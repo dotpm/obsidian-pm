@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] - 2026-09-07
+
 ### Added
 
 - The shortcut that saves a task and creates a project can be changed between Shift+Enter and Ctrl/Cmd+Enter
