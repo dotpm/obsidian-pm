@@ -7,25 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] - 2026-09-06
+
 ### Added
 
 - The timeline has a year zoom level, showing quarters under each year ([#50](https://github.com/StepanKropachev/obsidian-pm/issues/50), [#77](https://github.com/StepanKropachev/obsidian-pm/issues/77), [#147](https://github.com/StepanKropachev/obsidian-pm/issues/147))
 - A project can be duplicated with all its tasks, from the project list's context menu or the duplicate project command
+- The plugin's entry in Obsidian's plugin list links to the author's funding page
 
 ### Changed
 
+- The plugin is now called dotpm, matching the [dotpm](https://dotpm.pm) organization the repository moved to ([#269](https://github.com/dotpm/obsidian-pm/issues/269)). Commands are listed under **dotpm** in the Command Palette instead of **Project Manager**. Existing hotkeys, settings, and task files are unaffected, and updates continue as before.
 - Subtasks, parents and dependencies appear in the graph view and in a note's properties as links
 
 ### Fixed
 
 - Edits, dependency checks, and archiving could act on the wrong project when one project was created by copying another's folder
-
-### Changed
-
-- The plugin is now called dotpm, matching the [dotpm](https://dotpm.pm) organization the repository moved to ([#269](https://github.com/dotpm/obsidian-pm/issues/269)). Commands are listed under **dotpm** in the Command Palette instead of **Project Manager**. Existing hotkeys, settings, and task files are unaffected, and updates continue as before.
-
-### Fixed
-
 - The expand/collapse triangle was hard to click in the table, project list and Gantt views ([#266](https://github.com/dotpm/obsidian-pm/pull/266))
 - A task's due date in the table kept only the first digit typed and closed before the rest could be entered
 

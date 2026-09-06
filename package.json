@@ -1,6 +1,6 @@
 {
   "name": "project-manager",
-  "version": "2.1.0",
+  "version": "2.2.0",
   "description": "dotpm — project management for Obsidian",
   "repository": "github:dotpm/obsidian-pm",
   "main": "main.js",
