@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - The expand/collapse triangle was hard to click in the table, project list and Gantt views ([#266](https://github.com/dotpm/obsidian-pm/pull/266))
+- A task's due date in the table kept only the first digit typed and closed before the rest could be entered
 
 ## [2.1.0] - 2026-08-27
 

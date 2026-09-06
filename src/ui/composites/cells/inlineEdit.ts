@@ -27,13 +27,23 @@ export function makeInlineEdit(opts: InlineEditOpts): void {
     }
   })
 
+  const cancel = (): void => {
+    if (saved) return
+    saved = true
+    input.replaceWith(display)
+  }
+
+  let typed = false
   input.addEventListener('blur', save)
-  if (inputType !== 'date') {
-    input.addEventListener('keydown', (ev) => {
-      if (ev.key === 'Enter') save()
-      if (ev.key === 'Escape') input.replaceWith(display)
+  input.addEventListener('keydown', (ev) => {
+    if (ev.key === 'Enter') save()
+    else if (ev.key === 'Escape') cancel()
+    else typed = true
+  })
+
+  if (inputType === 'date') {
+    input.addEventListener('change', () => {
+      if (!typed) save()
     })
-  } else {
-    input.addEventListener('change', save)
   }
 }
