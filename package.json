@@ -38,7 +38,7 @@
     "oxfmt": "0.66.0",
     "oxlint": "1.81.0",
     "temporal-polyfill": "1.0.4",
-    "tsdown": "0.22.14",
+    "tsdown": "0.23.0",
     "typescript": "6.0.3",
     "vitest": "5.0.0",
     "yaml": "2.9.0"
