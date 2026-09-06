@@ -1,4 +1,4 @@
-import { ButtonComponent } from 'obsidian'
+import { ButtonComponent, type Scope } from 'obsidian'
 import type PMPlugin from '../../main'
 import type { Task, GanttGranularity, FilterState } from '../../types'
 import { personKeyer, type ProjectScope } from '../../store'
@@ -52,7 +52,8 @@ export class GanttView implements SubView {
     private scope: ProjectScope,
     private plugin: PMPlugin,
     private onRefresh: () => Promise<void>,
-    private filter: FilterState
+    private filter: FilterState,
+    private keyScope: Scope
   ) {
     this.granularity = plugin.settings.ganttGranularity
   }
@@ -192,31 +193,27 @@ export class GanttView implements SubView {
     })
     svgContainer.appendChild(this.svgEl)
 
-    // Gated on this leaf being the active one, so undo/redo isn't hijacked while the
-    // user is editing an unrelated note.
-    const isGanttActive = (): boolean => {
-      const leafEl = this.container.closest('.workspace-leaf')
-      return leafEl?.classList.contains('mod-active') ?? false
-    }
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (!isGanttActive()) return
-      if (e.key === 'Escape' && this.link.active) {
-        cancelLink(this.link)
-      }
+    const undo = () => {
       if (this.drag.isDragging) return
-      const mod = e.ctrlKey || e.metaKey
-      if (!mod) return
-      const key = e.key.toLowerCase()
-      if (key === 'z' && !e.shiftKey) {
-        e.preventDefault()
-        void this.plugin.undoLastAction()
-      } else if ((key === 'z' && e.shiftKey) || key === 'y') {
-        e.preventDefault()
-        void this.plugin.redoLastAction()
-      }
+      void this.plugin.undoLastAction()
+      return false
     }
-    activeDocument.addEventListener('keydown', onKeyDown)
-    this.cleanupFns.push(() => activeDocument.removeEventListener('keydown', onKeyDown))
+    const redo = () => {
+      if (this.drag.isDragging) return
+      void this.plugin.redoLastAction()
+      return false
+    }
+    const keyHandlers = [
+      this.keyScope.register([], 'Escape', () => {
+        if (this.link.active) cancelLink(this.link)
+      }),
+      this.keyScope.register(['Mod'], 'z', undo),
+      this.keyScope.register(['Mod', 'Shift'], 'z', redo),
+      this.keyScope.register(['Mod'], 'y', redo)
+    ]
+    this.cleanupFns.push(() => {
+      for (const handler of keyHandlers) this.keyScope.unregister(handler)
+    })
 
     const ctx = this.makeRendererContext()
     renderTimelineHeader(ctx)

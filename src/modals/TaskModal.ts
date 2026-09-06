@@ -23,7 +23,7 @@ export class TaskModal extends Modal {
       task,
       parentId,
       onSave,
-      { surface: 'modal', close: () => this.close(), keyScopeEl: this.modalEl },
+      { surface: 'modal', close: () => this.close(), scope: this.scope },
       defaults
     )
   }

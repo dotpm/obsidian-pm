@@ -1,4 +1,4 @@
-import { ButtonComponent, ExtraButtonComponent, ItemView, Menu, WorkspaceLeaf } from 'obsidian'
+import { ButtonComponent, ExtraButtonComponent, ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '../main'
 import { type Project, type ViewMode, type FilterState, type SavedView, makeDefaultFilter, makeId } from '../types'
 import {
@@ -50,7 +50,7 @@ export class ProjectView extends ItemView {
   private headerEl!: HTMLElement
   private bodyEl!: HTMLElement
   private header: ProjectHeader | null = null
-  private keydownHandler: ((e: KeyboardEvent) => void) | null = null
+  private keyScope: Scope
   private pendingRefresh: Promise<void> | null = null
   private initialized = false
   /** Set once the default view mode is applied, so reloads don't undo a mode switch. */
@@ -67,6 +67,8 @@ export class ProjectView extends ItemView {
     this.plugin = plugin
     this.currentView = plugin.settings.defaultView
     this.navigation = false
+    this.keyScope = new Scope(this.app.scope)
+    this.scope = this.keyScope
   }
 
   getViewType(): string {
@@ -105,10 +107,6 @@ export class ProjectView extends ItemView {
   }
 
   onClose(): Promise<void> {
-    if (this.keydownHandler) {
-      this.containerEl.removeEventListener('keydown', this.keydownHandler)
-      this.keydownHandler = null
-    }
     this.subview?.destroy?.()
     this.subview = null
     return Promise.resolve()
@@ -127,14 +125,6 @@ export class ProjectView extends ItemView {
     this.toolbarEl = root.createDiv('pm-toolbar')
     this.headerEl = root.createDiv('pm-project-header-mount')
     this.bodyEl = root.createDiv('pm-content')
-
-    this.keydownHandler = (e: KeyboardEvent) => {
-      this.subview?.handleKeyDown?.(e)
-    }
-    this.containerEl.addEventListener('keydown', this.keydownHandler)
-    if (!this.containerEl.hasAttribute('tabindex')) {
-      this.containerEl.setAttribute('tabindex', '-1')
-    }
 
     this.register(
       this.plugin.store.onProjectChanged((path) => {
@@ -525,6 +515,7 @@ export class ProjectView extends ItemView {
           this.plugin,
           () => this.refreshProject(),
           this.filter,
+          this.keyScope,
           this.savedTableViewState ?? undefined
         )
         if (savedTableScrollTop !== null) table.setPendingScrollTop(savedTableScrollTop)
@@ -532,7 +523,14 @@ export class ProjectView extends ItemView {
         break
       }
       case 'gantt': {
-        const gantt = new GanttView(this.bodyEl, scope, this.plugin, () => this.refreshProject(), this.filter)
+        const gantt = new GanttView(
+          this.bodyEl,
+          scope,
+          this.plugin,
+          () => this.refreshProject(),
+          this.filter,
+          this.keyScope
+        )
         if (savedGanttScroll) gantt.setPendingScroll(savedGanttScroll)
         if (savedGanttLabelWidth !== null) gantt.setLabelWidth(savedGanttLabelWidth)
         this.subview = gantt

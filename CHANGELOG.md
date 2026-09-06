@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The shortcut that saves a task and creates a project can be changed between Shift+Enter and Ctrl/Cmd+Enter
+
+### Changed
+
+- The new project dialog creates the project with the save shortcut or its create button
+
+### Fixed
+
+- Undo while typing in a dialog reverted the last task change when a Gantt view was open
+
 ## [2.2.0] - 2026-09-06
 
 ### Added

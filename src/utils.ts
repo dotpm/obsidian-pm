@@ -1,5 +1,5 @@
-import { Notice, parseLinktext, setIcon } from 'obsidian'
-import type { Task, StatusConfig, PriorityConfig, TaskPriority, PriorityIconSet } from './types'
+import { Notice, parseLinktext, Platform, setIcon } from 'obsidian'
+import type { Task, StatusConfig, PriorityConfig, TaskPriority, PriorityIconSet, PMSettings } from './types'
 import { PRIORITY_ICON_SETS } from './types'
 import type { DueUrgency } from './ui/composites/dueChip'
 import { today, parsePlainDate } from './dates'
@@ -94,6 +94,11 @@ export function stringifyCustomValue(val: unknown): string {
 export function truncateTitle(title: string, maxLen = 20): string {
   if (title.length <= maxLen) return title
   return title.slice(0, maxLen - 1) + '…'
+}
+
+export function saveShortcutLabel(modifier: PMSettings['editorSaveModifier']): string {
+  if (modifier === 'Shift') return 'Shift+Enter'
+  return Platform.isMacOS ? 'Cmd+Enter' : 'Ctrl+Enter'
 }
 
 export function sanitizeFileName(title: string): string {

@@ -222,6 +222,8 @@ export interface PMSettings {
   showTagColors: boolean
   saveTaskOnClose: boolean
   taskEditorSurface: 'modal' | 'tab'
+  /** Key shortcut to create or save tasks and projects. */
+  editorSaveModifier: 'Shift' | 'Mod'
   /** Where a project link lands: its overview page or its tasks in the default view. */
   projectSurface: 'overview' | 'tasks'
   /** Keyed by scope key, e.g. `project:Projects/Roadmap.md`. */
@@ -275,6 +277,7 @@ export const DEFAULT_SETTINGS: PMSettings = {
   pullForwardOnEarlyFinish: false,
   saveTaskOnClose: true,
   taskEditorSurface: 'modal',
+  editorSaveModifier: 'Shift',
   projectSurface: 'overview',
   projectFilters: {},
   scopeViews: {},

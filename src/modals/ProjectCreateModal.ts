@@ -1,8 +1,8 @@
-import { App, ButtonComponent, ExtraButtonComponent, Modal, setIcon } from 'obsidian'
+import { App, ButtonComponent, ExtraButtonComponent, Keymap, Modal, setIcon } from 'obsidian'
 import type PMPlugin from '../main'
 import { DEFAULT_PROJECT_COLOR, DEFAULT_PROJECT_ICON } from '../types'
 import { folderOf, projectFilePath, projectFolderOf } from '../store'
-import { safeAsync } from '../utils'
+import { safeAsync, saveShortcutLabel } from '../utils'
 import { renderPersonPicker } from '../ui/PersonPicker'
 import { renderPropRow } from '../ui/FormField'
 import { renderIconControl, renderSelectControl } from '../ui/composites/properties'
@@ -62,20 +62,15 @@ export class ProjectCreateModal extends Modal {
 
     this.renderFooter(contentEl)
 
-    this.modalEl.addEventListener('keydown', this.handleKeyDown)
+    this.scope.register([this.plugin.settings.editorSaveModifier], 'Enter', () => {
+      this.create()
+      return false
+    })
     this.refreshValidity()
   }
 
   onClose(): void {
-    this.modalEl.removeEventListener('keydown', this.handleKeyDown)
     this.contentEl.empty()
-  }
-
-  private readonly handleKeyDown = (e: KeyboardEvent): void => {
-    if (e.key === 'Enter' && e.shiftKey) {
-      e.preventDefault()
-      this.create()
-    }
   }
 
   private renderHeader(parent: HTMLElement): void {
@@ -118,10 +113,7 @@ export class ProjectCreateModal extends Modal {
       this.refreshValidity()
     })
     this.titleInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault()
-        this.create()
-      }
+      if (e.key === 'Enter' && !Keymap.isModifier(e, this.plugin.settings.editorSaveModifier)) e.preventDefault()
     })
     window.setTimeout(autosize, 0)
     this.titleInput.focus()
@@ -255,7 +247,7 @@ export class ProjectCreateModal extends Modal {
 
     new ButtonComponent(footer).setButtonText('Cancel').onClick(() => this.close())
     this.submit = new ButtonComponent(footer)
-      .setButtonText('Create project (Shift+Enter)')
+      .setButtonText(`Create project (${saveShortcutLabel(this.plugin.settings.editorSaveModifier)})`)
       .setCta()
       .onClick(() => this.create())
   }

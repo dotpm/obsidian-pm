@@ -3,6 +3,7 @@ import type { SettingDefinitionItem, SettingDefinitionPage } from 'obsidian'
 import type PMPlugin from './main'
 import { type PMSettings, DEFAULT_SETTINGS, PRIORITY_ICON_SET_LABELS, makeId } from './types'
 import { flattenTasks } from './store/TaskTreeOps'
+import { saveShortcutLabel } from './utils'
 import {
   countTaskNotesPaletteChanges,
   getTaskNotesApi,
@@ -83,6 +84,16 @@ export class PMSettingTab extends PluginSettingTab {
             name: 'Save tasks on close',
             desc: 'Save changes when the task editor is closed.',
             control: { type: 'toggle', key: 'saveTaskOnClose' }
+          },
+          {
+            name: 'Save shortcut',
+            desc: 'Key shortcut to create or save tasks and projects.',
+            aliases: ['hotkey', 'keyboard'],
+            control: {
+              type: 'dropdown',
+              key: 'editorSaveModifier',
+              options: { Shift: saveShortcutLabel('Shift'), Mod: saveShortcutLabel('Mod') }
+            }
           }
         ]
       },
