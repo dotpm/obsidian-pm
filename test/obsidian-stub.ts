@@ -1,4 +1,4 @@
-import { parse } from 'yaml'
+import { parse, stringify } from 'yaml'
 
 // Plugin code schedules timers through `window`, as Obsidian requires. Point it
 // at the node globals so tests run without a DOM environment, and so vitest's
@@ -6,6 +6,7 @@ import { parse } from 'yaml'
 Object.assign(globalThis, { window: globalThis })
 
 export const parseYaml = (raw: string): unknown => parse(raw)
+export const stringifyYaml = (obj: unknown): string => stringify(obj)
 
 export class Notice {
   hide(): void {}

@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Undo while typing in a dialog reverted the last task change when a Gantt view was open
+- Saving a task or project removed the properties that other plugins or the user had added to its note ([#272](https://github.com/StepanKropachev/obsidian-pm/issues/272))
 
 ## [2.2.0] - 2026-09-06
 

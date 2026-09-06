@@ -2,7 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { makeProject, makeTask, type Project, type SavedView, type Task } from '../types'
 import { hydrateProjectFromFrontmatter, hydrateTaskFromFile } from './YamlHydrator'
 import { parseFrontmatter } from './YamlParser'
-import { serializeProject, serializeTask, taskFilePath, type RefWriter } from './YamlSerializer'
+import {
+  buildTaskFrontmatter,
+  foreignFrontmatter,
+  PROJECT_FRONTMATTER_KEYS,
+  serializeProject,
+  serializeTask,
+  TASK_FRONTMATTER_KEYS,
+  taskFilePath,
+  type RefWriter
+} from './YamlSerializer'
 
 /** Stands in for Obsidian: every fixture file name here is unique, so none needs its path. */
 const refs: RefWriter = {
@@ -294,5 +303,54 @@ describe('hydration does not alias the source frontmatter', () => {
 
     expect((fm.customFields as unknown[]).length).toBe(1)
     expect(fm.teamMembers).toEqual(['Alice'])
+  })
+})
+
+describe('foreign frontmatter', () => {
+  it('owns every key the serializers write', () => {
+    const project = makeProject('P', 'Projects/P.md')
+    project.parentPath = 'Projects/Parent.md'
+    project.config = { defaultView: 'kanban' }
+    const task = makeTask({
+      id: 't-full',
+      title: 'Full',
+      completed: '2026-04-01',
+      recurrence: { interval: 'weekly', every: 1 },
+      timeEstimate: 4,
+      timeLogs: [{ date: '2026-04-01', hours: 2, note: 'init' }],
+      customFields: { sprint: 'S1' }
+    })
+
+    const taskKeys = Object.keys(buildTaskFrontmatter(task, project, null, refs))
+    expect(taskKeys.filter((key) => !TASK_FRONTMATTER_KEYS.has(key))).toEqual([])
+
+    const { frontmatter } = parseFrontmatter(serializeProject(project, [], refs))
+    const projectKeys = Object.keys(frontmatter ?? {})
+    expect(projectKeys.filter((key) => !PROJECT_FRONTMATTER_KEYS.has(key))).toEqual([])
+  })
+
+  it('writes foreign keys after its own and reads them back unchanged', () => {
+    const project = makeProject('P', 'Projects/P.md')
+    const task = makeTask({ id: 't-1', title: 'Task', status: 'todo' })
+    const foreign = {
+      uuid: 'ext-42',
+      timeEntries: [{ startTime: '2026-09-02T07:00:00', endTime: '2026-09-02T07:25:00' }]
+    }
+
+    const md = serializeTask(task, project, null, [], refs, foreign)
+    const { frontmatter } = parseFrontmatter(md)
+    if (!frontmatter) throw new Error('frontmatter missing')
+
+    expect(foreignFrontmatter(frontmatter, TASK_FRONTMATTER_KEYS)).toEqual(foreign)
+    expect(Object.keys(frontmatter).indexOf('uuid')).toBeGreaterThan(Object.keys(frontmatter).indexOf('updatedAt'))
+    expect(hydrateTaskFromFile(frontmatter, '', 'Projects/P_tasks/task.md').task.status).toBe('todo')
+  })
+
+  it('keeps only the keys the plugin does not own', () => {
+    expect(foreignFrontmatter(null, TASK_FRONTMATTER_KEYS)).toEqual({})
+    expect(foreignFrontmatter({ status: 'done', uuid: 'x', tasks: [] }, PROJECT_FRONTMATTER_KEYS)).toEqual({
+      status: 'done',
+      uuid: 'x'
+    })
   })
 })

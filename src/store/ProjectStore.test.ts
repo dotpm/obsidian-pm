@@ -13,6 +13,7 @@ import {
   type Task
 } from '../types'
 import { ProjectStore } from './ProjectStore'
+import { parseFrontmatter } from './YamlParser'
 import { projectTaskFolder } from './vaultFs'
 import { addDays } from './Scheduler'
 import { buildTaskIndex } from './TaskIndex'
@@ -360,6 +361,7 @@ describe('ProjectStore round-trip', () => {
 
     expect(vault.getAbstractFileByPath('Projects/Legacy_tasks/first.md')).not.toBeNull()
     expect(vault.getAbstractFileByPath('Projects/Legacy_tasks/second.md')).not.toBeNull()
+    expect(await vault.cachedRead(file)).not.toMatch(/^tasks:/m)
 
     const reloaded = await store.loadProject(file)
     if (!reloaded) throw new Error('reload failed')
@@ -1638,5 +1640,86 @@ describe('ProjectStore.duplicateProject', () => {
     const source = await store.createProject('Roadmap', 'Projects')
 
     await expect(store.duplicateProject(source, 'Roadmap')).rejects.toThrow('already exists')
+  })
+})
+
+describe('ProjectStore foreign frontmatter', () => {
+  const TIME_ENTRIES = 'timeEntries:\n  - startTime: 2026-09-02T07:00:00\n    endTime: 2026-09-02T07:25:00\n'
+  const EXPECTED = [{ startTime: '2026-09-02T07:00:00', endTime: '2026-09-02T07:25:00' }]
+
+  async function seeded() {
+    const { store, app } = newStore()
+    const project = await store.createProject('Foreign', 'Projects')
+    const task = await addNamed(store, project, 'Alpha')
+    await editOnDisk(app, 'Projects/Foreign/_tasks/alpha.md', (content) =>
+      content.replace('---\n', `---\n${TIME_ENTRIES}`)
+    )
+    return { store, app, project, task }
+  }
+
+  async function frontmatterAt(app: App, path: string): Promise<Record<string, unknown>> {
+    const content = await app.vault.cachedRead(fileAt(app, path))
+    return expectDefined(parseFrontmatter(content).frontmatter)
+  }
+
+  it("keeps another plugin's properties across a frontmatter-only save", async () => {
+    const { store, app, project, task } = await seeded()
+    await store.updateTask(project, task.id, { status: 'in-progress' })
+
+    const fm = await frontmatterAt(app, 'Projects/Foreign/_tasks/alpha.md')
+    expect(fm.status).toBe('in-progress')
+    expect(fm.timeEntries).toEqual(EXPECTED)
+  })
+
+  it("keeps another plugin's properties across a full rewrite", async () => {
+    const { store, app, project, task } = await seeded()
+    await store.updateTask(project, task.id, { description: 'Rewritten body' })
+
+    const fm = await frontmatterAt(app, 'Projects/Foreign/_tasks/alpha.md')
+    expect(fm.timeEntries).toEqual(EXPECTED)
+    expect(await app.vault.cachedRead(fileAt(app, 'Projects/Foreign/_tasks/alpha.md'))).toContain('Rewritten body')
+  })
+
+  it("keeps another plugin's properties when the file is renamed", async () => {
+    const { store, app, project, task } = await seeded()
+    await store.updateTask(project, task.id, { title: 'Alpha renamed' })
+
+    expect(app.vault.getAbstractFileByPath('Projects/Foreign/_tasks/alpha.md')).toBeNull()
+    const fm = await frontmatterAt(app, 'Projects/Foreign/_tasks/alpha-renamed.md')
+    expect(fm.title).toBe('Alpha renamed')
+    expect(fm.timeEntries).toEqual(EXPECTED)
+  })
+
+  it('still removes its own optional properties when they are cleared', async () => {
+    const { store, app, project, task } = await seeded()
+    await store.updateTask(project, task.id, { status: 'done' })
+    expect(await frontmatterAt(app, 'Projects/Foreign/_tasks/alpha.md')).toHaveProperty('completed')
+
+    await store.updateTask(project, task.id, { status: 'todo' })
+    const fm = await frontmatterAt(app, 'Projects/Foreign/_tasks/alpha.md')
+    expect(fm).not.toHaveProperty('completed')
+    expect(fm.timeEntries).toEqual(EXPECTED)
+  })
+
+  it('keeps properties added to the project note', async () => {
+    const { store, app } = newStore()
+    const project = await store.createProject('Aliased', 'Projects')
+    await editOnDisk(app, project.filePath, (content) => content.replace('---\n', '---\naliases:\n  - Ali\n'))
+
+    await store.updateProject(project, { color: '#123456' })
+    const fm = await frontmatterAt(app, project.filePath)
+    expect(fm.color).toBe('#123456')
+    expect(fm.aliases).toEqual(['Ali'])
+  })
+
+  it("keeps an imported note's properties", async () => {
+    const { store, app, vault } = newStore()
+    const project = await store.createProject('Import', 'Projects')
+    const note = await vault.create('Notes/Idea.md', `---\n${TIME_ENTRIES}---\nthe note body`)
+
+    await store.importNoteAsTask(project, note, { status: 'todo', priority: 'low', handling: 'move' })
+    const fm = await frontmatterAt(app, 'Projects/Import/_tasks/idea.md')
+    expect(fm['pm-task']).toBe(true)
+    expect(fm.timeEntries).toEqual(EXPECTED)
   })
 })
