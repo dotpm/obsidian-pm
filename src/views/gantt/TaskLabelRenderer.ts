@@ -116,7 +116,13 @@ export function renderTaskLabel(
             item
               .setTitle(nameOf(ref))
               .setIcon('link-2')
-              .onClick(safeAsync(() => openTaskByPath(ctx.plugin, ref.path, () => void ctx.onRefresh())))
+              .onClick(
+                safeAsync(() =>
+                  openTaskByPath(ctx.plugin, ref.path, () => {
+                    void ctx.onRefresh()
+                  })
+                )
+              )
           )
         }
         menu.showAtMouseEvent(e)

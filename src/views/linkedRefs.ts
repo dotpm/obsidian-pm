@@ -12,7 +12,11 @@ export function linkedRefs(app: App, values: string[], sourcePath: string): Avat
     return {
       name: person.name,
       unresolved: person.state === 'unresolved',
-      onClick: path ? () => void app.workspace.openLinkText(path, sourcePath) : undefined
+      onClick: path
+        ? () => {
+            void app.workspace.openLinkText(path, sourcePath)
+          }
+        : undefined
     }
   })
 }

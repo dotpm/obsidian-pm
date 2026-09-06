@@ -231,7 +231,9 @@ export class ProjectStore implements TaskSource {
         // Obsidian is still finishing this rename, and moving files while it does blocks
         // it, so the follow-up waits for the current one to settle.
         if (file instanceof TFile) {
-          window.setTimeout(() => void this.followProjectRename(oldPath, file.path), 0)
+          window.setTimeout(() => {
+            void this.followProjectRename(oldPath, file.path)
+          }, 0)
         }
         this.syncPath(file.path)
         this.syncPath(oldPath)
