@@ -29,7 +29,7 @@
     "@2bad/tsconfig": "4.0.0",
     "@types/node": "26.4.1",
     "@typescript-eslint/parser": "8.69.0",
-    "@vitest/coverage-v8": "4.1.10",
+    "@vitest/coverage-v8": "5.0.0",
     "eslint": "10.10.0",
     "eslint-plugin-obsidianmd": "0.4.2",
     "lightningcss": "1.33.0",
@@ -40,8 +40,7 @@
     "temporal-polyfill": "1.0.4",
     "tsdown": "0.22.14",
     "typescript": "6.0.3",
-    "vite-tsconfig-paths": "6.1.1",
-    "vitest": "4.1.10",
+    "vitest": "5.0.0",
     "yaml": "2.9.0"
   },
   "packageManager": "pnpm@11.5.3",

@@ -1,5 +1,4 @@
 import { fileURLToPath } from 'node:url'
-import tsconfigPaths from 'vite-tsconfig-paths'
 import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 
 export default defineConfig({
@@ -22,6 +21,5 @@ export default defineConfig({
       }
     },
     testTimeout: 30000
-  },
-  plugins: [tsconfigPaths()]
+  }
 })
