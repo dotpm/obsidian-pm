@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.1] - 2026-09-07
+
 ### Fixed
 
 - Status, priority, date and tag pickers opened outside the dialog when a theme applied a blur or transform to dialogs ([#276](https://github.com/dotpm/obsidian-pm/issues/276))
