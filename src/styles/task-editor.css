@@ -4,7 +4,7 @@
   left: var(--pop-left, 0);
   z-index: var(--layer-menu);
   min-width: var(--pop-width, 180px);
-  max-height: min(70vh, 460px);
+  max-height: min(70vh, 460px, var(--pop-max-height, 100vh));
   overflow-y: auto;
   padding: 5px;
   background: var(--background-secondary);

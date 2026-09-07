@@ -11,6 +11,28 @@ export interface PopoverOptions {
 const VIEWPORT_MARGIN = 12
 const ANCHOR_GAP = 4
 
+const CONTAINER_PROPS = [
+  'transform',
+  'translate',
+  'rotate',
+  'scale',
+  'perspective',
+  'filter',
+  'backdrop-filter',
+  '-webkit-backdrop-filter'
+]
+
+function isFixedContainer(cs: CSSStyleDeclaration): boolean {
+  for (const prop of CONTAINER_PROPS) {
+    const value = cs.getPropertyValue(prop)
+    if (value && value !== 'none') return true
+  }
+  const containerType = cs.getPropertyValue('container-type')
+  if (containerType && containerType !== 'normal') return true
+  if (/\b(paint|layout|strict|content)\b/.test(cs.getPropertyValue('contain'))) return true
+  return /\b(transform|perspective|filter|backdrop-filter|contain)\b/.test(cs.getPropertyValue('will-change'))
+}
+
 /**
  * Floating panel anchored to a trigger, for focusable content Obsidian's `Menu` can't
  * host (date inputs, search fields). The caller owns the lifecycle: fill `contentEl`,
@@ -20,7 +42,9 @@ const ANCHOR_GAP = 4
  *
  * Inside a modal it mounts into the modal element rather than the body: Obsidian's focus
  * trap yanks focus back to the first field whenever it lands outside, which would make
- * the panel impossible to type in. `position: fixed` still escapes the modal's overflow.
+ * the panel impossible to type in. `position: fixed` escapes the modal's overflow, unless a
+ * theme gives `.modal` a transform, filter or backdrop-filter: that makes the modal the
+ * containing block, so coordinates are resolved against whichever ancestor claims them.
  */
 export class Popover {
   readonly contentEl: HTMLElement
@@ -33,6 +57,7 @@ export class Popover {
   private readonly width?: number
   private readonly onCloseCb?: () => void
   private opened = false
+  private container: HTMLElement | null = null
 
   constructor(opts: PopoverOptions) {
     this.anchor = opts.anchor
@@ -57,6 +82,7 @@ export class Popover {
     this.opened = true
     this.anchor.setAttribute('aria-expanded', 'true')
     this.host.appendChild(this.el)
+    this.container = this.findContainer()
     this.reposition()
     this.doc.addEventListener('mousedown', this.onOutsideDown, true)
     this.doc.addEventListener('keydown', this.onKeyDown, true)
@@ -73,21 +99,55 @@ export class Popover {
     this.win.removeEventListener('scroll', this.reposition, true)
     this.win.removeEventListener('resize', this.reposition)
     this.el.remove()
+    this.container = null
     this.onCloseCb?.()
+  }
+
+  private findContainer(): HTMLElement | null {
+    for (let el = this.el.parentElement; el; el = el.parentElement) {
+      if (isFixedContainer(this.win.getComputedStyle(el))) return el
+    }
+    return null
+  }
+
+  private area(): {
+    top: number
+    left: number
+    right: number
+    bottom: number
+    originX: number
+    originY: number
+  } {
+    const win = this.win
+    const box = { top: 0, left: 0, right: win.innerWidth, bottom: win.innerHeight, originX: 0, originY: 0 }
+    if (!this.container) return box
+    const cs = win.getComputedStyle(this.container)
+    const r = this.container.getBoundingClientRect()
+    box.originX = r.left + parseFloat(cs.borderLeftWidth)
+    box.originY = r.top + parseFloat(cs.borderTopWidth)
+    if (cs.overflow !== 'visible') {
+      box.top = Math.max(box.top, box.originY)
+      box.left = Math.max(box.left, box.originX)
+      box.right = Math.min(box.right, r.right - parseFloat(cs.borderRightWidth))
+      box.bottom = Math.min(box.bottom, r.bottom - parseFloat(cs.borderBottomWidth))
+    }
+    return box
   }
 
   private reposition = (): void => {
     if (!this.opened || Platform.isPhone) return
     const r = this.anchor.getBoundingClientRect()
-    const vw = this.win.innerWidth
-    const vh = this.win.innerHeight
+    const box = this.area()
+    this.el.setCssProps({ '--pop-max-height': `${box.bottom - box.top - VIEWPORT_MARGIN * 2}px` })
     const pw = this.el.offsetWidth || this.width || 200
     const ph = this.el.offsetHeight || 200
     let top = r.bottom + ANCHOR_GAP
-    if (top + ph > vh - VIEWPORT_MARGIN) top = Math.max(VIEWPORT_MARGIN, r.top - ph - ANCHOR_GAP)
+    if (top + ph > box.bottom - VIEWPORT_MARGIN) {
+      top = Math.max(box.top + VIEWPORT_MARGIN, r.top - ph - ANCHOR_GAP)
+    }
     let left = this.align === 'right' ? r.right - pw : r.left
-    left = Math.max(VIEWPORT_MARGIN, Math.min(left, vw - pw - VIEWPORT_MARGIN))
-    this.el.setCssProps({ '--pop-top': `${top}px`, '--pop-left': `${left}px` })
+    left = Math.max(box.left + VIEWPORT_MARGIN, Math.min(left, box.right - pw - VIEWPORT_MARGIN))
+    this.el.setCssProps({ '--pop-top': `${top - box.originY}px`, '--pop-left': `${left - box.originX}px` })
   }
 
   private onOutsideDown = (e: MouseEvent): void => {
