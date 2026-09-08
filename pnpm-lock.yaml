@@ -18,6 +18,9 @@ importers:
       '@2bad/tsconfig':
         specifier: 4.0.0
         version: 4.0.0(typescript@6.0.3)
+      '@dotpm/api':
+        specifier: workspace:*
+        version: link:packages/api
       '@dotpm/core':
         specifier: workspace:*
         version: link:packages/core
@@ -69,6 +72,12 @@ importers:
       yaml:
         specifier: 2.9.0
         version: 2.9.0
+
+  packages/api:
+    dependencies:
+      '@dotpm/core':
+        specifier: workspace:*
+        version: link:../core
 
   packages/core:
     dependencies:

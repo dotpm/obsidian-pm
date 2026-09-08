@@ -1,4 +1,4 @@
-import { App, Notice, PluginSettingTab, Setting, debounce } from 'obsidian'
+import { App, Notice, Platform, PluginSettingTab, Setting, debounce } from 'obsidian'
 import type { SettingDefinitionItem, SettingDefinitionPage } from 'obsidian'
 import type PMPlugin from './main'
 import { type PMSettings, DEFAULT_SETTINGS, PRIORITY_ICON_SET_LABELS, makeId, flattenTasks } from '@dotpm/core'
@@ -12,6 +12,7 @@ import {
 } from './integrations/tasknotes'
 import { renderPaletteFields, renderStatusDoneToggle } from './ui/PaletteListEditor'
 import { renderPersonPicker } from './ui/PersonPicker'
+import { generateToken } from './api/LocalApiServer'
 
 export type { PMSettings }
 export { DEFAULT_SETTINGS }
@@ -253,6 +254,7 @@ export class PMSettingTab extends PluginSettingTab {
           }
         ]
       },
+      this.localApiGroup(),
       {
         type: 'group',
         heading: 'Task fields',
@@ -274,8 +276,67 @@ export class PMSettingTab extends PluginSettingTab {
       this.plugin.settings.lastAutoArchiveDate = ''
       await this.plugin.autoArchiver.check()
     }
+    if (key.startsWith('localApi')) await this.plugin.syncLocalApi()
     this.plugin.refreshViews()
     this.refreshDomState()
+  }
+
+  private async regenerateLocalApiToken(): Promise<void> {
+    this.plugin.settings.localApiToken = generateToken()
+    await this.plugin.saveSettings()
+    this.update()
+  }
+
+  private localApiGroup(): SettingDefinitionItem {
+    const enabled = (): boolean => this.plugin.settings.localApiEnabled
+    return {
+      type: 'group',
+      heading: 'Local API',
+      visible: () => Platform.isDesktopApp,
+      items: [
+        {
+          name: 'Serve projects to other apps',
+          desc: `Lets tools on this computer read and edit tasks over HTTP and MCP at http://127.0.0.1:${this.plugin.settings.localApiPort}. Only this computer can connect, and every request needs the token. The MCP endpoint is /mcp.`,
+          aliases: ['api', 'mcp', 'server', 'agent', 'local'],
+          control: { type: 'toggle', key: 'localApiEnabled' }
+        },
+        {
+          name: 'Port',
+          desc: 'Starts out derived from the vault name, so two open vaults do not want the same one.',
+          aliases: ['api', 'mcp'],
+          control: {
+            type: 'number',
+            key: 'localApiPort',
+            min: 1024,
+            max: 65535,
+            step: 1,
+            validate: (value) =>
+              Number.isInteger(value) && value >= 1024 && value <= 65535 ? undefined : 'Use a port from 1024 to 65535.',
+            disabled: () => !enabled()
+          }
+        },
+        {
+          name: 'Token',
+          desc: 'Clients send it as a bearer token.',
+          aliases: ['api', 'mcp', 'secret'],
+          control: {
+            type: 'text',
+            key: 'localApiToken',
+            validate: (value) => (value.trim().length >= 16 ? undefined : 'Use at least 16 characters.'),
+            disabled: () => !enabled()
+          }
+        },
+        {
+          name: 'Regenerate token',
+          desc: 'Every connected client will need the new one.',
+          aliases: ['api', 'mcp', 'secret'],
+          action: () => {
+            void this.regenerateLocalApiToken()
+          },
+          disabled: () => !enabled()
+        }
+      ]
+    }
   }
 
   private statusesPage(): SettingDefinitionPage {

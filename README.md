@@ -100,6 +100,18 @@ For teams:
 
 There is no real-time multi-user editing. Two people editing the same task at once produces a sync conflict, same as any Markdown note.
 
+## Local API and MCP
+
+Other programs on the same computer can read and edit your tasks: a coding agent through the Model Context Protocol, a script over plain HTTP. Turn it on in **Settings > Local API**. It is off by default and only exists on desktop.
+
+When it is on, dotpm listens on `127.0.0.1` on the port shown in settings. Each vault starts with its own port, derived from the vault name so two open vaults never want the same one, and you can change it. Nothing outside this computer can connect, and every request needs the token shown next to the port. Point an MCP client at `http://127.0.0.1:<port>/mcp` with `Authorization: Bearer <token>`; Claude Code, for example:
+
+```sh
+claude mcp add --transport http dotpm http://127.0.0.1:<port>/mcp --header "Authorization: Bearer <token>"
+```
+
+Everything a client changes goes through the same code the views use, so it shows up in Obsidian at once. The endpoints, the MCP tools and the change feed are documented in [docs/api.md](docs/api.md).
+
 ## Using with TaskNotes
 
 dotpm works alongside the [TaskNotes](https://github.com/callumalpass/tasknotes) plugin (4.10 or newer).

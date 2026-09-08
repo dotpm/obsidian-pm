@@ -3,6 +3,7 @@
   "include": [
     "src/**/*.ts",
     "packages/*/src/**/*.ts",
+    "packages/*/test/**/*.ts",
     "test/**/*.ts"
   ],
   "compilerOptions": {

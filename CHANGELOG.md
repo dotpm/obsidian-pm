@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Other apps on the same computer can read and edit tasks over a local HTTP and MCP server when it is turned on in settings
+
 ## [2.3.1] - 2026-09-07
 
 ### Fixed

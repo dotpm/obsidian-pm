@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { dedupePeople, displayName, dueUrgency, priorityIcon } from './utils'
-import { makeTask, DEFAULT_PRIORITIES, type PriorityConfig, type StatusConfig } from './types'
+import { dedupePeople, displayName, dueUrgency, localApiPortFor, priorityIcon } from './utils'
+import {
+  makeTask,
+  DEFAULT_PRIORITIES,
+  LOCAL_API_PORT_BASE,
+  LOCAL_API_PORT_SPAN,
+  type PriorityConfig,
+  type StatusConfig
+} from './types'
 import { today } from './dates'
 
 const statuses: StatusConfig[] = [
@@ -170,5 +177,23 @@ describe('dedupePeople with a key function', () => {
 
   it('collapses two spellings the key function calls the same', () => {
     expect(dedupePeople(['[[People/Jane]]', 'Jane'], keyOf)).toEqual(['[[People/Jane]]'])
+  })
+})
+
+describe('localApiPortFor', () => {
+  it('stays inside the band', () => {
+    for (const name of ['', 'Work', 'Personal notes', 'a'.repeat(200), '仕事', 'Vault/With:Odd*Chars']) {
+      const port = localApiPortFor(name)
+      expect(port).toBeGreaterThanOrEqual(LOCAL_API_PORT_BASE)
+      expect(port).toBeLessThan(LOCAL_API_PORT_BASE + LOCAL_API_PORT_SPAN)
+    }
+  })
+
+  it('gives one vault the same port every time', () => {
+    expect(localApiPortFor('Work')).toBe(localApiPortFor('Work'))
+  })
+
+  it('gives two vaults different ports', () => {
+    expect(localApiPortFor('Work')).not.toBe(localApiPortFor('Personal'))
   })
 })

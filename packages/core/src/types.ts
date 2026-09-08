@@ -235,6 +235,10 @@ export interface PMSettings {
   collapsedTasks: Record<string, string[]>
   /** Paths of projects whose sub-projects are collapsed in the project list. */
   collapsedProjects: string[]
+  /** A localhost HTTP and MCP server for other tools on this machine. Desktop only. */
+  localApiEnabled: boolean
+  localApiPort: number
+  localApiToken: string
 }
 
 export const DEFAULT_STATUSES: StatusConfig[] = [
@@ -252,6 +256,14 @@ export const DEFAULT_PRIORITIES: PriorityConfig[] = [
   { id: 'medium', label: 'Medium', color: '#8a94a0', icon: '' },
   { id: 'low', label: 'Low', color: '#79b58d', icon: '' }
 ]
+
+/**
+ * The band a vault's default local API port is drawn from. It sits clear of the numbers
+ * other Obsidian plugins take by default, and below every operating system's ephemeral
+ * range, so an outgoing connection can never be holding the port when the server starts.
+ */
+export const LOCAL_API_PORT_BASE = 27140
+export const LOCAL_API_PORT_SPAN = 100
 
 export const DEFAULT_SETTINGS: PMSettings = {
   projectsFolder: 'Projects',
@@ -283,7 +295,10 @@ export const DEFAULT_SETTINGS: PMSettings = {
   projectFilters: {},
   scopeViews: {},
   collapsedTasks: {},
-  collapsedProjects: []
+  collapsedProjects: [],
+  localApiEnabled: false,
+  localApiPort: LOCAL_API_PORT_BASE,
+  localApiToken: ''
 }
 
 export function makeId(): string {

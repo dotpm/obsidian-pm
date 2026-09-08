@@ -1,5 +1,5 @@
 import type { DueUrgency, Task, StatusConfig, PriorityConfig, TaskPriority, PriorityIconSet } from './types'
-import { PRIORITY_ICON_SETS } from './types'
+import { LOCAL_API_PORT_BASE, LOCAL_API_PORT_SPAN, PRIORITY_ICON_SETS } from './types'
 import { today, parsePlainDate } from './dates'
 
 export function displayName(raw: string): string {
@@ -40,6 +40,17 @@ export function stringToColor(s: string): string {
   let hash = 0
   for (let i = 0; i < s.length; i++) hash = s.charCodeAt(i) + ((hash << 5) - hash)
   return `hsl(${Math.abs(hash) % 360}, 55%, 45%)`
+}
+
+/**
+ * The port a vault's local API listens on until the user picks another. Two vaults open at
+ * once would otherwise want the same one, and deriving it from the name gives each the same
+ * port on every restart, so a client configured once keeps reaching it.
+ */
+export function localApiPortFor(vaultName: string): number {
+  let hash = 0
+  for (let i = 0; i < vaultName.length; i++) hash = vaultName.charCodeAt(i) + ((hash << 5) - hash)
+  return LOCAL_API_PORT_BASE + (Math.abs(hash) % LOCAL_API_PORT_SPAN)
 }
 
 export function isTerminalStatus(status: string, statuses: StatusConfig[]): boolean {

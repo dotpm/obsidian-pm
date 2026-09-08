@@ -1,4 +1,5 @@
-import { MarkdownView, Plugin, Notice } from 'obsidian'
+import { MarkdownView, Notice, Platform, Plugin } from 'obsidian'
+import { bearerAuth } from '@dotpm/api'
 import {
   DEFAULT_SETTINGS,
   makeDefaultFilter,
@@ -8,7 +9,8 @@ import {
   flattenTasks,
   findTask,
   dedupePeople,
-  displayName
+  displayName,
+  localApiPortFor
 } from '@dotpm/core'
 import {
   matchPersonNotes,
@@ -43,6 +45,8 @@ import { Notifier } from './components/Notifier'
 import { AutoArchiver } from './components/AutoArchiver'
 import { IdRepair } from './components/IdRepair'
 import { migrateProjects, migrateProjectLayout } from './migration'
+import { LocalApi } from './api/LocalApi'
+import { generateToken, LocalApiServer } from './api/LocalApiServer'
 
 export default class PMPlugin extends Plugin {
   settings: PMSettings = { ...DEFAULT_SETTINGS }
@@ -52,6 +56,7 @@ export default class PMPlugin extends Plugin {
   autoArchiver!: AutoArchiver
   idRepair!: IdRepair
   router!: PMViewRouter
+  localApi!: LocalApiServer
   /** Paths deliberately sent to the markdown editor, which the swap then leaves alone. */
   private markdownEscapes = new Set<string>()
   private viewRefreshScheduled = false
@@ -95,6 +100,16 @@ export default class PMPlugin extends Plugin {
     this.autoArchiver = new AutoArchiver(this)
     this.idRepair = new IdRepair(this)
     this.router = new PMViewRouter(this)
+    const api = new LocalApi(this)
+    this.register(api.attach())
+    this.localApi = new LocalApiServer(
+      {
+        api,
+        info: { name: 'dotpm', version: this.manifest.version },
+        authorized: bearerAuth(() => this.settings.localApiToken)
+      },
+      () => this.settings.localApiPort
+    )
 
     this.registerView(PM_PROJECT_VIEW_TYPE, (leaf) => new ProjectView(leaf, this))
     this.registerView(PM_PROJECT_OVERVIEW_VIEW_TYPE, (leaf) => new ProjectOverviewView(leaf, this))
@@ -108,6 +123,7 @@ export default class PMPlugin extends Plugin {
       safeAsync(async () => {
         this.index.build()
         await this.startupSweep()
+        await this.syncLocalApi()
       })
     )
 
@@ -290,6 +306,22 @@ export default class PMPlugin extends Plugin {
 
   onunload(): void {
     this.notifier.stop()
+    void this.localApi.stop()
+  }
+
+  /** Brings the local API in line with the settings. Mobile has nothing to run. */
+  async syncLocalApi(): Promise<void> {
+    if (!Platform.isDesktopApp) return
+    if (!this.settings.localApiEnabled) {
+      await this.localApi.stop()
+      return
+    }
+    try {
+      await this.localApi.restart()
+    } catch (err: unknown) {
+      console.error('[PM] local API failed to start', err)
+      new Notice(`The local API could not listen on port ${this.settings.localApiPort}.`)
+    }
   }
 
   /** Opens a task note in Obsidian's own editor, where the swap leaves it alone. */
@@ -360,6 +392,16 @@ export default class PMPlugin extends Plugin {
           entry.filter.statuses = nonTerminal
         }
       }
+      migrated = true
+    }
+
+    if (saved?.localApiPort === undefined) {
+      this.settings.localApiPort = localApiPortFor(this.app.vault.getName())
+      migrated = true
+    }
+
+    if (!this.settings.localApiToken) {
+      this.settings.localApiToken = generateToken()
       migrated = true
     }
 

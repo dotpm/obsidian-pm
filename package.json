@@ -27,6 +27,7 @@
   "devDependencies": {
     "@2bad/axiom": "2.1.0",
     "@2bad/tsconfig": "4.0.0",
+    "@dotpm/api": "workspace:*",
     "@dotpm/core": "workspace:*",
     "@dotpm/ui": "workspace:*",
     "@types/node": "26.4.1",
