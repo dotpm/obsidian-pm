@@ -1,7 +1,7 @@
 import { Menu } from 'obsidian'
 import type PMPlugin from '../main'
 import type { ProjectScope } from '../store'
-import type { Project, Task } from '../types'
+import type { Project, Task } from '@dotpm/core'
 import { openTaskModal } from '../ui/ModalFactory'
 
 export interface AddTaskOptions {

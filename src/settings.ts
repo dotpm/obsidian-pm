@@ -1,9 +1,9 @@
 import { App, Notice, PluginSettingTab, Setting, debounce } from 'obsidian'
 import type { SettingDefinitionItem, SettingDefinitionPage } from 'obsidian'
 import type PMPlugin from './main'
-import { type PMSettings, DEFAULT_SETTINGS, PRIORITY_ICON_SET_LABELS, makeId } from './types'
-import { flattenTasks } from './store/TaskTreeOps'
+import { type PMSettings, DEFAULT_SETTINGS, PRIORITY_ICON_SET_LABELS, makeId, flattenTasks } from '@dotpm/core'
 import { saveShortcutLabel } from './utils'
+import { renderCustomFieldFields, renderCustomFieldOptions } from '@dotpm/ui'
 import {
   countTaskNotesPaletteChanges,
   getTaskNotesApi,
@@ -11,7 +11,6 @@ import {
   isTaskNotesInstalled
 } from './integrations/tasknotes'
 import { renderPaletteFields, renderStatusDoneToggle } from './ui/PaletteListEditor'
-import { renderCustomFieldFields, renderCustomFieldOptions } from './ui/CustomFieldListEditor'
 import { renderPersonPicker } from './ui/PersonPicker'
 
 export type { PMSettings }

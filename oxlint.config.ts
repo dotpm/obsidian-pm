@@ -35,5 +35,35 @@ export default defineConfig({
     'obsidianmd/ui/sentence-case': ['error', { ignoreWords: ['TaskNotes'] }],
     'obsidianmd/ui/sentence-case-json': 'warn',
     'obsidianmd/vault/iterate': 'error'
-  }
+  },
+  overrides: [
+    {
+      files: ['packages/ui/src/dom-shim.ts', 'packages/ui/src/dom-platform.ts', 'packages/ui/src/**/*.test.ts'],
+      rules: {
+        'obsidianmd/prefer-active-doc': 'off',
+        'obsidianmd/no-static-styles-assignment': 'off',
+        'promise/prefer-await-to-callbacks': 'off'
+      }
+    },
+    {
+      files: ['packages/**/*.ts'],
+      rules: {
+        'no-restricted-imports': ['error', { paths: [{ name: 'obsidian', message: 'packages must stay free of the Obsidian API' }] }]
+      }
+    },
+    {
+      files: ['packages/core/**/*.ts'],
+      rules: {
+        'no-restricted-imports': [
+          'error',
+          {
+            paths: [
+              { name: 'obsidian', message: 'packages must stay free of the Obsidian API' },
+              { name: '@dotpm/ui', message: 'core must not depend on ui' }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 })

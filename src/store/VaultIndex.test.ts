@@ -2,7 +2,7 @@ import type { App, Plugin } from 'obsidian'
 import { TFile } from 'obsidian'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { makeFakeApp, type FakeVault } from '../../test/fakeVault'
-import { DEFAULT_SETTINGS, type PMSettings } from '../types'
+import { DEFAULT_SETTINGS, type PMSettings } from '@dotpm/core'
 import { VaultIndex } from './VaultIndex'
 
 const expectDefined = <T>(value: T | null | undefined, message = 'expected value to be defined'): T => {

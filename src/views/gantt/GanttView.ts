@@ -1,12 +1,18 @@
 import { ButtonComponent, type Scope } from 'obsidian'
 import type PMPlugin from '../../main'
-import type { Task, GanttGranularity, FilterState } from '../../types'
+import {
+  type Task,
+  type GanttGranularity,
+  type FilterState,
+  type FlatTask,
+  flattenTasks,
+  applyTaskFilterPromote,
+  Temporal,
+  today
+} from '@dotpm/core'
 import { personKeyer, type ProjectScope } from '../../store'
-import { type FlatTask, flattenTasks } from '../../store/TaskTreeOps'
-import { applyTaskFilterPromote } from '../../store/TaskFilter'
+import { renderAddButton, SegmentedControl, svgEl } from '@dotpm/ui'
 import { openAddTask } from '../addTask'
-import { renderAddButton } from '../../ui/composites/addButton'
-import { SegmentedControl } from '../../ui/primitives/SegmentedControl'
 import type { SubView } from '../SubView'
 import type { TimelineCfg } from './TimelineConfig'
 import { buildTimelineConfig, dateToX, xToDate, HEADER_HEIGHT, ROW_HEIGHT, LABEL_WIDTH } from './TimelineConfig'
@@ -22,8 +28,6 @@ import {
   renderDependencyArrows,
   renderMilestoneLabels
 } from './GanttRenderer'
-import { svgEl } from '../../utils'
-import { Temporal, today } from '../../dates'
 import type { RendererContext } from './GanttRenderer'
 import { renderTaskLabel } from './TaskLabelRenderer'
 

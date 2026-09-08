@@ -1,7 +1,7 @@
 import type { App } from 'obsidian'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { makeFakeApp } from '../../test/fakeVault'
-import { DEFAULT_SETTINGS, makeTask, type PMSettings, type Project, type StatusConfig } from '../types'
+import { DEFAULT_SETTINGS, makeTask, type PMSettings, type Project, type StatusConfig } from '@dotpm/core'
 import { ProjectStore } from './ProjectStore'
 import { ProjectScope, resolveScopePaths, scopeKey } from './ProjectScope'
 import { VaultIndex } from './VaultIndex'

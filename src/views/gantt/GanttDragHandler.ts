@@ -1,7 +1,7 @@
 import { Notice } from 'obsidian'
 import type PMPlugin from '../../main'
-import type { Project, Task } from '../../types'
-import { safeAsync } from '../../utils'
+import type { Project, Task } from '@dotpm/core'
+import { safeAsync } from '@dotpm/ui'
 import type { TimelineCfg } from './TimelineConfig'
 import { xToDate, getSnapPoints, snapX } from './TimelineConfig'
 

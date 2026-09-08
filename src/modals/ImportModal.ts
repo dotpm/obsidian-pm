@@ -1,7 +1,14 @@
 import { App, ButtonComponent, Modal, TFile, Notice } from 'obsidian'
 import type PMPlugin from '../main'
-import type { PriorityConfig, Project, StatusConfig, TaskStatus, TaskPriority } from '../types'
-import { getDefaultStatusId, getDefaultPriorityId } from '../utils'
+import {
+  type PriorityConfig,
+  type Project,
+  type StatusConfig,
+  type TaskStatus,
+  type TaskPriority,
+  getDefaultStatusId,
+  getDefaultPriorityId
+} from '@dotpm/core'
 import {
   ensurePaletteEntries,
   getTaskNotesApi,

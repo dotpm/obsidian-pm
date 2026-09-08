@@ -2,22 +2,23 @@ import type { App, Plugin } from 'obsidian'
 import { TFile, TFolder } from 'obsidian'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { makeFakeApp, type FakeVault } from '../../test/fakeVault'
-import { today } from '../dates'
 import {
+  today,
   DEFAULT_SETTINGS,
   makeDefaultFilter,
   makeTask,
   type PMSettings,
   type Project,
   type StatusConfig,
-  type Task
-} from '../types'
+  type Task,
+  parseFrontmatter,
+  addDays,
+  buildTaskIndex,
+  findTask,
+  flattenTasks
+} from '@dotpm/core'
 import { ProjectStore } from './ProjectStore'
-import { parseFrontmatter } from './YamlParser'
 import { projectTaskFolder } from './vaultFs'
-import { addDays } from './Scheduler'
-import { buildTaskIndex } from './TaskIndex'
-import { findTask, flattenTasks } from './TaskTreeOps'
 import { VaultIndex } from './VaultIndex'
 
 const expectDefined = <T>(value: T | null | undefined, message = 'expected value to be defined'): T => {

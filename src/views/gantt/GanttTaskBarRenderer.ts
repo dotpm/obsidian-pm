@@ -1,8 +1,7 @@
 import { Notice } from 'obsidian'
-import type { Task } from '../../types'
+import { type Task, displayName, getStatusConfig, parsePlainDate } from '@dotpm/core'
+import { svgEl, safeAsync } from '@dotpm/ui'
 import { openTaskModal } from '../../ui/ModalFactory'
-import { svgEl, displayName, getStatusConfig, safeAsync } from '../../utils'
-import { parsePlainDate } from '../../dates'
 import {
   ROW_HEIGHT,
   HEADER_HEIGHT,

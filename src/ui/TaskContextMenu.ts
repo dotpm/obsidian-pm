@@ -1,7 +1,7 @@
 import { Menu, Notice } from 'obsidian'
 import type PMPlugin from '../main'
-import type { Task, Project } from '../types'
-import { safeAsync } from '../utils'
+import type { Task, Project } from '@dotpm/core'
+import { safeAsync } from '@dotpm/ui'
 import { openTaskModal, confirmDialog, confirmDuplicateSubtasks, openProjectPicker } from './ModalFactory'
 
 export interface TaskMenuContext {

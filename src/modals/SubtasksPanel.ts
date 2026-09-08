@@ -1,9 +1,12 @@
-import type { StatusConfig, Task } from '../types'
-import { makeTask } from '../types'
-import { renderNoteLink } from '../ui/composites/noteLink'
-import { Checkbox } from '../ui/primitives/Checkbox'
-import { IconButton } from '../ui/primitives/IconButton'
-import { isTerminalStatus, getCompleteStatusId, getDefaultStatusId } from '../utils'
+import {
+  type StatusConfig,
+  type Task,
+  makeTask,
+  isTerminalStatus,
+  getCompleteStatusId,
+  getDefaultStatusId
+} from '@dotpm/core'
+import { renderNoteLink, Checkbox, IconButton } from '@dotpm/ui'
 
 /** The header count is how many subtasks sit in a terminal status. */
 export function renderSubtasksPanel(

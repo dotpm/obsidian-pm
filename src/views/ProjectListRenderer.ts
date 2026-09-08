@@ -1,12 +1,9 @@
 import { Menu, ButtonComponent } from 'obsidian'
 import type PMPlugin from '../main'
 import type { ProjectRef } from '../store'
-import { formatDateShort } from '../dates'
-import { dateUrgency, safeAsync } from '../utils'
+import { formatDateShort, dateUrgency } from '@dotpm/core'
+import { safeAsync, EmptyState, ProjectRow, childTreeGuides } from '@dotpm/ui'
 import { openProjectCreate } from '../ui/ModalFactory'
-import { EmptyState } from '../ui/primitives/EmptyState'
-import { ProjectRow } from '../ui/composites/ProjectRow'
-import { childTreeGuides } from '../ui/composites/treeGuides'
 import { linkedRefs } from './linkedRefs'
 
 const COLUMNS: { label: string; cls?: string }[] = [

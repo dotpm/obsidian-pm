@@ -1,5 +1,12 @@
-import type { CustomFieldDef, PriorityConfig, Project, ResolvedProjectConfig, StatusConfig, Task } from '../types'
-import { findTaskById } from './TaskIndex'
+import {
+  type CustomFieldDef,
+  type PriorityConfig,
+  type Project,
+  type ResolvedProjectConfig,
+  type StatusConfig,
+  type Task,
+  findTaskById
+} from '@dotpm/core'
 import type { TaskSource } from './TaskSource'
 import type { VaultIndex } from './VaultIndex'
 

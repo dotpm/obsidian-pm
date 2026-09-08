@@ -1,5 +1,12 @@
 import type { App } from 'obsidian'
 import { TFile, TFolder, normalizePath } from 'obsidian'
+import { sanitizeFileName } from '@dotpm/core'
+
+/** A project owns a folder named after it, holding its note and its `_tasks/`. */
+export function projectFilePath(projectTitle: string, folder: string): string {
+  const name = sanitizeFileName(projectTitle)
+  return normalizePath(`${folder}/${name}/${name}.md`)
+}
 
 /** The task storage folder inside a project's own folder. */
 export const TASK_FOLDER_NAME = '_tasks'

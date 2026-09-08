@@ -1,14 +1,20 @@
 import type { App, Plugin, TAbstractFile } from 'obsidian'
 import { TFile, normalizePath } from 'obsidian'
-import type { CustomFieldDef, PMSettings, StatusConfig } from '../types'
-import { today } from '../dates'
-import { reaches } from './Scheduler'
-import { FRONTMATTER_KEY, TASK_FRONTMATTER_KEY } from './YamlParser'
-import { customFieldList, stringList } from './YamlHydrator'
+import {
+  type CustomFieldDef,
+  type PMSettings,
+  type StatusConfig,
+  today,
+  reaches,
+  FRONTMATTER_KEY,
+  TASK_FRONTMATTER_KEY,
+  customFieldList,
+  stringList,
+  dedupePeople
+} from '@dotpm/core'
 import { projectPathForTaskPath, resolveVaultLink } from './vaultFs'
 import { isRefLink, refToId, refToPath } from './refs'
 import { personKeyer } from './people'
-import { dedupePeople } from '../utils'
 
 export interface ProjectRef {
   path: string

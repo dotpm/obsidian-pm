@@ -1,13 +1,21 @@
 import type PMPlugin from '../main'
-import type { Project, Task, TaskType, Recurrence } from '../types'
-import { collectAllAssignees, collectAllTags, flattenTasks } from '../store/TaskTreeOps'
-import { reaches } from '../store/Scheduler'
-import { renderPropRow } from '../ui/FormField'
-import { isTerminalStatus, priorityIcon, stringToColor } from '../utils'
-import { completionOutcome, relativeDue } from '../dates'
-import { renderCustomFieldInput } from './CustomFieldInputs'
-import { renderPersonPicker } from '../ui/PersonPicker'
 import {
+  type Project,
+  type Task,
+  type TaskType,
+  type Recurrence,
+  collectAllAssignees,
+  collectAllTags,
+  flattenTasks,
+  reaches,
+  isTerminalStatus,
+  priorityIcon,
+  stringToColor,
+  completionOutcome,
+  relativeDue
+} from '@dotpm/core'
+import {
+  renderPropRow,
   renderSelectControl,
   renderDateControl,
   renderInputControl,
@@ -16,7 +24,9 @@ import {
   renderDepRow,
   type SelectItem,
   type HiddenProperty
-} from '../ui/composites/properties'
+} from '@dotpm/ui'
+import { renderCustomFieldInput } from './CustomFieldInputs'
+import { renderPersonPicker } from '../ui/PersonPicker'
 
 export interface TaskFormFieldsContext {
   task: Task

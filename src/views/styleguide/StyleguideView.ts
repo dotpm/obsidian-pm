@@ -8,33 +8,37 @@ import {
   DEFAULT_STATUSES,
   PRIORITY_ICON_SETS,
   PRIORITY_ICON_SET_LABELS,
-  makeTask
-} from '../../types'
-import { renderDueChip } from '../../ui/composites/dueChip'
-import { renderTagChip } from '../../ui/composites/tagChip'
-import { renderTimeChip } from '../../ui/composites/timeChip'
-import { renderMetricStrip } from '../../ui/composites/metricStrip'
-import { renderMilestoneTimeline } from '../../ui/composites/milestoneTimeline'
-import { renderNoteLink } from '../../ui/composites/noteLink'
-import { renderProjectChip } from '../../ui/composites/projectChip'
-import { ActionsCell } from '../../ui/composites/cells/ActionsCell'
-import { AssigneesCell } from '../../ui/composites/cells/AssigneesCell'
-import { CustomFieldCell, type CustomFieldValue } from '../../ui/composites/cells/CustomFieldCell'
-import { DueDateCell } from '../../ui/composites/cells/DueDateCell'
-import { ExpandCell } from '../../ui/composites/cells/ExpandCell'
-import { PriorityCell } from '../../ui/composites/cells/PriorityCell'
-import { ProjectCell } from '../../ui/composites/cells/ProjectCell'
-import { ProgressCell } from '../../ui/composites/cells/ProgressCell'
-import { SelectCell } from '../../ui/composites/cells/SelectCell'
-import { StatusCell } from '../../ui/composites/cells/StatusCell'
-import { TimeCell } from '../../ui/composites/cells/TimeCell'
-import { TitleCell } from '../../ui/composites/cells/TitleCell'
-import { KanbanCard } from '../../ui/composites/KanbanCard'
-import { ProjectRow } from '../../ui/composites/ProjectRow'
-import { TaskRow } from '../../ui/composites/TaskRow'
-import { renderAddButton } from '../../ui/composites/addButton'
-import { CUSTOM_FIELD_TYPE_LABELS, renderCustomFieldListEditor } from '../../ui/CustomFieldListEditor'
+  makeTask,
+  displayName,
+  priorityIcon
+} from '@dotpm/core'
 import {
+  renderDueChip,
+  renderTagChip,
+  renderTimeChip,
+  renderMetricStrip,
+  renderMilestoneTimeline,
+  renderNoteLink,
+  renderProjectChip,
+  ActionsCell,
+  AssigneesCell,
+  CustomFieldCell,
+  type CustomFieldValue,
+  DueDateCell,
+  ExpandCell,
+  PriorityCell,
+  ProjectCell,
+  ProgressCell,
+  SelectCell,
+  StatusCell,
+  TimeCell,
+  TitleCell,
+  KanbanCard,
+  ProjectRow,
+  TaskRow,
+  renderAddButton,
+  CUSTOM_FIELD_TYPE_LABELS,
+  renderCustomFieldListEditor,
   renderAddProperty,
   renderDepRow,
   renderDateControl,
@@ -42,24 +46,27 @@ import {
   renderIconControl,
   renderInputControl,
   renderMultiSelect,
-  renderSelectControl
-} from '../../ui/composites/properties'
-import { renderPropRow } from '../../ui/FormField'
-import { renderFilterDropdown } from '../../ui/FilterDropdown'
-import { Avatar } from '../../ui/primitives/Avatar'
-import { AvatarStack, type AvatarPerson } from '../../ui/primitives/AvatarStack'
-import { Chip } from '../../ui/primitives/Chip'
-import { Checkbox } from '../../ui/primitives/Checkbox'
-import { CollapseToggle } from '../../ui/primitives/CollapseToggle'
-import { EmptyState } from '../../ui/primitives/EmptyState'
-import { IconButton } from '../../ui/primitives/IconButton'
-import { ChipButton } from '../../ui/primitives/ChipButton'
-import { Popover } from '../../ui/primitives/Popover'
-import { ProgressBar } from '../../ui/primitives/ProgressBar'
-import { SegmentedControl } from '../../ui/primitives/SegmentedControl'
-import { ViewSwitcher } from '../../ui/primitives/ViewSwitcher'
-import { renderPriorityBadge, renderStatusBadge, renderStatusDot } from '../../ui/StatusBadge'
-import { displayName, priorityIcon, safeAsync } from '../../utils'
+  renderSelectControl,
+  renderPropRow,
+  renderFilterDropdown,
+  Avatar,
+  AvatarStack,
+  type AvatarPerson,
+  Chip,
+  Checkbox,
+  CollapseToggle,
+  EmptyState,
+  IconButton,
+  ChipButton,
+  Popover,
+  ProgressBar,
+  SegmentedControl,
+  ViewSwitcher,
+  renderPriorityBadge,
+  renderStatusBadge,
+  renderStatusDot,
+  safeAsync
+} from '@dotpm/ui'
 
 export const PM_STYLEGUIDE_VIEW_TYPE = 'pm-styleguide'
 

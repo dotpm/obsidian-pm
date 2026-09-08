@@ -1,14 +1,21 @@
 import { Menu } from 'obsidian'
 import type PMPlugin from '../main'
-import type { Task, TaskStatus, FilterState, ResolvedProjectConfig } from '../types'
+import {
+  type Task,
+  type TaskStatus,
+  type FilterState,
+  type ResolvedProjectConfig,
+  flattenTasks,
+  totalLoggedHours,
+  matchesFilter,
+  displayName,
+  dueUrgency,
+  getPriorityConfig
+} from '@dotpm/core'
 import { personKeyer, type ProjectScope } from '../store'
-import { flattenTasks, totalLoggedHours } from '../store/TaskTreeOps'
-import { matchesFilter } from '../store/TaskFilter'
-import { displayName, dueUrgency, getPriorityConfig, safeAsync } from '../utils'
+import { safeAsync, KanbanColumn, type KanbanCardData, renderProjectChip } from '@dotpm/ui'
 import { openTaskModal } from '../ui/ModalFactory'
 import { buildTaskContextMenu } from '../ui/TaskContextMenu'
-import { KanbanColumn, type KanbanCardData } from '../ui/composites/KanbanColumn'
-import { renderProjectChip } from '../ui/composites/projectChip'
 import { linkedRefs } from './linkedRefs'
 import type { SubView } from './SubView'
 

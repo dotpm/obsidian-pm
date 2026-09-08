@@ -1,8 +1,5 @@
-import type { Task } from '../types'
-import { totalLoggedHours } from '../store/TaskTreeOps'
-import { today } from '../dates'
-import { renderAddButton } from '../ui/composites/addButton'
-import { IconButton } from '../ui/primitives/IconButton'
+import { type Task, totalLoggedHours, today } from '@dotpm/core'
+import { renderAddButton, IconButton } from '@dotpm/ui'
 
 export function renderTimeTrackingPanel(container: HTMLElement, task: Task): void {
   if (task.type === 'milestone') return

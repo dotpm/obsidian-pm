@@ -1,6 +1,14 @@
 import { ButtonComponent, ExtraButtonComponent, ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '../main'
-import { type Project, type ViewMode, type FilterState, type SavedView, makeDefaultFilter, makeId } from '../types'
+import {
+  type Project,
+  type ViewMode,
+  type FilterState,
+  type SavedView,
+  makeDefaultFilter,
+  makeId,
+  truncateTitle
+} from '@dotpm/core'
 import {
   folderOf,
   personKeyer,
@@ -10,17 +18,13 @@ import {
   scopeKey,
   type ScopeSpec
 } from '../store'
-import { truncateTitle, safeAsync } from '../utils'
+import { safeAsync, ChipButton, ViewSwitcher, ProjectHeader, renderGlyph } from '@dotpm/ui'
 import type { SubView } from './SubView'
 import { TableView } from './table/TableView'
 import type { TableViewState } from './table/TableView'
 import { GanttView } from './gantt/GanttView'
 import { KanbanView } from './KanbanView'
 import { openTaskModal } from '../ui/ModalFactory'
-import { ChipButton } from '../ui/primitives/ChipButton'
-import { ViewSwitcher } from '../ui/primitives/ViewSwitcher'
-import { ProjectHeader } from '../ui/composites/ProjectHeader'
-import { renderGlyph } from '../ui/composites/properties'
 
 export const PM_PROJECT_VIEW_TYPE = 'pm-project'
 

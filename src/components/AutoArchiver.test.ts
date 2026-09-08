@@ -1,11 +1,9 @@
 import type { App } from 'obsidian'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { makeFakeApp } from '../../test/fakeVault'
-import { today } from '../dates'
-import type PMPlugin from '../main'
+import { today, findTask, DEFAULT_SETTINGS, makeTask, type PMSettings, type Project, type Task } from '@dotpm/core'
 import { ProjectStore, VaultIndex } from '../store'
-import { findTask } from '../store/TaskTreeOps'
-import { DEFAULT_SETTINGS, makeTask, type PMSettings, type Project, type Task } from '../types'
+import type PMPlugin from '../main'
 import { AutoArchiver } from './AutoArchiver'
 
 const daysAgo = (days: number): string => today().subtract({ days }).toString()

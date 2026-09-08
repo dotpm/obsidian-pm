@@ -1,25 +1,34 @@
 import { Menu, type App } from 'obsidian'
-import { getStatusConfig, dueUrgency, isTerminalStatus, safeAsync, stringifyCustomValue } from '../../utils'
-import type { CustomFieldDef } from '../../types'
-import { totalLoggedHours } from '../../store/TaskTreeOps'
+import {
+  getStatusConfig,
+  dueUrgency,
+  isTerminalStatus,
+  stringifyCustomValue,
+  type CustomFieldDef,
+  totalLoggedHours
+} from '@dotpm/core'
+import {
+  safeAsync,
+  TaskRow,
+  ActionsCell,
+  AssigneesCell,
+  CustomFieldCell,
+  type CustomFieldValue,
+  DueDateCell,
+  ExpandCell,
+  PriorityCell,
+  ProjectCell,
+  ProgressCell,
+  SelectCell,
+  StatusCell,
+  TimeCell,
+  TitleCell
+} from '@dotpm/ui'
 import { updateSelectCheckboxes, getVisibleTaskIds } from './TableRenderer'
 import type { TableContext, TableState, TableTreeRow } from './TableRenderer'
 import { openTaskModal } from '../../ui/ModalFactory'
 import { buildTaskContextMenu } from '../../ui/TaskContextMenu'
-import { TaskRow } from '../../ui/composites/TaskRow'
-import { ActionsCell } from '../../ui/composites/cells/ActionsCell'
-import { AssigneesCell } from '../../ui/composites/cells/AssigneesCell'
 import { linkedRefs } from '../linkedRefs'
-import { CustomFieldCell, type CustomFieldValue } from '../../ui/composites/cells/CustomFieldCell'
-import { DueDateCell } from '../../ui/composites/cells/DueDateCell'
-import { ExpandCell } from '../../ui/composites/cells/ExpandCell'
-import { PriorityCell } from '../../ui/composites/cells/PriorityCell'
-import { ProjectCell } from '../../ui/composites/cells/ProjectCell'
-import { ProgressCell } from '../../ui/composites/cells/ProgressCell'
-import { SelectCell } from '../../ui/composites/cells/SelectCell'
-import { StatusCell } from '../../ui/composites/cells/StatusCell'
-import { TimeCell } from '../../ui/composites/cells/TimeCell'
-import { TitleCell } from '../../ui/composites/cells/TitleCell'
 
 export function renderTaskRow(tbody: HTMLElement, flat: TableTreeRow, ctx: TableContext): void {
   const { task, depth } = flat

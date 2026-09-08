@@ -1,7 +1,6 @@
 import type { App } from 'obsidian'
 import { TFile, normalizePath } from 'obsidian'
-import type { Project, Task } from '../types'
-import { findTaskById } from './TaskIndex'
+import { type Project, type Task, findTaskById } from '@dotpm/core'
 import type { TaskRef } from './VaultIndex'
 import { ensureFolder, moveTaskAttachmentFolder, projectTaskFolder } from './vaultFs'
 

@@ -1,12 +1,19 @@
 import type PMPlugin from '../../main'
-import type { FilterState, LineBorders, PriorityConfig, PriorityIconSet, StatusConfig } from '../../types'
+import {
+  type FilterState,
+  type LineBorders,
+  type PriorityConfig,
+  type PriorityIconSet,
+  type StatusConfig,
+  type FlatTask,
+  flattenTasks,
+  findTaskById,
+  applyTaskFilterFlat,
+  isFilterActive
+} from '@dotpm/core'
 import { personKeyer, type ProjectScope } from '../../store'
-import { type FlatTask, flattenTasks } from '../../store/TaskTreeOps'
-import { findTaskById } from '../../store/TaskIndex'
-import { applyTaskFilterFlat, isFilterActive } from '../../store/TaskFilter'
+import { renderAddButton, childTreeGuides } from '@dotpm/ui'
 import { openTaskModal } from '../../ui/ModalFactory'
-import { renderAddButton } from '../../ui/composites/addButton'
-import { childTreeGuides } from '../../ui/composites/treeGuides'
 import { openAddTask } from '../addTask'
 import { compareTask } from './TableFilters'
 import { renderTaskRow, updateSelectedRow, updateSelectAllCheckbox } from './TableRow'

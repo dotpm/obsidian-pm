@@ -5,7 +5,7 @@ import { makeFakeApp } from '../test/fakeVault'
 import { migrateProjectLayout } from './migration'
 import type PMPlugin from './main'
 import { ProjectStore, VaultIndex } from './store'
-import { DEFAULT_SETTINGS, makeDefaultFilter, type PMSettings } from './types'
+import { DEFAULT_SETTINGS, makeDefaultFilter, type PMSettings } from '@dotpm/core'
 
 const expectDefined = <T>(value: T | null | undefined): T => {
   if (value == null) throw new Error('expected value to be defined')

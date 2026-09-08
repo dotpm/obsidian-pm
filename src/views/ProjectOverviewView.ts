@@ -1,20 +1,38 @@
 import { ButtonComponent, Component, ItemView, MarkdownRenderer, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '../main'
-import type { Project, ResolvedProjectConfig, Task } from '../types'
-import { collectAllTags, flattenTasks, personKeyer, totalLoggedHours, type ProjectRef } from '../store'
-import { Temporal, formatDateLong, parsePlainDate, today } from '../dates'
-import { dateUrgency, dedupePeople, isTerminalStatus, safeAsync, truncateTitle } from '../utils'
-import { Avatar } from '../ui/primitives/Avatar'
+import {
+  type Project,
+  type ResolvedProjectConfig,
+  type Task,
+  collectAllTags,
+  flattenTasks,
+  totalLoggedHours,
+  Temporal,
+  formatDateLong,
+  parsePlainDate,
+  today,
+  dateUrgency,
+  dedupePeople,
+  isTerminalStatus,
+  truncateTitle
+} from '@dotpm/core'
+import { personKeyer, type ProjectRef } from '../store'
+import {
+  safeAsync,
+  Avatar,
+  EmptyState,
+  ProgressBar,
+  renderPropRow,
+  renderDueChip,
+  renderMetricStrip,
+  type MetricStat,
+  renderMilestoneTimeline,
+  type MilestonePoint,
+  renderTagChip,
+  renderTimeChip,
+  renderGlyph
+} from '@dotpm/ui'
 import { linkedRefs } from './linkedRefs'
-import { EmptyState } from '../ui/primitives/EmptyState'
-import { ProgressBar } from '../ui/primitives/ProgressBar'
-import { renderPropRow } from '../ui/FormField'
-import { renderDueChip } from '../ui/composites/dueChip'
-import { renderMetricStrip, type MetricStat } from '../ui/composites/metricStrip'
-import { renderMilestoneTimeline, type MilestonePoint } from '../ui/composites/milestoneTimeline'
-import { renderTagChip } from '../ui/composites/tagChip'
-import { renderTimeChip } from '../ui/composites/timeChip'
-import { renderGlyph } from '../ui/composites/properties'
 
 export const PM_PROJECT_OVERVIEW_VIEW_TYPE = 'pm-project-overview'
 

@@ -1,11 +1,9 @@
 import type PMPlugin from '../../main'
-import type { StatusConfig } from '../../types'
+import { type StatusConfig, type FlatTask, today } from '@dotpm/core'
 import type { ProjectScope } from '../../store'
-import type { FlatTask } from '../../store/TaskTreeOps'
+import { svgEl } from '@dotpm/ui'
 import type { TimelineCfg } from './TimelineConfig'
 import { ROW_HEIGHT, HEADER_HEIGHT, dateToX } from './TimelineConfig'
-import { svgEl } from '../../utils'
-import { today } from '../../dates'
 import type { DragState } from './GanttDragHandler'
 import type { LinkState } from './GanttLinkHandler'
 

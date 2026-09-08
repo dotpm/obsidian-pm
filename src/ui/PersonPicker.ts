@@ -1,7 +1,7 @@
 import type PMPlugin from '../main'
 import { createPersonLink, personCandidates, personKeyer, type PersonCandidate } from '../store'
-import { renderMultiSelect } from './composites/properties'
-import { dedupePeople, displayName } from '../utils'
+import { renderMultiSelect } from '@dotpm/ui'
+import { dedupePeople, displayName } from '@dotpm/core'
 
 export interface PeopleSource {
   /** Offered before the user types. */

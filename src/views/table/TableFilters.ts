@@ -1,6 +1,12 @@
-import type { Task, TaskPriority, StatusConfig, PriorityConfig } from '../../types'
+import {
+  type Task,
+  type TaskPriority,
+  type StatusConfig,
+  type PriorityConfig,
+  displayName,
+  statusSortOrder
+} from '@dotpm/core'
 import type { TableState } from './TableRenderer'
-import { displayName, statusSortOrder } from '../../utils'
 
 export function compareTask(
   a: Task,

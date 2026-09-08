@@ -1,8 +1,26 @@
 import { MarkdownView, Plugin, Notice } from 'obsidian'
-import { DEFAULT_SETTINGS, makeDefaultFilter, type PMSettings, type Project, type Task } from './types'
-import { flattenTasks, findTask } from './store/TaskTreeOps'
-import { matchPersonNotes, personLink, ProjectStore, scopeKey, VaultIndex } from './store'
-import type { ProjectRef, TaskSource } from './store'
+import {
+  DEFAULT_SETTINGS,
+  makeDefaultFilter,
+  type PMSettings,
+  type Project,
+  type Task,
+  flattenTasks,
+  findTask,
+  dedupePeople,
+  displayName
+} from '@dotpm/core'
+import {
+  matchPersonNotes,
+  personLink,
+  ProjectStore,
+  scopeKey,
+  VaultIndex,
+  type ProjectRef,
+  type TaskSource
+} from './store'
+import { safeAsync } from '@dotpm/ui'
+import { installObsidianPlatform } from './platform'
 import { PMSettingTab } from './settings'
 import { ProjectView, PM_PROJECT_VIEW_TYPE } from './views/ProjectView'
 import { ProjectOverviewView, PM_PROJECT_OVERVIEW_VIEW_TYPE } from './views/ProjectOverviewView'
@@ -25,7 +43,6 @@ import { Notifier } from './components/Notifier'
 import { AutoArchiver } from './components/AutoArchiver'
 import { IdRepair } from './components/IdRepair'
 import { migrateProjects, migrateProjectLayout } from './migration'
-import { dedupePeople, displayName, safeAsync } from './utils'
 
 export default class PMPlugin extends Plugin {
   settings: PMSettings = { ...DEFAULT_SETTINGS }
@@ -64,6 +81,7 @@ export default class PMPlugin extends Plugin {
   }
 
   async onload(): Promise<void> {
+    installObsidianPlatform()
     await this.loadSettings()
     this.index = new VaultIndex(this.app, () => this.settings)
     // The first sweep can run against a half-filled metadata cache, so it runs again once

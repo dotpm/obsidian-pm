@@ -1,10 +1,17 @@
 import { ButtonComponent, ExtraButtonComponent, Menu } from 'obsidian'
-import type { Task, TaskStatus, TaskPriority } from '../../types'
-import { flattenTasks, collectAllAssignees, collectAllTags } from '../../store'
-import { displayName, priorityIcon } from '../../utils'
-import { today } from '../../dates'
+import {
+  type Task,
+  type TaskStatus,
+  type TaskPriority,
+  flattenTasks,
+  collectAllAssignees,
+  collectAllTags,
+  displayName,
+  priorityIcon,
+  today
+} from '@dotpm/core'
+import { addPaletteMenuItem } from '@dotpm/ui'
 import { promptText } from '../../ui/ModalFactory'
-import { addPaletteMenuItem } from '../../ui/StatusBadge'
 import { peopleSource } from '../../ui/PersonPicker'
 import { TaskPickerModal } from '../../modals/PickerModals'
 import type { TableContext } from './TableRenderer'

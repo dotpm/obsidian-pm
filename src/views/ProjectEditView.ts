@@ -9,19 +9,28 @@ import {
   type ProjectPatch,
   type StatusConfig,
   makeId,
-  PRIORITY_ICON_SET_LABELS
-} from '../types'
-import { collectAllAssignees, flattenTasks, mergeById } from '../store'
-import { safeAsync, truncateTitle } from '../utils'
+  PRIORITY_ICON_SET_LABELS,
+  collectAllAssignees,
+  flattenTasks,
+  mergeById,
+  truncateTitle
+} from '@dotpm/core'
+import {
+  safeAsync,
+  renderAddButton,
+  renderPropRow,
+  renderGlyph,
+  renderIconControl,
+  renderInputControl,
+  renderSelectControl,
+  CUSTOM_FIELD_TYPE_LABELS,
+  renderCustomFieldListEditor,
+  EmptyState,
+  IconButton
+} from '@dotpm/ui'
 import { confirmDialog } from '../ui/ModalFactory'
 import { renderPersonPicker } from '../ui/PersonPicker'
-import { renderAddButton } from '../ui/composites/addButton'
-import { renderPropRow } from '../ui/FormField'
-import { renderGlyph, renderIconControl, renderInputControl, renderSelectControl } from '../ui/composites/properties'
 import { renderPriorityListEditor, renderStatusListEditor } from '../ui/PaletteListEditor'
-import { CUSTOM_FIELD_TYPE_LABELS, renderCustomFieldListEditor } from '../ui/CustomFieldListEditor'
-import { EmptyState } from '../ui/primitives/EmptyState'
-import { IconButton } from '../ui/primitives/IconButton'
 
 export const PM_PROJECT_EDIT_VIEW_TYPE = 'pm-project-edit'
 

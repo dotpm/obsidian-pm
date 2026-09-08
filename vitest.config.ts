@@ -8,10 +8,20 @@ export default defineConfig({
     }
   },
   test: {
-    exclude: ['build', 'node_modules'],
+    include: ['src/**/*.test.ts', 'packages/*/src/**/*.test.ts'],
+    setupFiles: ['test/setup.ts'],
     coverage: {
-      include: ['src/**/*.ts'],
-      exclude: ['src/main.ts', 'src/migration.ts', 'src/views/**', 'src/modals/**', 'src/ui/**', 'src/components/**', 'src/settings.ts', ...coverageConfigDefaults.exclude],
+      include: ['src/**/*.ts', 'packages/*/src/**/*.ts'],
+      exclude: [
+        'src/main.ts',
+        'src/migration.ts',
+        'src/views/**',
+        'src/modals/**',
+        'src/ui/**',
+        'src/components/**',
+        'src/settings.ts',
+        ...coverageConfigDefaults.exclude
+      ],
       provider: 'v8',
       thresholds: {
         branches: 0,

@@ -1,7 +1,7 @@
 import { Notice, TFile } from 'obsidian'
 import type PMPlugin from './main'
 import type { ScopeSpec } from './store'
-import { parseFrontmatter, isOldFormat } from './store/YamlParser'
+import { parseFrontmatter, isOldFormat } from '@dotpm/core'
 
 /** Rewrites projects whose tasks are embedded in frontmatter as one file per task. */
 export async function migrateProjects(plugin: PMPlugin): Promise<void> {

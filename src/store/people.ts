@@ -1,5 +1,5 @@
 import { normalizePath, TFile, type App } from 'obsidian'
-import { displayName } from '../utils'
+import { displayName } from '@dotpm/core'
 import { ensureFolder, resolveVaultLink } from './vaultFs'
 
 /** How a stored assignee value relates to the vault. */

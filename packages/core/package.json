@@ -1,0 +1,12 @@
+{
+  "name": "@dotpm/core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "temporal-polyfill": "1.0.4"
+  }
+}

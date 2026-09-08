@@ -1,14 +1,9 @@
 import { Menu } from 'obsidian'
 import type PMPlugin from '../../main'
-import type { StatusConfig, Task } from '../../types'
+import type { StatusConfig, Task } from '@dotpm/core'
 import type { ProjectScope, TaskRef } from '../../store'
-import { Chip } from '../../ui/primitives/Chip'
-import { CollapseToggle } from '../../ui/primitives/CollapseToggle'
-import { IconButton } from '../../ui/primitives/IconButton'
+import { Chip, CollapseToggle, IconButton, renderProjectChip, renderStatusDot, safeAsync } from '@dotpm/ui'
 import { openTaskByPath, openTaskModal } from '../../ui/ModalFactory'
-import { renderProjectChip } from '../../ui/composites/projectChip'
-import { renderStatusDot } from '../../ui/StatusBadge'
-import { safeAsync } from '../../utils'
 import { ROW_HEIGHT } from './TimelineConfig'
 
 export interface LabelContext {

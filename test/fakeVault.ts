@@ -1,5 +1,5 @@
 import { TAbstractFile, TFile, TFolder, normalizePath, parseYaml } from 'obsidian'
-import { appendYaml } from '../src/store/YamlParser'
+import { appendYaml } from '@dotpm/core'
 
 const expectDefined = <T>(value: T | null | undefined, message = 'expected value to be defined'): T => {
   if (value == null) throw new Error(message)
@@ -224,9 +224,7 @@ export class FakeMetadataCache {
   }
 
   getFirstLinkpathDest(linkpath: string, _sourcePath: string): TFile | null {
-    const direct = this.vault.getAbstractFileByPath(
-      linkpath.endsWith('.md') ? linkpath : `${linkpath}.md`
-    )
+    const direct = this.vault.getAbstractFileByPath(linkpath.endsWith('.md') ? linkpath : `${linkpath}.md`)
     if (direct instanceof TFile) return direct
     return this.vault.getMarkdownFiles().find((f) => f.basename === linkpath) ?? null
   }

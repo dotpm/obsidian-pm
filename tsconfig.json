@@ -1,11 +1,18 @@
 {
   "extends": "@2bad/tsconfig",
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "packages/*/src/**/*.ts",
+    "test/**/*.ts"
+  ],
   "compilerOptions": {
     "target": "ES2022",
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "lib": ["ES2022", "DOM"],
+    "lib": [
+      "ES2022",
+      "DOM"
+    ],
     "inlineSourceMap": true,
     "inlineSources": true,
     "isolatedModules": true,
