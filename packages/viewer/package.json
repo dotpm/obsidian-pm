@@ -1,0 +1,14 @@
+{
+  "name": "@dotpm/viewer",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/main.ts"
+  },
+  "dependencies": {
+    "@dotpm/api": "workspace:*",
+    "@dotpm/core": "workspace:*",
+    "@dotpm/ui": "workspace:*"
+  }
+}

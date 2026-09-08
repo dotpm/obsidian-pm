@@ -3,6 +3,7 @@ import { defineConfig } from 'oxlint'
 
 export default defineConfig({
   extends: [axiom],
+  ignorePatterns: ['packages/*/dist/**'],
   jsPlugins: ['eslint-plugin-obsidianmd'],
   rules: {
     'no-new': 'off',
@@ -38,7 +39,12 @@ export default defineConfig({
   },
   overrides: [
     {
-      files: ['packages/ui/src/dom-shim.ts', 'packages/ui/src/dom-platform.ts', 'packages/ui/src/**/*.test.ts'],
+      files: [
+        'packages/ui/src/dom-shim.ts',
+        'packages/ui/src/dom-platform.ts',
+        'packages/ui/src/**/*.test.ts',
+        'packages/viewer/src/**/*.ts'
+      ],
       rules: {
         'obsidianmd/prefer-active-doc': 'off',
         'obsidianmd/no-static-styles-assignment': 'off',

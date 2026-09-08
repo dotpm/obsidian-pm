@@ -46,6 +46,7 @@ import { AutoArchiver } from './components/AutoArchiver'
 import { IdRepair } from './components/IdRepair'
 import { migrateProjects, migrateProjectLayout } from './migration'
 import { LocalApi } from './api/LocalApi'
+import { exportViewAsHtml } from './export/exportView'
 import { generateToken, LocalApiServer } from './api/LocalApiServer'
 
 export default class PMPlugin extends Plugin {
@@ -247,6 +248,20 @@ export default class PMPlugin extends Plugin {
         )
       })
     )
+
+    this.addCommand({
+      id: 'export-view-html',
+      name: 'Export current view as HTML',
+      checkCallback: (checking: boolean) => {
+        const view = this.app.workspace.getActiveViewOfType(ProjectView)
+        if (!view?.projectScope?.primary) return false
+        if (checking) return true
+        safeAsync(async () => {
+          await exportViewAsHtml(this, view)
+        })()
+        return true
+      }
+    })
 
     this.addCommand({
       id: 'open-current-as-project',

@@ -6,17 +6,24 @@ import {
   displayName,
   statusSortOrder
 } from '@dotpm/core'
-import type { TableState } from './TableRenderer'
+
+export type SortKey = 'title' | 'status' | 'priority' | 'due' | 'assignees' | 'progress'
+export type SortDir = 'asc' | 'desc'
+
+export interface SortOrder {
+  sortKey: SortKey
+  sortDir: SortDir
+}
 
 export function compareTask(
   a: Task,
   b: Task,
-  state: TableState,
+  order: SortOrder,
   statuses: StatusConfig[] = [],
   priorities: PriorityConfig[] = []
 ): number {
-  const dir = state.sortDir === 'asc' ? 1 : -1
-  switch (state.sortKey) {
+  const dir = order.sortDir === 'asc' ? 1 : -1
+  switch (order.sortKey) {
     case 'title':
       return dir * a.title.localeCompare(b.title)
     case 'status':

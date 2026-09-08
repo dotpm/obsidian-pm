@@ -91,6 +91,18 @@ importers:
         specifier: workspace:*
         version: link:../core
 
+  packages/viewer:
+    dependencies:
+      '@dotpm/api':
+        specifier: workspace:*
+        version: link:../api
+      '@dotpm/core':
+        specifier: workspace:*
+        version: link:../core
+      '@dotpm/ui':
+        specifier: workspace:*
+        version: link:../ui
+
 packages:
 
   '@2bad/axiom@2.1.0':

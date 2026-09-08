@@ -100,6 +100,10 @@ For teams:
 
 There is no real-time multi-user editing. Two people editing the same task at once produces a sync conflict, same as any Markdown note.
 
+## Share a view as a page
+
+The command **Export current view as HTML** writes the table, timeline or board you are looking at to one HTML file next to the project note, with every task, the filter you had on, and the icons it needs inside it. It opens in any browser without Obsidian, works offline, and switches between the three views on the page. Send it to someone or drop it on any web host; nothing in it calls home.
+
 ## Local API and MCP
 
 Other programs on the same computer can read and edit your tasks: a coding agent through the Model Context Protocol, a script over plain HTTP. Turn it on in **Settings > Local API**. It is off by default and only exists on desktop.

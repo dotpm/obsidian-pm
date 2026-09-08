@@ -11,11 +11,20 @@ import {
   today
 } from '@dotpm/core'
 import { personKeyer, type ProjectScope } from '../../store'
-import { renderAddButton, SegmentedControl, svgEl } from '@dotpm/ui'
+import {
+  renderAddButton,
+  SegmentedControl,
+  svgEl,
+  type TimelineCfg,
+  buildTimelineConfig,
+  dateToX,
+  xToDate,
+  HEADER_HEIGHT,
+  ROW_HEIGHT,
+  LABEL_WIDTH
+} from '@dotpm/ui'
 import { openAddTask } from '../addTask'
 import type { SubView } from '../SubView'
-import type { TimelineCfg } from './TimelineConfig'
-import { buildTimelineConfig, dateToX, xToDate, HEADER_HEIGHT, ROW_HEIGHT, LABEL_WIDTH } from './TimelineConfig'
 import { makeDragState } from './GanttDragHandler'
 import type { DragState } from './GanttDragHandler'
 import { makeLinkState, cancelLink } from './GanttLinkHandler'
@@ -297,6 +306,7 @@ export class GanttView implements SubView {
       svgEl: this.svgEl,
       headerSvgEl: this.headerSvgEl,
       cfg: this.cfg,
+      weekLabel: this.plugin.settings.ganttWeekLabel,
       plugin: this.plugin,
       scope: this.scope,
       statuses: this.scope.config.statuses,

@@ -22,6 +22,7 @@ import { safeAsync, ChipButton, ViewSwitcher, ProjectHeader, renderGlyph } from 
 import type { SubView } from './SubView'
 import { TableView } from './table/TableView'
 import type { TableViewState } from './table/TableView'
+import type { ExportViewState } from '../export/snapshot'
 import { GanttView } from './gantt/GanttView'
 import { KanbanView } from './KanbanView'
 import { openTaskModal } from '../ui/ModalFactory'
@@ -80,6 +81,17 @@ export class ProjectView extends ItemView {
   }
   getDisplayText(): string {
     return truncateTitle(this.projectScope?.label() ?? 'Project', 10)
+  }
+
+  /** The mode, filter and sort a reader of an export starts from. */
+  exportState(): ExportViewState {
+    const table = this.subview instanceof TableView ? this.subview.getViewState() : this.savedTableViewState
+    return {
+      mode: this.currentView,
+      filter: { ...this.filter },
+      sortKey: table?.sortKey ?? 'title',
+      sortDir: table?.sortDir ?? 'asc'
+    }
   }
   getIcon(): string {
     return 'chart-gantt'

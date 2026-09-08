@@ -1,9 +1,12 @@
+import { existsSync, readFileSync } from 'node:fs'
 import { builtinModules } from 'node:module'
 import { defineConfig } from 'tsdown'
 
 const prod = Boolean(process.env['PRODUCTION'])
 const vaultPath = process.env['VAULT_PATH']
 const outDir = vaultPath ? `${vaultPath}/.obsidian/plugins/project-manager` : '.'
+const viewerTemplate = 'packages/viewer/dist/viewer.html'
+if (!existsSync(viewerTemplate)) console.warn('viewer template missing; run `pnpm build:viewer` first or exports will refuse')
 
 export default defineConfig({
   entry: 'src/main.ts',
@@ -18,7 +21,8 @@ export default defineConfig({
   hash: false,
   outExtensions: () => ({ js: '.js' }),
   define: {
-    __STYLEGUIDE__: JSON.stringify(!prod || Boolean(process.env['STYLEGUIDE']))
+    __STYLEGUIDE__: JSON.stringify(!prod || Boolean(process.env['STYLEGUIDE'])),
+    __VIEWER_TEMPLATE__: JSON.stringify(existsSync(viewerTemplate) ? readFileSync(viewerTemplate, 'utf8') : '')
   },
   deps: {
     neverBundle: [

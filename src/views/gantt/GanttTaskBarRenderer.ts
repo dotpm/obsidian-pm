@@ -1,17 +1,24 @@
 import { Notice } from 'obsidian'
-import { type Task, displayName, getStatusConfig, parsePlainDate } from '@dotpm/core'
-import { svgEl, safeAsync } from '@dotpm/ui'
-import { openTaskModal } from '../../ui/ModalFactory'
+import type { Task } from '@dotpm/core'
 import {
+  svgEl,
+  safeAsync,
+  barColor,
+  drawDependencyArrows,
+  drawMilestoneDiamond,
+  drawMilestoneLabels,
+  drawRowHover,
+  drawTaskBar,
+  type GanttRow,
   ROW_HEIGHT,
   HEADER_HEIGHT,
   BAR_PADDING,
   BAR_BORDER_RADIUS,
-  dateToX,
   xToDate,
   getSnapPoints,
   snapX
-} from './TimelineConfig'
+} from '@dotpm/ui'
+import { openTaskModal } from '../../ui/ModalFactory'
 import { attachBarDrag } from './GanttDragHandler'
 import { handleLinkDotClick } from './GanttLinkHandler'
 import type { RendererContext } from './GanttRenderer'
@@ -19,101 +26,22 @@ import type { RendererContext } from './GanttRenderer'
 export function renderTaskBar(g: SVGGElement, task: Task, row: number, _depth: number, ctx: RendererContext): void {
   const project = ctx.scope.projectOf(task.id)
   if (!project) return
-  const startDate = parsePlainDate(task.start)
-  const endDate = parsePlainDate(task.due)
-  if (!startDate && !endDate) {
+  if (!task.start && !task.due) {
     renderEmptyRowClickTarget(g, task, row, ctx)
     return
   }
 
-  const statusConfig = getStatusConfig(ctx.statuses, task.status)
-  const color = statusConfig?.color ?? getComputedStyle(ctx.svgEl).getPropertyValue('--interactive-accent').trim()
-  const rowY = HEADER_HEIGHT + row * ROW_HEIGHT
-  const y = rowY + BAR_PADDING
-  const height = ROW_HEIGHT - BAR_PADDING * 2
-
-  g.appendChild(
-    svgEl('rect', {
-      x: 0,
-      y: rowY,
-      width: ctx.cfg.totalWidth,
-      height: ROW_HEIGHT,
-      class: 'pm-gantt-row-hover'
-    })
-  )
+  const color = barColor(ctx, ctx.statuses, task)
+  drawRowHover(g, ctx, row)
 
   if (task.type === 'milestone') {
     renderMilestoneDiamond(g, task, row, color, ctx)
     return
   }
 
-  // A task due on E occupies day E, so the bar's right edge sits at the start of E+1.
-  const effectiveStart = startDate ?? endDate
-  if (!effectiveStart) return
-  const effectiveEnd = (endDate ?? effectiveStart).add({ days: 1 })
-
-  const x = Math.max(0, dateToX(ctx.cfg, effectiveStart))
-  const xEnd = Math.min(ctx.cfg.totalWidth, dateToX(ctx.cfg, effectiveEnd))
-  const width = Math.max(8, xEnd - x)
-
-  const barGroup = svgEl('g', { class: 'pm-gantt-bar-group' })
-  g.appendChild(barGroup)
-
-  const rect = svgEl('rect', {
-    x,
-    y,
-    width,
-    height,
-    rx: BAR_BORDER_RADIUS,
-    ry: BAR_BORDER_RADIUS,
-    fill: color,
-    opacity: 0.4,
-    class: 'pm-gantt-bar'
-  })
-  barGroup.appendChild(rect)
-
-  if (task.progress > 0) {
-    const pw = (task.progress / 100) * width
-    barGroup.appendChild(
-      svgEl('rect', {
-        x,
-        y,
-        width: pw,
-        height,
-        rx: BAR_BORDER_RADIUS,
-        ry: BAR_BORDER_RADIUS,
-        fill: color,
-        opacity: 0.9,
-        class: 'pm-gantt-bar-progress'
-      })
-    )
-  }
-
-  if (task.recurrence) {
-    const icon = svgEl('text', {
-      x: x + width + 4,
-      y: y + height / 2 + 5,
-      class: 'pm-gantt-bar-icon'
-    })
-    icon.textContent = 'R'
-    barGroup.appendChild(icon)
-  }
-
-  if (width > 55) {
-    const label = svgEl('text', {
-      x: x + 8,
-      y: y + height / 2 + 5,
-      class: 'pm-gantt-bar-label'
-    })
-    const maxChars = Math.max(4, Math.floor((width - 16) / 7.5))
-    label.textContent = task.title.length > maxChars ? task.title.slice(0, maxChars - 1) + '\u2026' : task.title
-    barGroup.appendChild(label)
-  }
-
-  const ttEl = svgEl('title', {})
-  const assigneesStr = task.assignees.length ? `\nAssignees: ${task.assignees.map(displayName).join(', ')}` : ''
-  ttEl.textContent = `${task.title}\n${statusConfig?.label ?? task.status} \u00b7 ${task.priority}\nStart: ${task.start || '\u2014'}  Due: ${task.due || '\u2014'}\nProgress: ${task.progress}%${assigneesStr}`
-  rect.appendChild(ttEl)
+  const drawn = drawTaskBar(g, ctx, ctx.statuses, task, row, color)
+  if (!drawn) return
+  const { barGroup, rect, x, y, width, height } = drawn
 
   const HANDLE_W = 8
   for (const side of ['left', 'right'] as const) {
@@ -274,138 +202,22 @@ function renderEmptyRowClickTarget(g: SVGGElement, task: Task, row: number, ctx:
 }
 
 function renderMilestoneDiamond(g: SVGGElement, task: Task, row: number, color: string, ctx: RendererContext): void {
-  const date = parsePlainDate(task.due) ?? parsePlainDate(task.start)
-  if (!date) return
   const project = ctx.scope.projectOf(task.id)
   if (!project) return
-
-  const cx = dateToX(ctx.cfg, date) + ctx.cfg.dayWidth / 2
-  const cy = HEADER_HEIGHT + row * ROW_HEIGHT + ROW_HEIGHT / 2
-  const size = 12
-
-  const pts = `${cx},${cy - size} ${cx + size},${cy} ${cx},${cy + size} ${cx - size},${cy}`
-  const diamond = svgEl('polygon', {
-    points: pts,
-    fill: color,
-    opacity: 0.8,
-    class: 'pm-gantt-milestone',
-    cursor: 'pointer'
-  })
-  g.appendChild(diamond)
-
-  const tt = svgEl('title', {})
-  tt.textContent = `${task.title} (milestone)\nDate: ${task.due || task.start || '\u2014'}`
-  diamond.appendChild(tt)
-
-  diamond.addEventListener('click', () => {
+  const diamond = drawMilestoneDiamond(g, ctx, task, row, color)
+  diamond?.addEventListener('click', () => {
     openTaskModal(ctx.plugin, project, { task, onSave: () => ctx.onRefresh() })
   })
 }
 
 export function renderMilestoneLabels(ctx: RendererContext): void {
-  const milestones = ctx.flatTasks.filter((f) => f.task.type === 'milestone' && (f.task.due || f.task.start))
-  if (!milestones.length) return
-
-  const linesG = svgEl('g', { class: 'pm-gantt-milestone-labels' })
-
-  for (const { task } of milestones) {
-    const date = parsePlainDate(task.due) ?? parsePlainDate(task.start)
-    if (!date) continue
-    const x = dateToX(ctx.cfg, date) + ctx.cfg.dayWidth / 2
-    const statusConfig = getStatusConfig(ctx.statuses, task.status)
-    const color = statusConfig?.color ?? getComputedStyle(ctx.svgEl).getPropertyValue('--interactive-accent').trim()
-
-    const totalH = HEADER_HEIGHT + ctx.flatTasks.filter((f) => f.visible || f.depth === 0).length * ROW_HEIGHT
-    linesG.appendChild(
-      svgEl('line', {
-        x1: x,
-        y1: HEADER_HEIGHT,
-        x2: x,
-        y2: totalH,
-        stroke: color,
-        'stroke-width': 1,
-        'stroke-dasharray': '4 4',
-        opacity: 0.4
-      })
-    )
-
-    // Label rides the sticky header so it stays visible while rows scroll.
-    const label = svgEl('text', {
-      x,
-      y: 14,
-      'text-anchor': 'middle',
-      class: 'pm-gantt-milestone-label',
-      fill: color
-    })
-    label.textContent = task.title.length > 16 ? task.title.slice(0, 14) + '\u2026' : task.title
-    ctx.headerSvgEl.appendChild(label)
-  }
-
-  ctx.svgEl.appendChild(linesG)
+  drawMilestoneLabels(ctx, ctx.statuses, visibleRows(ctx))
 }
 
 export function renderDependencyArrows(ctx: RendererContext): void {
-  const indexMap = new Map<string, number>()
-  ctx.flatTasks.forEach((f, i) => indexMap.set(f.task.id, i))
-
-  const arrowGroup = svgEl('g', { class: 'pm-gantt-arrows' })
-
-  for (const { task } of ctx.flatTasks) {
-    if (!task.dependencies?.length) continue
-    const toRow = indexMap.get(task.id)
-    if (toRow === undefined) continue
-    const toY = HEADER_HEIGHT + toRow * ROW_HEIGHT + ROW_HEIGHT / 2
-    const taskStart = parsePlainDate(task.start)
-    if (!taskStart) continue
-    const toX = dateToX(ctx.cfg, taskStart)
-
-    for (const depId of task.dependencies) {
-      const fromRow = indexMap.get(depId)
-      if (fromRow === undefined) continue
-      const depTask = ctx.flatTasks.find((f) => f.task.id === depId)?.task
-      const depDue = depTask ? parsePlainDate(depTask.due) : null
-      if (!depDue) continue
-      const fromX = dateToX(ctx.cfg, depDue.add({ days: 1 }))
-      const fromY = HEADER_HEIGHT + fromRow * ROW_HEIGHT + ROW_HEIGHT / 2
-
-      const midX = (fromX + toX) / 2
-      arrowGroup.appendChild(
-        svgEl('path', {
-          d: `M ${fromX} ${fromY} C ${midX} ${fromY}, ${midX} ${toY}, ${toX} ${toY}`,
-          class: 'pm-gantt-arrow',
-          'marker-end': 'url(#pm-arrowhead)'
-        })
-      )
-    }
-  }
-
-  const defs = getOrCreateDefs(ctx.svgEl)
-  const marker = svgEl('marker', {
-    id: 'pm-arrowhead',
-    markerWidth: 8,
-    markerHeight: 8,
-    refX: 6,
-    refY: 3,
-    orient: 'auto'
-  })
-  marker.appendChild(
-    svgEl('path', {
-      d: 'M0,0 L0,6 L8,3 z',
-      class: 'pm-gantt-arrowhead'
-    })
-  )
-  defs.appendChild(marker)
-
-  ctx.svgEl.appendChild(arrowGroup)
+  drawDependencyArrows(ctx, visibleRows(ctx))
 }
 
-function getOrCreateDefs(el: SVGSVGElement): SVGDefsElement {
-  return (
-    (el.querySelector('defs') as SVGDefsElement) ??
-    (() => {
-      const d = svgEl('defs', {})
-      el.insertBefore(d, el.firstChild)
-      return d
-    })()
-  )
+function visibleRows(ctx: RendererContext): GanttRow[] {
+  return ctx.flatTasks.filter((f) => f.visible || f.depth === 0).map((f) => ({ task: f.task, depth: f.depth }))
 }

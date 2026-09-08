@@ -12,14 +12,10 @@ import {
   isFilterActive
 } from '@dotpm/core'
 import { personKeyer, type ProjectScope } from '../../store'
-import { renderAddButton, childTreeGuides } from '@dotpm/ui'
+import { renderAddButton, childTreeGuides, compareTask, type SortDir, type SortKey } from '@dotpm/ui'
 import { openTaskModal } from '../../ui/ModalFactory'
 import { openAddTask } from '../addTask'
-import { compareTask } from './TableFilters'
 import { renderTaskRow, updateSelectedRow, updateSelectAllCheckbox } from './TableRow'
-
-type SortKey = 'title' | 'status' | 'priority' | 'due' | 'assignees' | 'progress'
-type SortDir = 'asc' | 'desc'
 
 export type { SortKey, SortDir }
 

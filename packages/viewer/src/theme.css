@@ -1,0 +1,227 @@
+/* The Obsidian variables the plugin styles read, with the app's default values, so the
+   same stylesheet paints the same picture on a plain page. */
+:root {
+  --font-interface: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, Ubuntu, sans-serif;
+  --font-monospace: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-ui-smaller: 12px;
+  --font-ui-small: 13px;
+  --font-ui-medium: 15px;
+  --font-ui-large: 20px;
+  --size-4-1: 4px;
+  --size-4-2: 8px;
+  --size-4-4: 16px;
+  --size-4-6: 24px;
+  --size-4-8: 32px;
+  --radius-s: 4px;
+  --radius-m: 8px;
+  --radius-l: 12px;
+  --input-height: 30px;
+  --checkbox-size: 16px;
+  --checkbox-radius: 4px;
+  --icon-size: 18px;
+  --layer-menu: 30;
+  --shadow-s: 0 1px 2px rgba(0, 0, 0, 0.12);
+
+  --background-primary: #ffffff;
+  --background-secondary: #f6f6f6;
+  --background-modifier-border: #e0e0e0;
+  --background-modifier-border-hover: #c9c9c9;
+  --background-modifier-border-focus: #8a5cf5;
+  --background-modifier-hover: rgba(0, 0, 0, 0.075);
+  --interactive-normal: #f2f2f2;
+  --interactive-accent: #8a5cf5;
+  --interactive-accent-hover: #7b4de8;
+  --text-normal: #2e3338;
+  --text-muted: #5c5c5c;
+  --text-faint: #8f8f8f;
+  --text-accent: #7b4de8;
+  --text-on-accent: #ffffff;
+  --text-error: #e93147;
+  --color-red: #e93147;
+  --color-orange: #ec7500;
+  --color-green: #08b94e;
+  --color-blue: #086ddd;
+  --color-purple: #7852ee;
+}
+
+body.theme-dark {
+  --background-primary: #1e1e1e;
+  --background-secondary: #262626;
+  --background-modifier-border: #3a3a3a;
+  --background-modifier-border-hover: #4d4d4d;
+  --background-modifier-border-focus: #9a76f7;
+  --background-modifier-hover: rgba(255, 255, 255, 0.075);
+  --interactive-normal: #2a2a2a;
+  --interactive-accent: #9a76f7;
+  --interactive-accent-hover: #a98cff;
+  --text-normal: #dadada;
+  --text-muted: #9e9e9e;
+  --text-faint: #666666;
+  --text-accent: #a98cff;
+  --text-on-accent: #ffffff;
+  --text-error: #fb464c;
+  --color-red: #fb464c;
+  --color-orange: #e9973f;
+  --color-green: #44cf6e;
+  --color-blue: #4a90e2;
+  --color-purple: #a882ff;
+  --shadow-s: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: var(--background-primary);
+  color: var(--text-normal);
+  font-family: var(--font-interface);
+  font-size: var(--font-ui-medium);
+  line-height: 1.4;
+}
+
+a {
+  color: var(--text-accent);
+  text-decoration: none;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+button {
+  font: inherit;
+  font-size: var(--font-ui-small);
+  color: var(--text-normal);
+  background: var(--interactive-normal);
+  border: 0;
+  border-radius: var(--radius-s);
+  padding: 0 12px;
+  height: var(--input-height);
+  box-shadow: var(--shadow-s);
+  cursor: pointer;
+}
+
+button:hover {
+  background: var(--background-modifier-hover);
+}
+
+button.mod-cta {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+button.mod-cta:hover {
+  background: var(--interactive-accent-hover);
+}
+
+input[type='checkbox'] {
+  width: var(--checkbox-size);
+  height: var(--checkbox-size);
+  accent-color: var(--interactive-accent);
+}
+
+.clickable-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: var(--radius-s);
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.clickable-icon:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+.svg-icon {
+  width: var(--icon-size);
+  height: var(--icon-size);
+  flex-shrink: 0;
+}
+
+.menu {
+  position: fixed;
+  z-index: var(--layer-menu);
+  min-width: 160px;
+  padding: 4px;
+  background: var(--background-primary);
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  box-shadow: var(--shadow-s);
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: var(--radius-s);
+  font-size: var(--font-ui-small);
+  cursor: pointer;
+}
+
+.menu-item:hover,
+.menu-item.mod-checked {
+  background: var(--background-modifier-hover);
+}
+
+.menu-item-icon:empty {
+  display: none;
+}
+
+.menu-separator {
+  height: 1px;
+  margin: 4px 0;
+  background: var(--background-modifier-border);
+}
+
+.pm-snapshot {
+  height: 100vh;
+}
+
+.pm-snapshot-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  flex-shrink: 0;
+}
+
+.pm-snapshot-icon {
+  display: inline-flex;
+  font-size: 22px;
+  --icon-size: 22px;
+}
+
+.pm-snapshot-title {
+  margin: 0;
+  font-size: var(--font-ui-large);
+  font-weight: 600;
+}
+
+.pm-snapshot-meta {
+  margin-left: auto;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.pm-snapshot-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: auto;
+}
+
+.pm-snapshot-body > .pm-table-wrapper {
+  flex: 1;
+}

@@ -1,4 +1,12 @@
-import type { PlatformButton, PlatformExtraButton, PlatformMenu, PlatformMenuItem, UiPlatform } from './platform'
+import {
+  setIcon as platformSetIcon,
+  setTooltip as platformSetTooltip,
+  type PlatformButton,
+  type PlatformExtraButton,
+  type PlatformMenu,
+  type PlatformMenuItem,
+  type UiPlatform
+} from './platform'
 
 const LUCIDE_ID = /^[a-z0-9]+(-[a-z0-9]+)*$/
 
@@ -26,7 +34,7 @@ class DomButton implements PlatformButton {
   }
 
   setIcon(icon: string): this {
-    setIcon(this.buttonEl, icon)
+    platformSetIcon(this.buttonEl, icon)
     return this
   }
 
@@ -46,7 +54,7 @@ class DomButton implements PlatformButton {
   }
 
   setTooltip(text: string): this {
-    setTooltip(this.buttonEl, text)
+    platformSetTooltip(this.buttonEl, text)
     return this
   }
 
@@ -74,12 +82,12 @@ class DomExtraButton implements PlatformExtraButton {
   }
 
   setIcon(icon: string): this {
-    setIcon(this.extraSettingsEl, icon)
+    platformSetIcon(this.extraSettingsEl, icon)
     return this
   }
 
   setTooltip(text: string): this {
-    setTooltip(this.extraSettingsEl, text)
+    platformSetTooltip(this.extraSettingsEl, text)
     return this
   }
 
@@ -112,7 +120,7 @@ class DomMenuItem implements PlatformMenuItem {
   }
 
   setIcon(icon: string | null): this {
-    if (icon) setIcon(this.iconEl, icon)
+    if (icon) platformSetIcon(this.iconEl, icon)
     else this.iconEl.empty()
     return this
   }

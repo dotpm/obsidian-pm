@@ -5,14 +5,21 @@ import obsidianmd from 'eslint-plugin-obsidianmd'
 export default defineConfig([
   ...obsidianmd.configs.recommended,
   {
-    ignores: ['**/*.test.ts', 'packages/*/test/**', 'packages/ui/src/dom-shim.ts', 'packages/ui/src/dom-platform.ts']
+    ignores: [
+      '**/*.test.ts',
+      'packages/*/test/**',
+      'packages/*/dist/**',
+      'packages/ui/src/dom-shim.ts',
+      'packages/ui/src/dom-platform.ts',
+      'packages/viewer/**'
+    ]
   },
   {
     files: ['src/**/*.ts', 'packages/*/src/**/*.ts'],
     languageOptions: {
       parser: tsparser,
       parserOptions: { project: './tsconfig.json' },
-      globals: { __STYLEGUIDE__: 'readonly' }
+      globals: { __STYLEGUIDE__: 'readonly', __VIEWER_TEMPLATE__: 'readonly' }
     }
   },
   {

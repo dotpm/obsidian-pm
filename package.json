@@ -7,10 +7,10 @@
   "type": "module",
   "scripts": {
     "dev": "run-p dev:js dev:css",
-    "dev:js": "tsdown --watch",
+    "dev:js": "pnpm build:viewer && tsdown --watch",
     "dev:css": "node scripts/build-styles.mjs --watch",
     "build": "run-p build:js build:css",
-    "build:js": "PRODUCTION=1 tsdown",
+    "build:js": "pnpm build:viewer && PRODUCTION=1 tsdown",
     "build:css": "PRODUCTION=1 node scripts/build-styles.mjs",
     "check": "run-p check:**",
     "check:code": "oxlint ./src ./packages ./test",
@@ -22,7 +22,8 @@
     "fix:format": "oxfmt ./src ./packages ./test",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "build:viewer": "node scripts/build-viewer.mjs"
   },
   "devDependencies": {
     "@2bad/axiom": "2.1.0",

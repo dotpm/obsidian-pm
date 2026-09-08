@@ -1,5 +1,5 @@
 import type { Project, Recurrence, ResolvedProjectConfig, Task, TaskType } from '@dotpm/core'
-import { parsePlainDate } from '@dotpm/core'
+import { makeTask, parsePlainDate } from '@dotpm/core'
 import {
   ApiRequestError,
   type ProjectResource,
@@ -251,4 +251,47 @@ export function taskPatch(write: TaskWrite): Partial<Task> {
   if (write.timeEstimate !== undefined) patch.timeEstimate = write.timeEstimate ?? undefined
   if (write.customFields !== undefined) patch.customFields = write.customFields
   return patch
+}
+
+/** Rebuilds the task tree a project holds from its flat resources, siblings in position order. */
+export function tasksFromResources(resources: TaskResource[]): Task[] {
+  const byId = new Map<string, Task>()
+  for (const r of resources) {
+    byId.set(
+      r.id,
+      makeTask({
+        id: r.id,
+        title: r.title,
+        description: r.description,
+        type: r.type,
+        status: r.status,
+        priority: r.priority,
+        start: r.start,
+        due: r.due,
+        completed: r.completed,
+        progress: r.progress,
+        assignees: [...r.assignees],
+        tags: [...r.tags],
+        dependencies: [...r.dependencies],
+        recurrence: r.recurrence ?? undefined,
+        timeEstimate: r.timeEstimate ?? undefined,
+        timeLogs: r.timeLogs.map((log) => ({ ...log })),
+        customFields: { ...r.customFields },
+        archived: r.archived,
+        createdAt: r.createdAt,
+        updatedAt: r.updatedAt,
+        filePath: r.path || undefined
+      })
+    )
+  }
+  const roots: Task[] = []
+  const sorted = [...resources].sort((a, b) => a.position - b.position)
+  for (const r of sorted) {
+    const task = byId.get(r.id)
+    if (!task) continue
+    const parent = r.parentId ? byId.get(r.parentId) : undefined
+    if (parent) parent.subtasks.push(task)
+    else roots.push(task)
+  }
+  return roots
 }

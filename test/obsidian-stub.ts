@@ -14,6 +14,10 @@ export class Notice {
 
 export function setIcon(): void {}
 
+export function getIcon(): SVGSVGElement | null {
+  return null
+}
+
 export function normalizePath(p: string): string {
   return p.replace(/\\/g, '/').replace(/\/+/g, '/').replace(/^\/+/, '').replace(/\/+$/, '')
 }

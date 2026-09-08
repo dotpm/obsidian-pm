@@ -19,6 +19,13 @@
   flex: 1;
 }
 
+.pm-gantt-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
 .pm-gantt-wrapper {
   display: flex;
   flex: 1;
