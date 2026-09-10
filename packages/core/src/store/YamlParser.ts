@@ -3,20 +3,34 @@ import { parseYaml } from '../yaml'
 export const FRONTMATTER_KEY = 'pm-project'
 export const TASK_FRONTMATTER_KEY = 'pm-task'
 
-export function parseFrontmatter(content: string): {
-  frontmatter: Record<string, unknown> | null
-  body: string
-} {
-  if (!content.startsWith('---')) return { frontmatter: null, body: content }
-  const end = content.indexOf('\n---', 4)
-  if (end === -1) return { frontmatter: null, body: content }
-  const raw = content.slice(4, end)
-  const body = content.slice(end + 4).trim()
+/**
+ * 'none' is a note without frontmatter, so its whole content is the body, matching
+ * how Obsidian reads a note that opens with a horizontal rule. 'malformed' carries
+ * neither: a note whose frontmatter block will not parse has no readable body, and
+ * callers must not fall back to its content.
+ */
+export type ParsedFrontmatter =
+  | { kind: 'frontmatter'; frontmatter: Record<string, unknown>; body: string }
+  | { kind: 'none'; body: string }
+  | { kind: 'malformed' }
+
+const FRONTMATTER_BLOCK = /^---[ \t]*\r?\n([\s\S]*?)\r?\n---[ \t]*(?:\r?\n|$)/
+
+const toLf = (text: string): string => text.replace(/\r\n/g, '\n')
+
+export function parseFrontmatter(content: string): ParsedFrontmatter {
+  const block = FRONTMATTER_BLOCK.exec(content)
+  if (!block) return { kind: 'none', body: toLf(content) }
+  let parsed: unknown
   try {
-    return { frontmatter: parseYaml(raw) as Record<string, unknown>, body }
+    parsed = parseYaml(toLf(block[1]))
   } catch {
-    return { frontmatter: null, body: content }
+    return { kind: 'malformed' }
   }
+  // An empty or non-mapping block is a note carrying no properties, not a broken one.
+  const frontmatter =
+    parsed !== null && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : {}
+  return { kind: 'frontmatter', frontmatter, body: toLf(content.slice(block[0].length)).trim() }
 }
 
 /** Without this the generated wiki-link lines would be duplicated on every save. */
@@ -39,7 +53,7 @@ export function appendYaml(lines: string[], obj: Record<string, unknown>, indent
     } else if (typeof val === 'number') {
       lines.push(`${pad}${key}: ${val}`)
     } else if (typeof val === 'string') {
-      const escaped = val.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\n/g, '\\n')
+      const escaped = val.replace(/\\/g, '\\\\').replace(/"/g, '\\"').replace(/\r/g, '\\r').replace(/\n/g, '\\n')
       lines.push(`${pad}${key}: "${escaped}"`)
     } else if (Array.isArray(val)) {
       if (val.length === 0) {

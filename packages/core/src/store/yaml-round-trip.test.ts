@@ -25,18 +25,18 @@ function roundTripTask(
   parent: Task | null = null
 ) {
   const md = serializeTask(t, project, parent, [], refs)
-  const { frontmatter, body } = parseFrontmatter(md)
-  if (!frontmatter) throw new Error('frontmatter missing')
-  return hydrateTaskFromFile(frontmatter, body, 'Projects/Test_tasks/task.md')
+  const parsed = parseFrontmatter(md)
+  if (parsed.kind !== 'frontmatter') throw new Error('frontmatter missing')
+  return hydrateTaskFromFile(parsed.frontmatter, parsed.body, 'Projects/Test_tasks/task.md')
 }
 
 function roundTripProject(p: Project) {
   const md = serializeProject(p, [], refs)
-  const { frontmatter, body } = parseFrontmatter(md)
-  if (!frontmatter) throw new Error('frontmatter missing')
+  const parsed = parseFrontmatter(md)
+  if (parsed.kind !== 'frontmatter') throw new Error('frontmatter missing')
   return {
-    project: hydrateProjectFromFrontmatter(frontmatter, body, p.filePath, 'Test'),
-    frontmatter
+    project: hydrateProjectFromFrontmatter(parsed.frontmatter, parsed.body, p.filePath, 'Test'),
+    frontmatter: parsed.frontmatter
   }
 }
 
@@ -213,9 +213,9 @@ describe('project round-trip', () => {
     const task = makeTask({ id: 't-dup', title: 'Dup', filePath: 'Projects/P_tasks/dup-tdup.md' })
     p.tasks = [task, task]
     const md = serializeProject(p, [], refs)
-    const { frontmatter } = parseFrontmatter(md)
-    if (!frontmatter) throw new Error('frontmatter missing')
-    expect(frontmatter.taskIds).toEqual(['[[dup-tdup|Dup]]'])
+    const parsed = parseFrontmatter(md)
+    if (parsed.kind !== 'frontmatter') throw new Error('frontmatter missing')
+    expect(parsed.frontmatter.taskIds).toEqual(['[[dup-tdup|Dup]]'])
     const bulletCount = md.split('\n').filter((l) => l.startsWith('- [ ] [[dup-tdup|')).length
     expect(bulletCount).toBe(1)
   })
@@ -324,8 +324,8 @@ describe('foreign frontmatter', () => {
     const taskKeys = Object.keys(buildTaskFrontmatter(task, project, null, refs))
     expect(taskKeys.filter((key) => !TASK_FRONTMATTER_KEYS.has(key))).toEqual([])
 
-    const { frontmatter } = parseFrontmatter(serializeProject(project, [], refs))
-    const projectKeys = Object.keys(frontmatter ?? {})
+    const parsedProject = parseFrontmatter(serializeProject(project, [], refs))
+    const projectKeys = parsedProject.kind === 'frontmatter' ? Object.keys(parsedProject.frontmatter) : []
     expect(projectKeys.filter((key) => !PROJECT_FRONTMATTER_KEYS.has(key))).toEqual([])
   })
 
@@ -338,8 +338,9 @@ describe('foreign frontmatter', () => {
     }
 
     const md = serializeTask(task, project, null, [], refs, foreign)
-    const { frontmatter } = parseFrontmatter(md)
-    if (!frontmatter) throw new Error('frontmatter missing')
+    const parsed = parseFrontmatter(md)
+    if (parsed.kind !== 'frontmatter') throw new Error('frontmatter missing')
+    const frontmatter = parsed.frontmatter
 
     expect(foreignFrontmatter(frontmatter, TASK_FRONTMATTER_KEYS)).toEqual(foreign)
     expect(Object.keys(frontmatter).indexOf('uuid')).toBeGreaterThan(Object.keys(frontmatter).indexOf('updatedAt'))

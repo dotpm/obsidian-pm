@@ -79,17 +79,17 @@ describe('serializer determinism', () => {
   it('reaches a fixed point after one task round-trip', () => {
     const project = fixtureProject()
     const first = serializeTask(fixtureTask(), project, null, [], refs)
-    const { frontmatter, body } = parseFrontmatter(first)
-    if (!frontmatter) throw new Error('frontmatter missing')
-    const { task } = hydrateTaskFromFile(frontmatter, body, 'Projects/Test/_tasks/design-api.md')
+    const parsed = parseFrontmatter(first)
+    if (parsed.kind !== 'frontmatter') throw new Error('frontmatter missing')
+    const { task } = hydrateTaskFromFile(parsed.frontmatter, parsed.body, 'Projects/Test/_tasks/design-api.md')
     expect(serializeTask(task, project, null, [], refs)).toBe(first)
   })
 
   it('reaches a fixed point after one project round-trip', () => {
     const first = serializeProject(fixtureProject(), [], refs)
-    const { frontmatter, body } = parseFrontmatter(first)
-    if (!frontmatter) throw new Error('frontmatter missing')
-    const project = hydrateProjectFromFrontmatter(frontmatter, body, 'Projects/Test/Test.md', 'Test')
+    const parsed = parseFrontmatter(first)
+    if (parsed.kind !== 'frontmatter') throw new Error('frontmatter missing')
+    const project = hydrateProjectFromFrontmatter(parsed.frontmatter, parsed.body, 'Projects/Test/Test.md', 'Test')
     expect(serializeProject(project, [], refs)).toBe(first)
   })
 })
