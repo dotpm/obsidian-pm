@@ -97,13 +97,14 @@ describe('parseTaskMove', () => {
 })
 
 describe('parseTaskSearch', () => {
-  it('reads query-string shaped input', () => {
-    expect(parseTaskSearch({ query: 'x', includeArchived: 'true', limit: '10', status: '' })).toEqual({
+  it('keeps the filters that carry a value', () => {
+    expect(parseTaskSearch({ query: 'x', includeArchived: true, limit: 10, status: '' })).toEqual({
       query: 'x',
       includeArchived: true,
       limit: 10
     })
     rejects(() => parseTaskSearch({ limit: 0 }), 'limit must be an integer from 1 to 500')
+    rejects(() => parseTaskSearch({ includeArchived: 'true' }), 'includeArchived must be true or false')
   })
 })
 
