@@ -1,59 +1,54 @@
-import { ApiRequestError, ERROR_STATUS, type DomainApi } from './contract'
+import { Hono, type Context } from 'hono'
+import { bearerAuth } from 'hono/bearer-auth'
+import { except } from 'hono/combine'
+import { HTTPException } from 'hono/http-exception'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
+import { ApiRequestError, ERROR_STATUS, type ApiErrorCode, type DomainApi } from './contract'
 import { createMcpHandler, type ServerInfo } from './mcp'
 import { parseTaskSearch } from './resources'
-
-export interface HttpRequest {
-  method: string
-  /** Pathname only, no query string. */
-  path: string
-  query: Record<string, string>
-  /** Lower-cased header names. */
-  headers: Record<string, string>
-  body: unknown
-}
-
-export interface HttpResponse {
-  status: number
-  body?: unknown
-  headers?: Record<string, string>
-  /** Set instead of `body` when the host must pipe the bytes through unchanged. */
-  stream?: ReadableStream<Uint8Array>
-}
 
 export interface HttpHost {
   api: DomainApi
   info: ServerInfo
-  authorized(req: HttpRequest): boolean
+  token: () => string
 }
 
-function json(status: number, body: unknown): HttpResponse {
-  return { status, body }
+function fail(code: ApiErrorCode, message: string): { error: { code: ApiErrorCode; message: string } } {
+  return { error: { code, message } }
 }
 
-function error(code: keyof typeof ERROR_STATUS, message: string): HttpResponse {
-  return json(ERROR_STATUS[code], { error: { code, message } })
+/** Constant-time compare, so the token can't be guessed byte by byte through timing. */
+export function tokenMatches(presented: string, expected: string): boolean {
+  if (!presented || !expected || presented.length !== expected.length) return false
+  let diff = 0
+  for (let i = 0; i < expected.length; i++) diff |= presented.charCodeAt(i) ^ expected.charCodeAt(i)
+  return diff === 0
 }
 
-/** Matches `/v1/tasks/:id/move` style patterns, returning the named segments. */
-function match(pattern: string, path: string): Record<string, string> | null {
-  const want = pattern.split('/')
-  const have = path.split('/')
-  if (want.length !== have.length) return null
-  const params: Record<string, string> = {}
-  for (let i = 0; i < want.length; i++) {
-    if (want[i].startsWith(':')) {
-      if (!have[i]) return null
-      params[want[i].slice(1)] = decodeURIComponent(have[i])
-    } else if (want[i] !== have[i]) {
-      return null
-    }
+/** An empty body is not a mistake: `archive` and the pickers read their defaults from it. */
+async function body(c: Context): Promise<unknown> {
+  const raw = await c.req.text()
+  if (!raw.trim()) return undefined
+  try {
+    return JSON.parse(raw)
+  } catch {
+    throw new ApiRequestError('invalid', 'body is not valid JSON')
   }
-  return params
+}
+
+/** Hono's own failures already carry a response; ours become the error shape clients read. */
+function toResponse(err: unknown, c: Context): Response {
+  if (err instanceof HTTPException) return err.getResponse()
+  if (err instanceof ApiRequestError) {
+    return c.json(fail(err.code, err.message), ERROR_STATUS[err.code] as ContentfulStatusCode)
+  }
+  console.error('[PM] api request failed', err)
+  return c.json({ error: { code: 'internal', message: 'request failed; see the developer console' } }, 500)
 }
 
 /** A query string carries only strings, while the search fields are typed. */
-function search(req: HttpRequest): Record<string, unknown> {
-  const { includeArchived, limit, q, query, ...rest } = req.query
+function search(c: Context): Record<string, unknown> {
+  const { includeArchived, limit, q, query, ...rest } = c.req.query()
   return {
     ...rest,
     query: q ?? query,
@@ -62,108 +57,80 @@ function search(req: HttpRequest): Record<string, unknown> {
   }
 }
 
-function bearer(req: HttpRequest): string | null {
-  const header = req.headers['authorization'] ?? ''
-  return header.startsWith('Bearer ') ? header.slice(7).trim() : null
-}
-
-/** Constant-time compare, so the token can't be guessed byte by byte through timing. */
-export function tokenMatches(presented: string | null, expected: string): boolean {
-  if (!presented || !expected || presented.length !== expected.length) return false
-  let diff = 0
-  for (let i = 0; i < expected.length; i++) diff |= presented.charCodeAt(i) ^ expected.charCodeAt(i)
-  return diff === 0
-}
-
-export function bearerAuth(token: () => string): (req: HttpRequest) => boolean {
-  return (req) => tokenMatches(bearer(req), token())
-}
-
-async function route(req: HttpRequest, host: HttpHost): Promise<HttpResponse> {
-  const { api } = host
-  const { method, path } = req
-  let p: Record<string, string> | null
-
-  if (path === '/v1/projects' && method === 'GET') return json(200, await api.listProjects())
-
-  if ((p = match('/v1/projects/:id', path)) && method === 'GET') return json(200, await api.getProject(p['id']))
-
-  if ((p = match('/v1/projects/:id/tasks', path))) {
-    if (method === 'GET') return json(200, await api.listTasks(p['id'], req.query['includeArchived'] === 'true'))
-    if (method === 'POST') return json(201, await api.createTask(p['id'], req.body))
-  }
-
-  if ((p = match('/v1/tasks/:id', path))) {
-    if (method === 'GET') return json(200, await api.getTask(p['id']))
-    if (method === 'PATCH') {
-      const expected = req.headers['if-match']?.replace(/^"|"$/g, '')
-      return json(200, await api.updateTask(p['id'], req.body, expected))
-    }
-    if (method === 'DELETE') {
-      await api.deleteTask(p['id'])
-      return { status: 204 }
-    }
-  }
-
-  if ((p = match('/v1/tasks/:id/move', path)) && method === 'POST') {
-    return json(200, await api.moveTask(p['id'], req.body))
-  }
-
-  if ((p = match('/v1/tasks/:id/archive', path)) && method === 'POST') {
-    const body = (req.body ?? {}) as { archived?: unknown }
-    return json(200, await api.archiveTask(p['id'], body.archived !== false))
-  }
-
-  if (path === '/v1/search' && method === 'GET') return json(200, await api.searchTasks(parseTaskSearch(search(req))))
-
-  if (path === '/v1/changes' && method === 'GET') {
-    const since = req.query['since']
-    const cursor = since === undefined || since === '' ? null : Number(since)
-    if (cursor !== null && !Number.isInteger(cursor)) return error('invalid', 'since must be an integer cursor')
-    return json(200, await api.changes(cursor))
-  }
-
-  return error('not_found', `no route for ${method} ${path}`)
-}
-
-/** The MCP transport speaks fetch, so the request is rebuilt and the reply unwrapped. */
-async function mcp(handle: (request: Request) => Promise<Response>, req: HttpRequest): Promise<HttpResponse> {
-  const headers = new Headers(req.headers)
-  headers.delete('content-length')
-  const response = await handle(
-    new Request('http://127.0.0.1/mcp', {
-      method: req.method,
-      headers,
-      body: req.body === undefined ? undefined : JSON.stringify(req.body)
-    })
-  )
-  const contentType = response.headers.get('content-type') ?? ''
-  if (contentType.startsWith('text/event-stream') && response.body) {
-    return { status: response.status, stream: response.body, headers: { 'content-type': contentType } }
-  }
-  if (!contentType.startsWith('application/json')) return { status: response.status }
-  const raw = await response.text()
-  return { status: response.status, body: raw ? JSON.parse(raw) : undefined }
-}
-
 /**
- * The whole HTTP surface, independent of any server: the host reads the request, hands
- * it here, and writes whatever comes back. `/v1/health` needs no token. The MCP server
+ * The whole HTTP surface as a fetch handler, so it runs in front of any server that can
+ * hand it a `Request`. `/v1/health` is the one route that needs no token. The MCP server
  * behind `/mcp` is built once, so build the router once too.
  */
-export function createRouter(host: HttpHost): (req: HttpRequest) => Promise<HttpResponse> {
-  const handleMcp = createMcpHandler(host.api, host.info)
-  return async (req) => {
-    if (req.path === '/v1/health' && req.method === 'GET') {
-      return json(200, { ok: true, name: host.info.name, version: host.info.version })
+export function createRouter(host: HttpHost): (request: Request) => Response | Promise<Response> {
+  const { api } = host
+  const mcp = createMcpHandler(api, host.info)
+  const app = new Hono()
+
+  app.use(async (c, next) => {
+    await next()
+    c.header('cache-control', 'no-store')
+  })
+
+  app.use(
+    except(
+      '/v1/health',
+      bearerAuth({
+        verifyToken: (token) => tokenMatches(token, host.token()),
+        noAuthenticationHeader: { message: fail('unauthorized', 'missing or wrong bearer token') },
+        invalidAuthenticationHeader: { message: fail('invalid', 'the authorization header is malformed') },
+        invalidToken: { message: fail('unauthorized', 'missing or wrong bearer token') }
+      })
+    )
+  )
+
+  app.get('/v1/health', (c) => c.json({ ok: true, name: host.info.name, version: host.info.version }))
+
+  app.all('/mcp', (c) => mcp(c.req.raw))
+
+  app.get('/v1/projects', async (c) => c.json(await api.listProjects()))
+
+  app.get('/v1/projects/:id', async (c) => c.json(await api.getProject(c.req.param('id'))))
+
+  app.get('/v1/projects/:id/tasks', async (c) =>
+    c.json(await api.listTasks(c.req.param('id'), c.req.query('includeArchived') === 'true'))
+  )
+
+  app.post('/v1/projects/:id/tasks', async (c) => c.json(await api.createTask(c.req.param('id'), await body(c)), 201))
+
+  app.get('/v1/tasks/:id', async (c) => c.json(await api.getTask(c.req.param('id'))))
+
+  app.patch('/v1/tasks/:id', async (c) => {
+    const expected = c.req.header('if-match')?.replace(/^"|"$/g, '')
+    return c.json(await api.updateTask(c.req.param('id'), await body(c), expected))
+  })
+
+  app.delete('/v1/tasks/:id', async (c) => {
+    await api.deleteTask(c.req.param('id'))
+    return c.body(null, 204)
+  })
+
+  app.post('/v1/tasks/:id/move', async (c) => c.json(await api.moveTask(c.req.param('id'), await body(c))))
+
+  app.post('/v1/tasks/:id/archive', async (c) => {
+    const asked = ((await body(c)) ?? {}) as { archived?: unknown }
+    return c.json(await api.archiveTask(c.req.param('id'), asked.archived !== false))
+  })
+
+  app.get('/v1/search', async (c) => c.json(await api.searchTasks(parseTaskSearch(search(c)))))
+
+  app.get('/v1/changes', async (c) => {
+    const since = c.req.query('since')
+    const cursor = since === undefined || since === '' ? null : Number(since)
+    if (cursor !== null && !Number.isInteger(cursor)) {
+      throw new ApiRequestError('invalid', 'since must be an integer cursor')
     }
-    if (!host.authorized(req)) return error('unauthorized', 'missing or wrong bearer token')
-    try {
-      return req.path === '/mcp' ? await mcp(handleMcp, req) : await route(req, host)
-    } catch (err: unknown) {
-      if (err instanceof ApiRequestError) return error(err.code, err.message)
-      console.error('[PM] api request failed', err)
-      return json(500, { error: { code: 'internal', message: 'request failed; see the developer console' } })
-    }
-  }
+    return c.json(await api.changes(cursor))
+  })
+
+  app.notFound((c) => c.json(fail('not_found', `no route for ${c.req.method} ${c.req.path}`), 404))
+
+  app.onError(toResponse)
+
+  return app.fetch
 }
