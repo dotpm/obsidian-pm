@@ -30,7 +30,7 @@ Cursor, Claude Desktop and other clients that take a JSON config:
 }
 ```
 
-The server is stateless: every request stands alone, there is no session to keep, and it does not push notifications. Clients that insist on a Server-Sent Events stream get `405` from `GET /mcp` and fall back to plain requests.
+The server is stateless: every request stands alone, there is no session to keep, and it does not push notifications. A client that asks for `text/event-stream` on its POST gets the reply as one event and the stream closes; the standalone `GET /mcp` stream and `DELETE /mcp` need a session, so both answer `405`. Protocol versions `2025-06-18` and `2025-03-26` are supported, and one message per request: JSON-RPC batches are refused.
 
 Tools: `list_projects`, `get_project`, `list_tasks`, `get_task`, `search_tasks`, `create_task`, `update_task`, `move_task`, `archive_task`, `delete_task`, `list_changes`. Resources: `dotpm://projects/{id}` (the project with its tasks) and `dotpm://tasks/{id}`.
 

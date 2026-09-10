@@ -1,5 +1,5 @@
 import { ApiRequestError, ERROR_STATUS, type DomainApi } from './contract'
-import { handleMcp, type ServerInfo } from './mcp'
+import { createMcpHandler, type ServerInfo } from './mcp'
 import { parseTaskSearch } from './resources'
 
 export interface HttpRequest {
@@ -16,6 +16,8 @@ export interface HttpResponse {
   status: number
   body?: unknown
   headers?: Record<string, string>
+  /** Set instead of `body` when the host must pipe the bytes through unchanged. */
+  stream?: ReadableStream<Uint8Array>
 }
 
 export interface HttpHost {
@@ -71,15 +73,6 @@ async function route(req: HttpRequest, host: HttpHost): Promise<HttpResponse> {
   const { method, path } = req
   let p: Record<string, string> | null
 
-  if (path === '/mcp') {
-    if (method === 'POST') {
-      const result = await handleMcp(req.body, api, host.info)
-      return result === null ? { status: 202 } : json(200, result)
-    }
-    if (method === 'DELETE') return { status: 204 }
-    return { status: 405, headers: { allow: 'POST, DELETE' } }
-  }
-
   if (path === '/v1/projects' && method === 'GET') return json(200, await api.listProjects())
 
   if ((p = match('/v1/projects/:id', path)) && method === 'GET') return json(200, await api.getProject(p['id']))
@@ -127,20 +120,44 @@ async function route(req: HttpRequest, host: HttpHost): Promise<HttpResponse> {
   return error('not_found', `no route for ${method} ${path}`)
 }
 
+/** The MCP transport speaks fetch, so the request is rebuilt and the reply unwrapped. */
+async function mcp(handle: (request: Request) => Promise<Response>, req: HttpRequest): Promise<HttpResponse> {
+  const headers = new Headers(req.headers)
+  headers.delete('content-length')
+  const response = await handle(
+    new Request('http://127.0.0.1/mcp', {
+      method: req.method,
+      headers,
+      body: req.body === undefined ? undefined : JSON.stringify(req.body)
+    })
+  )
+  const contentType = response.headers.get('content-type') ?? ''
+  if (contentType.startsWith('text/event-stream') && response.body) {
+    return { status: response.status, stream: response.body, headers: { 'content-type': contentType } }
+  }
+  if (!contentType.startsWith('application/json')) return { status: response.status }
+  const raw = await response.text()
+  return { status: response.status, body: raw ? JSON.parse(raw) : undefined }
+}
+
 /**
  * The whole HTTP surface, independent of any server: the host reads the request, hands
- * it here, and writes whatever comes back. `/v1/health` needs no token.
+ * it here, and writes whatever comes back. `/v1/health` needs no token. The MCP server
+ * behind `/mcp` is built once, so build the router once too.
  */
-export async function handleHttp(req: HttpRequest, host: HttpHost): Promise<HttpResponse> {
-  if (req.path === '/v1/health' && req.method === 'GET') {
-    return json(200, { ok: true, name: host.info.name, version: host.info.version })
-  }
-  if (!host.authorized(req)) return error('unauthorized', 'missing or wrong bearer token')
-  try {
-    return await route(req, host)
-  } catch (err: unknown) {
-    if (err instanceof ApiRequestError) return error(err.code, err.message)
-    console.error('[PM] api request failed', err)
-    return json(500, { error: { code: 'internal', message: 'request failed; see the developer console' } })
+export function createRouter(host: HttpHost): (req: HttpRequest) => Promise<HttpResponse> {
+  const handleMcp = createMcpHandler(host.api, host.info)
+  return async (req) => {
+    if (req.path === '/v1/health' && req.method === 'GET') {
+      return json(200, { ok: true, name: host.info.name, version: host.info.version })
+    }
+    if (!host.authorized(req)) return error('unauthorized', 'missing or wrong bearer token')
+    try {
+      return req.path === '/mcp' ? await mcp(handleMcp, req) : await route(req, host)
+    } catch (err: unknown) {
+      if (err instanceof ApiRequestError) return error(err.code, err.message)
+      console.error('[PM] api request failed', err)
+      return json(500, { error: { code: 'internal', message: 'request failed; see the developer console' } })
+    }
   }
 }

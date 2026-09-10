@@ -1,5 +1,5 @@
 /// <reference types="node" />
-import { handleHttp, type HttpHost } from '@dotpm/api'
+import { createRouter, type HttpHost, type HttpRequest, type HttpResponse } from '@dotpm/api'
 
 type HttpModule = typeof import('node:http')
 type Server = import('node:http').Server
@@ -15,17 +15,20 @@ export function generateToken(): string {
 }
 
 /**
- * The localhost server in front of `handleHttp`. Node's `http` is reached through the
+ * The localhost server in front of the router. Node's `http` is reached through the
  * desktop app's `require`, so this file loads on mobile but `start` refuses there.
  */
 export class LocalApiServer {
   private server: Server | null = null
   private boundPort = 0
+  private readonly route: (req: HttpRequest) => Promise<HttpResponse>
 
   constructor(
-    private readonly host: HttpHost,
+    host: HttpHost,
     private readonly port: () => number
-  ) {}
+  ) {
+    this.route = createRouter(host)
+  }
 
   get running(): boolean {
     return this.server !== null
@@ -97,11 +100,34 @@ export class LocalApiServer {
     for (const [name, value] of Object.entries(req.headers)) {
       headers[name] = Array.isArray(value) ? value.join(', ') : (value ?? '')
     }
-    const response = await handleHttp(
-      { method: req.method ?? 'GET', path: url.pathname, query: Object.fromEntries(url.searchParams), headers, body },
-      this.host
-    )
+    const response = await this.route({
+      method: req.method ?? 'GET',
+      path: url.pathname,
+      query: Object.fromEntries(url.searchParams),
+      headers,
+      body
+    })
+    if (response.stream) {
+      await this.pipe(res, response.status, response.stream, response.headers)
+      return
+    }
     this.write(res, response.status, response.body, response.headers)
+  }
+
+  private async pipe(
+    res: ServerResponse,
+    status: number,
+    stream: ReadableStream<Uint8Array>,
+    extra: Record<string, string> = {}
+  ): Promise<void> {
+    res.writeHead(status, { 'cache-control': 'no-store', ...extra })
+    const reader = stream.getReader()
+    for (;;) {
+      const { done, value } = await reader.read()
+      if (done) break
+      res.write(value)
+    }
+    res.end()
   }
 
   private write(res: ServerResponse, status: number, body: unknown, extra: Record<string, string> = {}): void {
