@@ -12,9 +12,9 @@ export async function migrateProjects(plugin: PMPlugin): Promise<void> {
     if (!(file instanceof TFile)) continue
     try {
       const content = await plugin.app.vault.read(file)
-      const { frontmatter } = parseFrontmatter(content)
-      if (!frontmatter || frontmatter['pm-project'] !== true) continue
-      if (!isOldFormat(frontmatter)) continue
+      const parsed = parseFrontmatter(content)
+      if (parsed.kind !== 'frontmatter' || parsed.frontmatter['pm-project'] !== true) continue
+      if (!isOldFormat(parsed.frontmatter)) continue
 
       const project = await plugin.store.loadProject(file)
       if (!project || project.tasks.length === 0) continue

@@ -17,7 +17,7 @@ import {
   findTask,
   flattenTasks
 } from '@dotpm/core'
-import { ProjectStore } from './ProjectStore'
+import { ProjectStore, UnreadableNoteError } from './ProjectStore'
 import { projectTaskFolder } from './vaultFs'
 import { VaultIndex } from './VaultIndex'
 
@@ -1660,7 +1660,9 @@ describe('ProjectStore foreign frontmatter', () => {
 
   async function frontmatterAt(app: App, path: string): Promise<Record<string, unknown>> {
     const content = await app.vault.cachedRead(fileAt(app, path))
-    return expectDefined(parseFrontmatter(content).frontmatter)
+    const parsed = parseFrontmatter(content)
+    if (parsed.kind !== 'frontmatter') throw new Error(`no frontmatter at ${path}`)
+    return parsed.frontmatter
   }
 
   it("keeps another plugin's properties across a frontmatter-only save", async () => {
@@ -1722,5 +1724,147 @@ describe('ProjectStore foreign frontmatter', () => {
     const fm = await frontmatterAt(app, 'Projects/Import/_tasks/idea.md')
     expect(fm['pm-task']).toBe(true)
     expect(fm.timeEntries).toEqual(EXPECTED)
+  })
+})
+
+describe('ProjectStore with a note whose properties will not parse', () => {
+  const MALFORMED = '---\n: : :\n---\n\n# Heading\n\nNote body\n'
+
+  function stubCache(app: App, path: string, fm: Record<string, unknown>, endOffset?: number): void {
+    const cache = (app as unknown as { metadataCache: { getFileCache: (f: TFile) => unknown } }).metadataCache
+    const entry =
+      endOffset === undefined
+        ? { frontmatter: fm }
+        : { frontmatter: fm, frontmatterPosition: { end: { offset: endOffset } } }
+    cache.getFileCache = (f: TFile) => (f.path === path ? entry : null)
+  }
+
+  it('keeps the project description instead of taking the note content', async () => {
+    const { store, vault, app } = newStore()
+    const project = await store.createProject('Broken', 'Projects')
+    await store.updateProject(project, { description: 'real description' })
+    const file = expectDefined(vault.getAbstractFileByPath(project.filePath))
+    if (!(file instanceof TFile)) throw new Error('project file missing')
+    const intact = await vault.cachedRead(file)
+    await vault.modify(file, MALFORMED)
+
+    stubCache(app, project.filePath, {
+      'pm-project': true,
+      id: project.id,
+      title: 'Broken',
+      description: 'real description',
+      taskIds: []
+    })
+    const store2 = new ProjectStore(app, () => SETTINGS)
+    const reloaded = expectDefined(await store2.loadProject(file))
+    expect(reloaded.description).toBe('real description')
+
+    await store2.loadProjectBody(reloaded)
+    expect(reloaded.description).toBe('real description')
+
+    // Still unhydrated, so a read after the note is repaired fills the body in.
+    await vault.modify(file, intact)
+    await store2.loadProjectBody(reloaded)
+    expect(reloaded.description).toBe('real description')
+  })
+
+  it('keeps the task description instead of taking the note content', async () => {
+    const { store, vault, app } = newStore()
+    const project = await store.createProject('Broken tasks', 'Projects')
+    const task = await addNamed(store, project, 'task')
+    await store.updateTask(project, task.id, { description: 'real description' })
+    const taskPath = expectDefined(task.filePath)
+    const file = expectDefined(vault.getAbstractFileByPath(taskPath))
+    if (!(file instanceof TFile)) throw new Error('task file missing')
+    const intact = await vault.cachedRead(file)
+    await vault.modify(file, MALFORMED)
+
+    stubCache(app, taskPath, { 'pm-task': true, id: task.id, title: 'task', projectId: project.id })
+    const store2 = new ProjectStore(app, () => SETTINGS)
+    const projectFile = expectDefined(vault.getAbstractFileByPath(project.filePath))
+    if (!(projectFile instanceof TFile)) throw new Error('project file missing')
+    const reloaded = expectDefined(await store2.loadProject(projectFile))
+    const reloadedTask = reloaded.tasks[0]
+
+    await store2.loadTaskBody(reloadedTask)
+    expect(reloadedTask.description).toBe('')
+    expect(reloadedTask.description).not.toContain('Note body')
+
+    await vault.modify(file, intact)
+    await store2.loadTaskBody(reloadedTask)
+    expect(reloadedTask.description).toBe('real description')
+  })
+
+  it('reads a task body through the offset Obsidian reported when our parser cannot', async () => {
+    const { store, vault, app } = newStore()
+    const project = await store.createProject('Offset', 'Projects')
+    const task = await addNamed(store, project, 'task')
+    const taskPath = expectDefined(task.filePath)
+    const file = expectDefined(vault.getAbstractFileByPath(taskPath))
+    if (!(file instanceof TFile)) throw new Error('task file missing')
+
+    // Obsidian reads this note; our parser will not.
+    const onDisk = '---\n: : :\n---\n\nreal description\n'
+    await vault.modify(file, onDisk)
+    expect(parseFrontmatter(onDisk).kind).toBe('malformed')
+
+    stubCache(
+      app,
+      taskPath,
+      { 'pm-task': true, id: task.id, title: 'task', projectId: project.id },
+      onDisk.indexOf('\n---') + 4
+    )
+    const store2 = new ProjectStore(app, () => SETTINGS)
+    const projectFile = expectDefined(vault.getAbstractFileByPath(project.filePath))
+    if (!(projectFile instanceof TFile)) throw new Error('project file missing')
+    const reloaded = expectDefined(await store2.loadProject(projectFile))
+
+    await store2.loadTaskBody(reloaded.tasks[0])
+    expect(reloaded.tasks[0].description).toBe('real description')
+  })
+
+  it('ignores an offset that does not match the note that was read', async () => {
+    const { store, vault, app } = newStore()
+    const project = await store.createProject('Shifted', 'Projects')
+    const task = await addNamed(store, project, 'task')
+    const taskPath = expectDefined(task.filePath)
+    const file = expectDefined(vault.getAbstractFileByPath(taskPath))
+    if (!(file instanceof TFile)) throw new Error('task file missing')
+
+    await vault.modify(file, MALFORMED)
+    // An offset from an older, longer version of the note lands mid-content.
+    stubCache(app, taskPath, { 'pm-task': true, id: task.id, title: 'task' }, MALFORMED.length - 4)
+    const store2 = new ProjectStore(app, () => SETTINGS)
+    const projectFile = expectDefined(vault.getAbstractFileByPath(project.filePath))
+    if (!(projectFile instanceof TFile)) throw new Error('project file missing')
+    const reloaded = expectDefined(await store2.loadProject(projectFile))
+
+    await store2.loadTaskBody(reloaded.tasks[0])
+    expect(reloaded.tasks[0].description).toBe('')
+  })
+
+  it('refuses to rewrite the project note, leaving it as it is on disk', async () => {
+    const { store, vault } = newStore()
+    const project = await store.createProject('Refuse', 'Projects')
+    const file = expectDefined(vault.getAbstractFileByPath(project.filePath))
+    if (!(file instanceof TFile)) throw new Error('project file missing')
+    await vault.modify(file, MALFORMED)
+
+    await expect(store.saveProject(project)).rejects.toThrow(UnreadableNoteError)
+    expect(await vault.cachedRead(file)).toBe(MALFORMED)
+  })
+
+  it('refuses to rewrite the task note, leaving it as it is on disk', async () => {
+    const { store, vault, app } = newStore()
+    const project = await store.createProject('Refuse task', 'Projects')
+    const task = await addNamed(store, project, 'task')
+    const taskPath = expectDefined(task.filePath)
+    const file = expectDefined(vault.getAbstractFileByPath(taskPath))
+    if (!(file instanceof TFile)) throw new Error('task file missing')
+    await vault.modify(file, MALFORMED)
+
+    stubCache(app, taskPath, { 'pm-task': true, id: task.id, title: 'task', projectId: project.id })
+    await expect(store.updateTask(project, task.id, { description: 'edited' })).rejects.toThrow(UnreadableNoteError)
+    expect(await vault.cachedRead(file)).toBe(MALFORMED)
   })
 })

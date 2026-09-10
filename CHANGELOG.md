@@ -12,6 +12,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A view can be exported as a self-contained HTML page that shows the table, timeline and board in any browser
 - Other apps on the same computer can read and edit tasks over a local HTTP and MCP server when it is turned on in settings
 
+### Fixed
+
+- A project or task description was replaced by the entire note when the note's properties could not be read ([#274](https://github.com/dotpm/obsidian-pm/issues/274))
+- Properties other plugins added to a note were removed by the next save when the note's properties could not be read
+
 ## [2.3.1] - 2026-09-07
 
 ### Fixed

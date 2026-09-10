@@ -304,7 +304,9 @@ export interface FakeAppLike {
     processFrontMatter: (file: TFile, fn: (fm: Record<string, unknown>) => void) => Promise<void>
   }
   metadataCache: {
-    getFileCache: (file: TFile) => { frontmatter?: Record<string, unknown> } | null
+    getFileCache: (
+      file: TFile
+    ) => { frontmatter?: Record<string, unknown>; frontmatterPosition?: { end: { offset: number } } } | null
     getFirstLinkpathDest: (linkpath: string, sourcePath: string) => TFile | null
     fileToLinktext: (file: TFile, sourcePath: string) => string
     on: (name: string, handler: MetadataHandler) => unknown
