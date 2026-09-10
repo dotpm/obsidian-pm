@@ -1,5 +1,4 @@
 import { createRequire } from 'node:module'
-import { bearerAuth } from '@dotpm/api'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { FakeApi } from '../../packages/api/test/fakeApi'
 import { LocalApiServer } from './LocalApiServer'
@@ -13,7 +12,7 @@ describe('LocalApiServer', () => {
   beforeAll(async () => {
     ;(globalThis as unknown as { window: unknown }).window = { require: createRequire(import.meta.url) }
     const server = new LocalApiServer(
-      { api: new FakeApi(), info: { name: 'dotpm', version: '9.9.9' }, authorized: bearerAuth(() => TOKEN) },
+      { api: new FakeApi(), info: { name: 'dotpm', version: '9.9.9' }, token: () => TOKEN },
       () => PORT
     )
     await server.start()
@@ -55,6 +54,16 @@ describe('LocalApiServer', () => {
     const body = await res.text()
     expect(body.startsWith('data: ')).toBe(true)
     expect(body).toContain('Demo')
+  })
+
+  it('creates a task over HTTP', async () => {
+    const res = await fetch(`${base}/v1/projects/p1/tasks`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${TOKEN}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ title: 'Over the socket' })
+    })
+    expect(res.status).toBe(201)
+    expect(await res.json()).toMatchObject({ title: 'Over the socket' })
   })
 
   it('refuses a request without the token', async () => {

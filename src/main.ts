@@ -1,5 +1,4 @@
 import { MarkdownView, Notice, Platform, Plugin } from 'obsidian'
-import { bearerAuth } from '@dotpm/api'
 import {
   DEFAULT_SETTINGS,
   makeDefaultFilter,
@@ -107,7 +106,7 @@ export default class PMPlugin extends Plugin {
       {
         api,
         info: { name: 'dotpm', version: this.manifest.version },
-        authorized: bearerAuth(() => this.settings.localApiToken)
+        token: () => this.settings.localApiToken
       },
       () => this.settings.localApiPort
     )
