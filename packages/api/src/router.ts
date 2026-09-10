@@ -51,6 +51,17 @@ function match(pattern: string, path: string): Record<string, string> | null {
   return params
 }
 
+/** A query string carries only strings, while the search fields are typed. */
+function search(req: HttpRequest): Record<string, unknown> {
+  const { includeArchived, limit, q, query, ...rest } = req.query
+  return {
+    ...rest,
+    query: q ?? query,
+    ...(includeArchived === undefined ? {} : { includeArchived: includeArchived === 'true' }),
+    ...(limit === undefined ? {} : { limit: Number(limit) })
+  }
+}
+
 function bearer(req: HttpRequest): string | null {
   const header = req.headers['authorization'] ?? ''
   return header.startsWith('Bearer ') ? header.slice(7).trim() : null
@@ -103,12 +114,7 @@ async function route(req: HttpRequest, host: HttpHost): Promise<HttpResponse> {
     return json(200, await api.archiveTask(p['id'], body.archived !== false))
   }
 
-  if (path === '/v1/search' && method === 'GET') {
-    return json(
-      200,
-      await api.searchTasks(parseTaskSearch({ ...req.query, query: req.query['q'] ?? req.query['query'] }))
-    )
-  }
+  if (path === '/v1/search' && method === 'GET') return json(200, await api.searchTasks(parseTaskSearch(search(req))))
 
   if (path === '/v1/changes' && method === 'GET') {
     const since = req.query['since']

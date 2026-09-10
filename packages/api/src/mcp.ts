@@ -1,3 +1,4 @@
+import { toJsonSchema } from '@valibot/to-json-schema'
 import {
   JSON_RPC_ERROR_CODES,
   McpServer,
@@ -6,8 +7,9 @@ import {
   type JsonRpcError,
   type ToolCallResult
 } from 'mcp-lite'
+import * as v from 'valibot'
 import { ApiRequestError, type DomainApi } from './contract'
-import { parseTaskSearch } from './resources'
+import { CREATE_FIELDS, MOVE_FIELDS, parseTaskSearch, SEARCH_FIELDS, TASK_FIELDS } from './resources'
 
 export interface ServerInfo {
   name: string
@@ -22,47 +24,23 @@ const INSTRUCTIONS =
 const PROJECT_TEMPLATE = 'dotpm://projects/{projectId}'
 const TASK_TEMPLATE = 'dotpm://tasks/{taskId}'
 
-type JsonSchema = Record<string, unknown>
-
-const TASK_FIELDS: Record<string, JsonSchema> = {
-  title: { type: 'string' },
-  description: { type: 'string', description: 'Markdown body of the task note' },
-  type: { type: 'string', enum: ['task', 'milestone', 'subtask'] },
-  status: { type: 'string', description: "One of the project's status ids (see get_project)" },
-  priority: { type: 'string', description: "One of the project's priority ids (see get_project)" },
-  start: { type: 'string', description: 'YYYY-MM-DD, or empty to clear' },
-  due: { type: 'string', description: 'YYYY-MM-DD, or empty to clear' },
-  progress: { type: 'integer', minimum: 0, maximum: 100 },
-  assignees: { type: 'array', items: { type: 'string' } },
-  tags: { type: 'array', items: { type: 'string' } },
-  dependencies: { type: 'array', items: { type: 'string' }, description: 'Ids of tasks this one waits for' },
-  recurrence: {
-    type: ['object', 'null'],
-    properties: {
-      interval: { type: 'string', enum: ['daily', 'weekly', 'monthly', 'yearly'] },
-      every: { type: 'integer', minimum: 1 },
-      endDate: { type: 'string' }
-    },
-    required: ['interval', 'every']
-  },
-  timeEstimate: { type: ['number', 'null'], description: 'Hours' },
-  customFields: { type: 'object', additionalProperties: true }
+function idField(name: string, description: string): v.GenericSchema<string, string> {
+  return v.pipe(v.string(`${name} is required`), v.description(description))
 }
+
+const projectId = idField('projectId', 'Id of the project, from list_projects')
+const taskId = idField('taskId', 'Id of the task, from list_tasks or search_tasks')
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
-function requireString(params: Record<string, unknown>, key: string): string {
-  const value = params[key]
-  if (typeof value !== 'string' || !value) throw new ApiRequestError('invalid', `${key} is required`)
-  return value
-}
-
-function withoutKeys(params: Record<string, unknown>, keys: string[]): Record<string, unknown> {
-  const rest: Record<string, unknown> = {}
-  for (const [key, value] of Object.entries(params)) if (!keys.includes(key)) rest[key] = value
-  return rest
+/** What a tool advertises. The two root keys the conversion adds are noise to a client. */
+function jsonSchema(schema: v.GenericSchema): Record<string, unknown> {
+  const converted = toJsonSchema(schema, { errorMode: 'ignore', typeMode: 'input' }) as Record<string, unknown>
+  delete converted['$schema']
+  delete converted['default']
+  return converted
 }
 
 function text(value: unknown): ToolCallResult {
@@ -77,24 +55,22 @@ function jsonContents(
 }
 
 /**
- * Registers one tool, with the arguments narrowed and the client-mistake contract in one
- * place: a mistake comes back as a tool result marked `isError`, not a protocol error.
+ * Registers one tool. The schema both checks the arguments, through the transport, and
+ * becomes the JSON Schema clients read. A call may leave `arguments` out entirely, which
+ * stands for an empty object; a value the vault refuses comes back as a tool result
+ * marked `isError` rather than a protocol error.
  */
-function tool(
+function tool<S extends v.GenericSchema>(
   server: McpServer,
   name: string,
-  def: {
-    description: string
-    inputSchema: JsonSchema
-    run: (params: Record<string, unknown>) => Promise<unknown>
-  }
+  def: { description: string; inputSchema: S; run: (args: v.InferOutput<S>) => Promise<unknown> }
 ): void {
-  server.tool<unknown>(name, {
+  server.tool<v.InferOutput<S>>(name, {
     description: def.description,
-    inputSchema: def.inputSchema,
-    handler: async (raw) => {
+    inputSchema: v.optional(def.inputSchema, () => ({}) as v.InferInput<S>),
+    handler: async (args) => {
       try {
-        return text(await def.run(isRecord(raw) ? raw : {}))
+        return text(await def.run(args))
       } catch (err: unknown) {
         if (err instanceof ApiRequestError) return { ...text({ error: err.code, message: err.message }), isError: true }
         throw err
@@ -106,129 +82,71 @@ function tool(
 function registerTools(server: McpServer, api: DomainApi): void {
   tool(server, 'list_projects', {
     description: 'Every project in the vault with its id, title, parent and task counts.',
-    inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    inputSchema: v.object({}),
     run: () => api.listProjects()
   })
 
   tool(server, 'get_project', {
     description: 'One project with its description, team, custom fields and the status and priority ids its tasks use.',
-    inputSchema: {
-      type: 'object',
-      properties: { projectId: { type: 'string' } },
-      required: ['projectId'],
-      additionalProperties: false
-    },
-    run: (params) => api.getProject(requireString(params, 'projectId'))
+    inputSchema: v.object({ projectId }),
+    run: (args) => api.getProject(args.projectId)
   })
 
   tool(server, 'list_tasks', {
     description: 'All tasks of a project in tree order. Each carries parentId and position.',
-    inputSchema: {
-      type: 'object',
-      properties: { projectId: { type: 'string' }, includeArchived: { type: 'boolean' } },
-      required: ['projectId'],
-      additionalProperties: false
-    },
-    run: (params) => api.listTasks(requireString(params, 'projectId'), params['includeArchived'] === true)
+    inputSchema: v.object({ projectId, includeArchived: v.optional(v.boolean(), false) }),
+    run: (args) => api.listTasks(args.projectId, args.includeArchived)
   })
 
   tool(server, 'get_task', {
     description: 'One task by id, including its description.',
-    inputSchema: {
-      type: 'object',
-      properties: { taskId: { type: 'string' } },
-      required: ['taskId'],
-      additionalProperties: false
-    },
-    run: (params) => api.getTask(requireString(params, 'taskId'))
+    inputSchema: v.object({ taskId }),
+    run: (args) => api.getTask(args.taskId)
   })
 
   tool(server, 'search_tasks', {
     description: 'Find tasks across every project by title text, project, status or assignee.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'Case-insensitive match on the title' },
-        projectId: { type: 'string' },
-        status: { type: 'string' },
-        assignee: { type: 'string' },
-        includeArchived: { type: 'boolean' },
-        limit: { type: 'integer', minimum: 1, maximum: 500 }
-      },
-      additionalProperties: false
-    },
-    run: (params) => api.searchTasks(parseTaskSearch(params))
+    inputSchema: v.object(SEARCH_FIELDS),
+    run: (args) => api.searchTasks(parseTaskSearch(args))
   })
 
   tool(server, 'create_task', {
     description: 'Create a task in a project, at the top level or under parentId.',
-    inputSchema: {
-      type: 'object',
-      properties: { projectId: { type: 'string' }, parentId: { type: ['string', 'null'] }, ...TASK_FIELDS },
-      required: ['projectId', 'title'],
-      additionalProperties: false
-    },
-    run: (params) => api.createTask(requireString(params, 'projectId'), withoutKeys(params, ['projectId']))
+    inputSchema: v.object({ projectId, ...CREATE_FIELDS }),
+    run: ({ projectId: project, ...create }) => api.createTask(project, create)
   })
 
   tool(server, 'update_task', {
     description:
       'Change fields of a task. Only the fields passed change. Pass expectedUpdatedAt from a previous read to refuse the write when the task changed since.',
-    inputSchema: {
-      type: 'object',
-      properties: { taskId: { type: 'string' }, expectedUpdatedAt: { type: 'string' }, ...TASK_FIELDS },
-      required: ['taskId'],
-      additionalProperties: false
-    },
-    run: (params) => {
-      const expected = params['expectedUpdatedAt']
-      return api.updateTask(
-        requireString(params, 'taskId'),
-        withoutKeys(params, ['taskId', 'expectedUpdatedAt']),
-        typeof expected === 'string' ? expected : undefined
-      )
-    }
+    inputSchema: v.object({
+      taskId,
+      expectedUpdatedAt: v.optional(
+        v.pipe(v.string('expectedUpdatedAt must be a string'), v.description('updatedAt from an earlier read'))
+      ),
+      ...TASK_FIELDS
+    }),
+    run: ({ taskId: task, expectedUpdatedAt, ...write }) => api.updateTask(task, write, expectedUpdatedAt)
   })
 
   tool(server, 'move_task', {
     description:
       'Re-parent a task (parentId, null for top level), move it to another project (projectId), or reorder it among its siblings (before or after a sibling id).',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        taskId: { type: 'string' },
-        parentId: { type: ['string', 'null'] },
-        projectId: { type: 'string' },
-        before: { type: 'string' },
-        after: { type: 'string' }
-      },
-      required: ['taskId'],
-      additionalProperties: false
-    },
-    run: (params) => api.moveTask(requireString(params, 'taskId'), withoutKeys(params, ['taskId']))
+    inputSchema: v.object({ taskId, ...MOVE_FIELDS }),
+    run: ({ taskId: task, ...move }) => api.moveTask(task, move)
   })
 
   tool(server, 'archive_task', {
     description: 'Archive a task and its subtasks, or bring them back with archived: false.',
-    inputSchema: {
-      type: 'object',
-      properties: { taskId: { type: 'string' }, archived: { type: 'boolean', default: true } },
-      required: ['taskId'],
-      additionalProperties: false
-    },
-    run: (params) => api.archiveTask(requireString(params, 'taskId'), params['archived'] !== false)
+    inputSchema: v.object({ taskId, archived: v.optional(v.boolean('archived must be true or false'), true) }),
+    run: (args) => api.archiveTask(args.taskId, args.archived)
   })
 
   tool(server, 'delete_task', {
     description: 'Delete a task and its subtasks. Cannot be undone.',
-    inputSchema: {
-      type: 'object',
-      properties: { taskId: { type: 'string' } },
-      required: ['taskId'],
-      additionalProperties: false
-    },
-    run: async (params) => {
-      await api.deleteTask(requireString(params, 'taskId'))
+    inputSchema: v.object({ taskId }),
+    run: async (args) => {
+      await api.deleteTask(args.taskId)
       return { deleted: true }
     }
   })
@@ -236,19 +154,20 @@ function registerTools(server: McpServer, api: DomainApi): void {
   tool(server, 'list_changes', {
     description:
       'Projects and tasks changed since a cursor, oldest first. Omit since for the current cursor only. A reset of true means the cursor was too old: refetch.',
-    inputSchema: { type: 'object', properties: { since: { type: 'integer' } }, additionalProperties: false },
-    run: (params) => {
-      const since = params['since']
-      return api.changes(typeof since === 'number' ? since : null)
-    }
+    inputSchema: v.object({
+      since: v.optional(
+        v.pipe(v.number('since must be an integer cursor'), v.integer('since must be an integer cursor'))
+      )
+    }),
+    run: (args) => api.changes(args.since ?? null)
   })
 }
 
 function registerResources(server: McpServer, api: DomainApi): void {
   server.resource(PROJECT_TEMPLATE, { name: 'Project with tasks', mimeType: 'application/json' }, async (uri, vars) => {
-    const projectId = String(vars['projectId'])
-    const [project, tasks] = await Promise.all([api.getProject(projectId), api.listTasks(projectId)])
-    return jsonContents(uri.href, { ...project, tasks })
+    const project = String(vars['projectId'])
+    const [resource, tasks] = await Promise.all([api.getProject(project), api.listTasks(project)])
+    return jsonContents(uri.href, { ...resource, tasks })
   })
 
   server.resource(TASK_TEMPLATE, { name: 'Task', mimeType: 'application/json' }, async (uri, vars) =>
@@ -294,7 +213,11 @@ function toRpcError(err: unknown): JsonRpcError | undefined {
  * client that wants the standalone `GET` stream is told the method is not allowed.
  */
 export function createMcpHandler(api: DomainApi, info: ServerInfo): (request: Request) => Promise<Response> {
-  const server = new McpServer({ name: info.name, version: info.version })
+  const server = new McpServer({
+    name: info.name,
+    version: info.version,
+    schemaAdapter: (schema) => jsonSchema(schema as v.GenericSchema)
+  })
   server.onError(toRpcError)
   completeResults(server, api)
   registerTools(server, api)

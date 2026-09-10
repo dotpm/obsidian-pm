@@ -73,8 +73,34 @@ describe('createMcpHandler', () => {
     expect((await rpc('nope/method')).error?.code).toBe(-32601)
   })
 
+  it('advertises the schema the arguments are checked against', async () => {
+    const tools = await rpc('tools/list')
+    const create = (
+      tools.result as { tools: Array<{ name: string; inputSchema: Record<string, unknown> }> }
+    ).tools.find((tool) => tool.name === 'create_task')
+    expect(create?.inputSchema).toMatchObject({
+      type: 'object',
+      required: ['projectId', 'title'],
+      properties: {
+        progress: { type: 'integer', minimum: 0, maximum: 100 },
+        type: { enum: ['task', 'milestone', 'subtask'] },
+        due: { type: 'string', description: expect.stringContaining('YYYY-MM-DD') }
+      }
+    })
+    expect(create?.inputSchema['$schema']).toBeUndefined()
+
+    const refused = await call('create_task', { projectId: 'p1', title: 'Too far', progress: 101 })
+    expect(refused.error).toMatchObject({
+      code: -32602,
+      message: expect.stringContaining('progress must be an integer')
+    })
+    expect(api.calls).not.toContain('createTask p1')
+  })
+
   it('calls tools and returns JSON text content', async () => {
-    expect(parsed(await call('list_projects', {}))).toEqual([expect.objectContaining({ id: 'p1', title: 'Demo' })])
+    expect(parsed(await rpc('tools/call', { name: 'list_projects' }))).toEqual([
+      expect.objectContaining({ id: 'p1', title: 'Demo' })
+    ])
 
     const created = await call('create_task', { projectId: 'p1', title: 'Via MCP', tags: ['agent'] })
     expect(parsed(created)).toMatchObject({ id: 't3', title: 'Via MCP', tags: ['agent'] })

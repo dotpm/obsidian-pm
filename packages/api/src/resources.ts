@@ -1,5 +1,6 @@
-import type { Project, Recurrence, ResolvedProjectConfig, Task, TaskType } from '@dotpm/core'
+import type { Project, ResolvedProjectConfig, Task } from '@dotpm/core'
 import { makeTask, parsePlainDate } from '@dotpm/core'
+import * as v from 'valibot'
 import {
   ApiRequestError,
   type ProjectResource,
@@ -11,15 +12,29 @@ import {
   type TaskWrite
 } from './contract'
 
-const TASK_TYPES: TaskType[] = ['task', 'milestone', 'subtask']
-const RECURRENCE_INTERVALS: Recurrence['interval'][] = ['daily', 'weekly', 'monthly', 'yearly']
+const TASK_TYPES = ['task', 'milestone', 'subtask'] as const
+const RECURRENCE_INTERVALS = ['daily', 'weekly', 'monthly', 'yearly'] as const
 
 export function invalid(message: string): never {
   throw new ApiRequestError('invalid', message)
 }
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
+/**
+ * Every schema below carries its own message, so a client reads the same words whether it
+ * came in over HTTP, where this runs, or over MCP, where the transport validates first.
+ */
+function parse<S extends v.GenericSchema>(schema: S, input: unknown): v.InferOutput<S> {
+  const result = v.safeParse(schema, input)
+  if (!result.success) invalid(result.issues[0].message)
+  return result.output
+}
+
+/** An object reports both a wrong type and a key it is missing, so it names the key itself. */
+function missingKey(wrongType: string, prefix = ''): (issue: v.ObjectIssue) => string {
+  return (issue) => {
+    const key = issue.path?.[0]?.key
+    return typeof key === 'string' ? `${prefix}${key} is required` : wrongType
+  }
 }
 
 export function toTaskResource(task: Task, projectId: string, parentId: string | null, position: number): TaskResource {
@@ -82,153 +97,146 @@ export function toProjectResource(
   }
 }
 
-function readString(input: Record<string, unknown>, key: string): string | undefined {
-  const value = input[key]
-  if (value === undefined) return undefined
-  if (typeof value !== 'string') invalid(`${key} must be a string`)
-  return value
+function isCalendarDate(value: string): boolean {
+  return value === '' || (/^\d{4}-\d{2}-\d{2}$/.test(value) && parsePlainDate(value) !== null)
 }
 
-function readDate(input: Record<string, unknown>, key: string): string | undefined {
-  const value = readString(input, key)
-  if (value === undefined || value === '') return value
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || !parsePlainDate(value)) invalid(`${key} must be YYYY-MM-DD or empty`)
-  return value
+function stringField(name: string, description: string): v.GenericSchema<string, string> {
+  return v.pipe(v.string(`${name} must be a string`), v.description(description))
 }
 
-function readStringList(input: Record<string, unknown>, key: string): string[] | undefined {
-  const value = input[key]
-  if (value === undefined) return undefined
-  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string')) {
-    invalid(`${key} must be a list of strings`)
-  }
-  return value as string[]
+function dateField(name: string): v.GenericSchema<string, string> {
+  return v.pipe(
+    v.string(`${name} must be a string`),
+    v.check(isCalendarDate, `${name} must be YYYY-MM-DD or empty`),
+    v.description('YYYY-MM-DD, or empty to clear')
+  )
 }
 
-function readRecurrence(input: Record<string, unknown>): Recurrence | null | undefined {
-  const value = input['recurrence']
-  if (value === undefined) return undefined
-  if (value === null) return null
-  if (!isRecord(value)) invalid('recurrence must be an object or null')
-  const interval = value['interval']
-  const every = value['every']
-  if (!RECURRENCE_INTERVALS.includes(interval as Recurrence['interval'])) {
-    invalid(`recurrence.interval must be one of ${RECURRENCE_INTERVALS.join(', ')}`)
+function listField(name: string, description: string): v.GenericSchema<string[], string[]> {
+  const message = `${name} must be a list of strings`
+  return v.pipe(v.array(v.string(message), message), v.description(description))
+}
+
+function integerField(name: string, min: number, max: number): v.GenericSchema<number, number> {
+  const message = `${name} must be an integer from ${min} to ${max}`
+  return v.pipe(v.number(message), v.integer(message), v.minValue(min, message), v.maxValue(max, message))
+}
+
+const RECURRENCE = v.object(
+  {
+    interval: v.picklist(RECURRENCE_INTERVALS, `recurrence.interval must be one of ${RECURRENCE_INTERVALS.join(', ')}`),
+    every: v.pipe(
+      v.number('recurrence.every must be a positive integer'),
+      v.integer('recurrence.every must be a positive integer'),
+      v.minValue(1, 'recurrence.every must be a positive integer')
+    ),
+    endDate: v.optional(dateField('recurrence.endDate'))
+  },
+  missingKey('recurrence must be an object or null', 'recurrence.')
+)
+
+/** The fields a client may write, defining both what is accepted and what MCP advertises. */
+export const TASK_FIELDS = {
+  title: v.optional(
+    v.pipe(
+      v.string('title must be a string'),
+      v.check((title) => title.trim() !== '', 'title must not be empty')
+    )
+  ),
+  description: v.optional(stringField('description', 'Markdown body of the task note')),
+  type: v.optional(v.picklist(TASK_TYPES, `type must be one of ${TASK_TYPES.join(', ')}`)),
+  status: v.optional(stringField('status', "One of the project's status ids (see get_project)")),
+  priority: v.optional(stringField('priority', "One of the project's priority ids (see get_project)")),
+  start: v.optional(dateField('start')),
+  due: v.optional(dateField('due')),
+  progress: v.optional(integerField('progress', 0, 100)),
+  assignees: v.optional(listField('assignees', 'Names or wikilinks of the people on the task')),
+  tags: v.optional(listField('tags', 'Tags without the leading hash')),
+  dependencies: v.optional(listField('dependencies', 'Ids of tasks this one waits for')),
+  recurrence: v.optional(v.nullable(RECURRENCE)),
+  timeEstimate: v.optional(
+    v.nullable(
+      v.pipe(
+        v.number('timeEstimate must be a non-negative number or null'),
+        v.minValue(0, 'timeEstimate must be a non-negative number or null'),
+        v.description('Hours')
+      )
+    )
+  ),
+  customFields: v.optional(v.record(v.string(), v.unknown(), 'customFields must be an object'))
+}
+
+/** `title` is what separates a create from a patch, so only here is it required. */
+export const CREATE_FIELDS = {
+  ...TASK_FIELDS,
+  title: v.pipe(
+    v.string('title must be a string'),
+    v.check((title) => title.trim() !== '', 'title must not be empty')
+  ),
+  parentId: v.optional(v.nullable(v.string('parentId must be a string or null')), null)
+}
+
+export const MOVE_FIELDS = {
+  parentId: v.optional(v.nullable(v.string('parentId must be a string or null'))),
+  projectId: v.optional(stringField('projectId', 'Move the task to this project')),
+  before: v.optional(stringField('before', 'Id of the sibling to sit in front of')),
+  after: v.optional(stringField('after', 'Id of the sibling to sit behind'))
+}
+
+export const SEARCH_FIELDS = {
+  query: v.optional(stringField('query', 'Case-insensitive match on the title')),
+  projectId: v.optional(stringField('projectId', 'Only tasks of this project')),
+  status: v.optional(stringField('status', 'Only tasks with this status id')),
+  assignee: v.optional(stringField('assignee', 'Only tasks this person is on')),
+  includeArchived: v.optional(v.boolean('includeArchived must be true or false')),
+  limit: v.optional(integerField('limit', 1, 500))
+}
+
+const TASK_WRITE = v.object(TASK_FIELDS, missingKey('expected an object'))
+const TASK_CREATE = v.object(CREATE_FIELDS, missingKey('expected an object'))
+
+const TASK_MOVE = v.pipe(
+  v.object(MOVE_FIELDS, missingKey('expected an object')),
+  v.check((move) => move.before === undefined || move.after === undefined, 'pass before or after, not both'),
+  v.check(
+    (move) => move.parentId !== undefined || move.projectId !== undefined || Boolean(move.before || move.after),
+    'nothing to move: pass parentId, projectId, before or after'
+  )
+)
+
+const TASK_SEARCH = v.object(SEARCH_FIELDS, missingKey('expected an object'))
+
+/** Only the project knows which status and priority ids its tasks may carry. */
+function checkAgainstConfig(write: TaskWrite, config: ResolvedProjectConfig): void {
+  if (write.status !== undefined && !config.statuses.some((status) => status.id === write.status)) {
+    invalid(`status must be one of ${config.statuses.map((status) => status.id).join(', ')}`)
   }
-  if (typeof every !== 'number' || !Number.isInteger(every) || every < 1) {
-    invalid('recurrence.every must be a positive integer')
+  if (write.priority !== undefined && !config.priorities.some((priority) => priority.id === write.priority)) {
+    invalid(`priority must be one of ${config.priorities.map((priority) => priority.id).join(', ')}`)
   }
-  const endDate = readDate(value, 'endDate')
-  return { interval: interval as Recurrence['interval'], every, ...(endDate ? { endDate } : {}) }
 }
 
 export function parseTaskWrite(input: unknown, config: ResolvedProjectConfig): TaskWrite {
-  if (!isRecord(input)) invalid('expected an object')
-  const write: TaskWrite = {}
-  const title = readString(input, 'title')
-  if (title !== undefined) {
-    if (!title.trim()) invalid('title must not be empty')
-    write.title = title
-  }
-  const description = readString(input, 'description')
-  if (description !== undefined) write.description = description
-  const type = readString(input, 'type')
-  if (type !== undefined) {
-    if (!TASK_TYPES.includes(type as TaskType)) invalid(`type must be one of ${TASK_TYPES.join(', ')}`)
-    write.type = type as TaskType
-  }
-  const status = readString(input, 'status')
-  if (status !== undefined) {
-    if (!config.statuses.some((s) => s.id === status)) {
-      invalid(`status must be one of ${config.statuses.map((s) => s.id).join(', ')}`)
-    }
-    write.status = status
-  }
-  const priority = readString(input, 'priority')
-  if (priority !== undefined) {
-    if (!config.priorities.some((p) => p.id === priority)) {
-      invalid(`priority must be one of ${config.priorities.map((p) => p.id).join(', ')}`)
-    }
-    write.priority = priority
-  }
-  const start = readDate(input, 'start')
-  if (start !== undefined) write.start = start
-  const due = readDate(input, 'due')
-  if (due !== undefined) write.due = due
-  const progress = input['progress']
-  if (progress !== undefined) {
-    if (typeof progress !== 'number' || !Number.isInteger(progress) || progress < 0 || progress > 100) {
-      invalid('progress must be an integer from 0 to 100')
-    }
-    write.progress = progress
-  }
-  for (const key of ['assignees', 'tags', 'dependencies'] as const) {
-    const list = readStringList(input, key)
-    if (list !== undefined) write[key] = list
-  }
-  const recurrence = readRecurrence(input)
-  if (recurrence !== undefined) write.recurrence = recurrence
-  const timeEstimate = input['timeEstimate']
-  if (timeEstimate !== undefined) {
-    if (timeEstimate !== null && (typeof timeEstimate !== 'number' || timeEstimate < 0)) {
-      invalid('timeEstimate must be a non-negative number or null')
-    }
-    write.timeEstimate = timeEstimate
-  }
-  const customFields = input['customFields']
-  if (customFields !== undefined) {
-    if (!isRecord(customFields)) invalid('customFields must be an object')
-    write.customFields = customFields
-  }
+  const write = parse(TASK_WRITE, input)
+  checkAgainstConfig(write, config)
   return write
 }
 
 export function parseTaskCreate(input: unknown, config: ResolvedProjectConfig): TaskCreate {
-  const write = parseTaskWrite(input, config)
-  if (write.title === undefined) invalid('title is required')
-  const record = input as Record<string, unknown>
-  const parentId = record['parentId']
-  if (parentId !== undefined && parentId !== null && typeof parentId !== 'string') {
-    invalid('parentId must be a string or null')
-  }
-  return { ...write, title: write.title, parentId: parentId ?? null }
+  const create = parse(TASK_CREATE, input)
+  checkAgainstConfig(create, config)
+  return create
 }
 
 export function parseTaskMove(input: unknown): TaskMove {
-  if (!isRecord(input)) invalid('expected an object')
-  const move: TaskMove = {}
-  const parentId = input['parentId']
-  if (parentId !== undefined) {
-    if (parentId !== null && typeof parentId !== 'string') invalid('parentId must be a string or null')
-    move.parentId = parentId
-  }
-  for (const key of ['projectId', 'before', 'after'] as const) {
-    const value = readString(input, key)
-    if (value !== undefined) move[key] = value
-  }
-  if (move.before !== undefined && move.after !== undefined) invalid('pass before or after, not both')
-  if (move.parentId === undefined && move.projectId === undefined && !move.before && !move.after) {
-    invalid('nothing to move: pass parentId, projectId, before or after')
-  }
-  return move
+  return parse(TASK_MOVE, input)
 }
 
 export function parseTaskSearch(input: unknown): TaskSearch {
-  if (!isRecord(input)) invalid('expected an object')
-  const search: TaskSearch = {}
+  const search = parse(TASK_SEARCH, input)
   for (const key of ['query', 'projectId', 'status', 'assignee'] as const) {
-    const value = readString(input, key)
-    if (value !== undefined && value !== '') search[key] = value
-  }
-  const includeArchived = input['includeArchived']
-  if (includeArchived !== undefined) search.includeArchived = includeArchived === true || includeArchived === 'true'
-  const limit = input['limit']
-  if (limit !== undefined) {
-    const n = typeof limit === 'string' ? Number(limit) : limit
-    if (typeof n !== 'number' || !Number.isInteger(n) || n < 1 || n > 500) {
-      invalid('limit must be an integer from 1 to 500')
-    }
-    search.limit = n
+    if (search[key] === '') search[key] = undefined
   }
   return search
 }
