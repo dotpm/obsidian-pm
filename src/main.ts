@@ -43,7 +43,7 @@ import {
 import { Notifier } from './components/Notifier'
 import { AutoArchiver } from './components/AutoArchiver'
 import { IdRepair } from './components/IdRepair'
-import { migrateProjects, migrateProjectLayout } from './migration'
+import { migrateProjects, migrateProjectLayout, migrateTaskRefs } from './migration'
 import { LocalApi } from './api/LocalApi'
 import { exportViewAsHtml } from './export/exportView'
 import { generateToken, LocalApiServer } from './api/LocalApiServer'
@@ -470,6 +470,7 @@ export default class PMPlugin extends Plugin {
   private async startupSweep(): Promise<void> {
     await migrateProjects(this)
     await migrateProjectLayout(this)
+    await migrateTaskRefs(this)
     await this.idRepair.check()
     await this.cleanupStaleProjectFilters()
     this.notifier.check()

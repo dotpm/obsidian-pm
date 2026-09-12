@@ -332,6 +332,34 @@ describe('ProjectStore round-trip', () => {
     expect(reloaded?.parentPath).toBe('Projects/Platform/Platform.md')
   })
 
+  it('writes a subtask added in the same save as a link, not as an id', async () => {
+    const { store, app } = newStore()
+    const project = await store.createProject('Links', 'Projects')
+    const parent = await addNamed(store, project, 'Parent')
+    const child = await addNamed(store, project, 'Child', parent.id)
+
+    const content = await app.vault.cachedRead(fileAt(app, expectDefined(parent.filePath)))
+    expect(content).toContain('subtaskIds: ["[[child|Child]]"]')
+    expect(content).not.toContain(child.id)
+  })
+
+  it('lists a subtask once when its parent holds both a link to it and its id', async () => {
+    const { app } = makeFakeApp({ liveMetadataCache: true })
+    const typed = app as unknown as App
+    const store = new ProjectStore(typed, () => SETTINGS)
+    const project = await store.createProject('Dup', 'Projects')
+    const parent = await addNamed(store, project, 'Parent')
+    const child = await addNamed(store, project, 'Child', parent.id)
+
+    await editOnDisk(typed, expectDefined(parent.filePath), (content) =>
+      content.replace(/^subtaskIds:.*$/m, `subtaskIds: ["[[child|Child]]", "${child.id}"]`)
+    )
+
+    const store2 = new ProjectStore(typed, () => SETTINGS)
+    const reloaded = expectDefined(await store2.loadProject(fileAt(typed, project.filePath)))
+    expect(expectDefined(findTask(reloaded.tasks, parent.id)).subtasks.map((s) => s.id)).toEqual([child.id])
+  })
+
   it('migrates an old-format (embedded tasks) project on load and save', async () => {
     const { store, vault } = newStore()
     // Manually write an old-format project file (tasks embedded in frontmatter).

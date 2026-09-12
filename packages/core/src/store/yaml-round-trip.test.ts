@@ -16,6 +16,7 @@ import {
 /** Stands in for Obsidian: every fixture file name here is unique, so none needs its path. */
 const refs: RefWriter = {
   link: (targetPath, title) => `[[${targetPath.replace(/^.*\//, '').replace(/\.md$/, '')}|${title}]]`,
+  task: (task) => (task.filePath ? refs.link(task.filePath, task.title) : null),
   dependency: () => null
 }
 

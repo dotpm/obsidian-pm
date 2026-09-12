@@ -174,13 +174,19 @@ export class ProjectStore implements TaskSource {
   }
 
   /** Bound to the note being written: how far a link abbreviates depends on where it sits. */
-  private refsFor(project: Project, sourcePath: string): RefWriter {
+  private refsFor(project: Project, sourcePath: string, planned?: Map<string, string>): RefWriter {
     const link = (targetPath: string, title: string): string => refLink(this.app, targetPath, title, sourcePath)
+    const pathOf = (task: Task): string | undefined => planned?.get(task.id) ?? task.filePath
     return {
       link,
+      task: (task) => {
+        const path = pathOf(task)
+        return path ? link(path, task.title) : null
+      },
       dependency: (taskId) => {
         const local = findTaskById(project, taskId)
-        if (local?.filePath) return link(local.filePath, local.title)
+        const localPath = local ? pathOf(local) : undefined
+        if (local && localPath) return link(localPath, local.title)
         const ref = this.index?.task(taskId)
         return ref ? link(ref.path, ref.title) : null
       }
@@ -497,9 +503,14 @@ export class ProjectStore implements TaskSource {
       const task = taskMap.get(taskId)
       if (!task) continue
       task.subtasks = []
+      // A list holding both a link to a task and its bare id resolves to one id twice.
+      const seen = new Set<string>()
       for (const sid of sids) {
+        if (seen.has(sid)) continue
         const sub = taskMap.get(sid)
-        if (sub) task.subtasks.push(sub)
+        if (!sub) continue
+        task.subtasks.push(sub)
+        seen.add(sid)
       }
     }
 
@@ -732,6 +743,9 @@ export class ProjectStore implements TaskSource {
 
     const jobs: { task: Task; parentTask: Task | null; folder: string; kind: DirtyKind }[] = []
     const targetPaths = new Set<string>()
+    // The batch below writes in parallel, so a task whose file is still being created has
+    // no filePath when its parent is serialized. Its planned path stands in for one.
+    const planned = new Map<string, string>()
     let hasArchived = false
     for (const [id, kind] of dirty) {
       const entry = project.taskIndex.get(id)
@@ -744,6 +758,7 @@ export class ProjectStore implements TaskSource {
       const path = normalizePath(resolveTaskPath(task, targetFolder, task.filePath))
       if (targetPaths.has(path)) throw new TaskFileNameConflictError(path)
       targetPaths.add(path)
+      planned.set(id, path)
       jobs.push({ task, parentTask: parentId ? findTaskById(project, parentId) : null, folder: targetFolder, kind })
     }
     if (hasArchived) await this.ensureFolder(normalizePath(folder + '/Archive'))
@@ -752,7 +767,9 @@ export class ProjectStore implements TaskSource {
     const batchSize = 16
     for (let i = 0; i < jobs.length; i += batchSize) {
       const results = await Promise.allSettled(
-        jobs.slice(i, i + batchSize).map((j) => this.saveTaskFile(j.task, project, j.parentTask, j.folder, j.kind))
+        jobs
+          .slice(i, i + batchSize)
+          .map((j) => this.saveTaskFile(j.task, project, j.parentTask, j.folder, j.kind, planned))
       )
       for (const r of results) {
         if (r.status === 'rejected') errors.push(r.reason instanceof Error ? r.reason : new Error(String(r.reason)))
@@ -770,7 +787,8 @@ export class ProjectStore implements TaskSource {
     project: Project,
     parentTask: Task | null,
     folder: string,
-    kind: DirtyKind
+    kind: DirtyKind,
+    planned?: Map<string, string>
   ): Promise<void> {
     const previousPath = task.filePath
     const filePath = normalizePath(resolveTaskPath(task, folder, previousPath))
@@ -781,7 +799,7 @@ export class ProjectStore implements TaskSource {
         const existing = this.app.vault.getAbstractFileByPath(filePath)
         if (existing instanceof TFile) {
           this.markSelfWrite(filePath)
-          const next = buildTaskFrontmatter(task, project, parentTask, this.refsFor(project, filePath))
+          const next = buildTaskFrontmatter(task, project, parentTask, this.refsFor(project, filePath, planned))
           await this.app.fileManager.processFrontMatter(existing, (fm: Record<string, unknown>) => {
             const foreign = foreignFrontmatter(fm, TASK_FRONTMATTER_KEYS)
             for (const k of Object.keys(fm)) Reflect.deleteProperty(fm, k)
@@ -812,7 +830,7 @@ export class ProjectStore implements TaskSource {
             project,
             parentTask,
             this.statusesFor(project),
-            this.refsFor(project, filePath),
+            this.refsFor(project, filePath, planned),
             foreignFrontmatter(frontmatter, TASK_FRONTMATTER_KEYS)
           )
         })
@@ -830,7 +848,7 @@ export class ProjectStore implements TaskSource {
           project,
           parentTask,
           this.statusesFor(project),
-          this.refsFor(project, filePath),
+          this.refsFor(project, filePath, planned),
           foreign
         )
         this.markSelfWrite(filePath)
@@ -922,6 +940,11 @@ export class ProjectStore implements TaskSource {
     })
     const live = await this.projectCache.get(childPath)
     if (live) live.parentPath = parentPath
+  }
+
+  async rewriteTaskFiles(project: Project, taskIds: string[]): Promise<void> {
+    this.markDirty(project, taskIds, 'full')
+    await this.saveProject(project)
   }
 
   async insertTask(project: Project, task: Task, parentId: string | null = null): Promise<void> {
