@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- An open timeline ignored the granularity chosen in settings until it was reopened
 - A subtask appeared twice under its parent when the parent's properties listed it more than once ([#306](https://github.com/dotpm/obsidian-pm/issues/306))
 - Collapsed parent tasks in the table and timeline expanded again when a task note changed outside the plugin ([#305](https://github.com/dotpm/obsidian-pm/issues/305))
 - A task failed to save when its note name differed from its title only by capitalization ([#308](https://github.com/dotpm/obsidian-pm/issues/308))
