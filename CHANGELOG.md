@@ -14,6 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- The task title was not focused when the task dialog opened ([#303](https://github.com/dotpm/obsidian-pm/issues/303))
+- The project name was not focused when the new project dialog opened
+- The project name and icon above a view did nothing when activated with the keyboard
 - A project or task description was replaced by the entire note when the note's properties could not be read ([#274](https://github.com/dotpm/obsidian-pm/issues/274))
 - Properties other plugins added to a note were removed by the next save when the note's properties could not be read
 

@@ -53,6 +53,7 @@ export class TaskEditor {
   private shownExtras = new Set<string>()
   private saveKeyHandler: KeymapEventHandler | null = null
   private containerEl: HTMLElement | null = null
+  private titleInput: HTMLTextAreaElement | null = null
 
   constructor(
     private app: App,
@@ -93,6 +94,16 @@ export class TaskEditor {
   mount(container: HTMLElement): void {
     this.containerEl = container
     this.render()
+    this.focusTitle()
+  }
+
+  private focusTitle(): void {
+    window.setTimeout(() => {
+      const input = this.titleInput
+      if (!input) return
+      input.focus()
+      if (this.isNew) input.select()
+    }, 0)
   }
 
   handleClose(): void {
@@ -330,6 +341,7 @@ export class TaskEditor {
 
     const titleWrap = body.createDiv('pm-te-title-wrap')
     const titleInput = titleWrap.createEl('textarea', { cls: 'pm-te-title' })
+    this.titleInput = titleInput
     titleInput.rows = 1
     titleInput.value = this.task.title
     titleInput.placeholder = 'Task title'
@@ -361,8 +373,6 @@ export class TaskEditor {
       if (e.key === 'Enter' && !Keymap.isModifier(e, this.plugin.settings.editorSaveModifier)) e.preventDefault()
     })
     window.setTimeout(autosizeTitle, 0)
-    titleInput.focus()
-    if (this.isNew) titleInput.select()
 
     const props = body.createDiv('pm-te-props')
     renderTaskFormFields(props, {
