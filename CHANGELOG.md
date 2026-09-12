@@ -14,6 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- A task failed to save when its note name differed from its title only by capitalization ([#308](https://github.com/dotpm/obsidian-pm/issues/308))
+- Creating a project failed when a note already held its name with different capitalization
 - The task title was not focused when the task dialog opened ([#303](https://github.com/dotpm/obsidian-pm/issues/303))
 - The project name was not focused when the new project dialog opened
 - The project name and icon above a view did nothing when activated with the keyboard

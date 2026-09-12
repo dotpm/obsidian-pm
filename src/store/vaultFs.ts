@@ -1,4 +1,4 @@
-import type { App } from 'obsidian'
+import type { App, TAbstractFile } from 'obsidian'
 import { TFile, TFolder, normalizePath } from 'obsidian'
 import { sanitizeFileName } from '@dotpm/core'
 
@@ -130,6 +130,24 @@ export function resolveVaultLink(app: App, raw: unknown, sourcePath: string): st
   const linkpath = inner.split('|')[0].trim()
   if (!linkpath) return undefined
   return app.metadataCache.getFirstLinkpathDest(linkpath, sourcePath)?.path ?? undefined
+}
+
+/**
+ * The note or folder a write to `path` would reach, which on macOS and Windows includes one
+ * whose name differs only in case and which `getAbstractFileByPath` misses. Resolved a
+ * segment at a time, since a parent folder can differ in case too.
+ */
+export function findIgnoringCase(app: App, path: string): TAbstractFile | null {
+  const normalized = normalizePath(path)
+  const exact = app.vault.getAbstractFileByPath(normalized)
+  if (exact) return exact
+  let current: TAbstractFile | null = app.vault.getRoot()
+  for (const segment of normalized.split('/')) {
+    if (!(current instanceof TFolder)) return null
+    const lower = segment.toLowerCase()
+    current = current.children.find((child) => child.name.toLowerCase() === lower) ?? null
+  }
+  return current
 }
 
 /**

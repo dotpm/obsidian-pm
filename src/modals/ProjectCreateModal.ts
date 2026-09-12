@@ -1,7 +1,7 @@
 import { App, ButtonComponent, ExtraButtonComponent, Keymap, Modal, setIcon } from 'obsidian'
 import type PMPlugin from '../main'
 import { DEFAULT_PROJECT_COLOR, DEFAULT_PROJECT_ICON } from '@dotpm/core'
-import { folderOf, projectFilePath, projectFolderOf } from '../store'
+import { findIgnoringCase, folderOf, projectFilePath, projectFolderOf } from '../store'
 import { safeAsync, renderPropRow, renderIconControl, renderSelectControl } from '@dotpm/ui'
 import { saveShortcutLabel } from '../utils'
 import { renderPersonPicker } from '../ui/PersonPicker'
@@ -254,7 +254,7 @@ export class ProjectCreateModal extends Modal {
   private refreshValidity(): void {
     const title = this.draft.title.trim()
     const path = title ? this.targetPath(title) : ''
-    const taken = !!path && !!this.app.vault.getAbstractFileByPath(path)
+    const taken = !!path && !!findIgnoringCase(this.app, path)
 
     this.crumbFolder.setText(this.targetFolder())
     this.pathHint.lastElementChild?.setText(path)
@@ -284,7 +284,7 @@ export class ProjectCreateModal extends Modal {
 
   private readonly create = safeAsync(async () => {
     const title = this.draft.title.trim()
-    if (!title || this.app.vault.getAbstractFileByPath(this.targetPath(title))) return
+    if (!title || findIgnoringCase(this.app, this.targetPath(title))) return
     const project = await this.plugin.store.createProject(title, this.targetFolder(), {
       icon: this.draft.icon,
       color: this.draft.color,
