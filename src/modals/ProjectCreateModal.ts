@@ -66,6 +66,7 @@ export class ProjectCreateModal extends Modal {
       return false
     })
     this.refreshValidity()
+    window.setTimeout(() => this.titleInput.focus(), 0)
   }
 
   onClose(): void {
@@ -115,7 +116,6 @@ export class ProjectCreateModal extends Modal {
       if (e.key === 'Enter' && !Keymap.isModifier(e, this.plugin.settings.editorSaveModifier)) e.preventDefault()
     })
     window.setTimeout(autosize, 0)
-    this.titleInput.focus()
   }
 
   private renderIcon(parent: HTMLElement): void {

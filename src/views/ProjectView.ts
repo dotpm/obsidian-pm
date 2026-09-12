@@ -18,7 +18,7 @@ import {
   scopeKey,
   type ScopeSpec
 } from '../store'
-import { safeAsync, ChipButton, ViewSwitcher, ProjectHeader, renderGlyph } from '@dotpm/ui'
+import { safeAsync, ChipButton, ViewSwitcher, ProjectHeader, renderGlyph, makeActivatable } from '@dotpm/ui'
 import type { SubView } from './SubView'
 import { TableView } from './table/TableView'
 import type { TableViewState } from './table/TableView'
@@ -389,17 +389,17 @@ export class ProjectView extends ItemView {
     if (!scope.isMulti) {
       const iconEl = left.createSpan({
         cls: 'pm-toolbar-icon',
-        attr: { 'aria-label': 'Open project page', role: 'button', tabindex: '0' }
+        attr: { 'aria-label': 'Open project page' }
       })
       renderGlyph(iconEl, { icon: primary.icon, color: primary.color })
-      iconEl.addEventListener('click', openOverview)
+      makeActivatable(iconEl, openOverview)
     }
 
     const titleEl = left.createEl('h2', { text: scope.label(), cls: 'pm-toolbar-title' })
     if (!scope.isMulti) {
       titleEl.addClass('pm-toolbar-title--link')
-      titleEl.setAttrs({ 'aria-label': 'Open project page', role: 'button', tabindex: '0' })
-      titleEl.addEventListener('click', openOverview)
+      titleEl.setAttrs({ 'aria-label': 'Open project page' })
+      makeActivatable(titleEl, openOverview)
     }
     this.renderScopeSwitcher(left)
 
