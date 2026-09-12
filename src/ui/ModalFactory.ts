@@ -7,7 +7,6 @@ import { PersonLookupModal, ProjectPickerModal, TaskPickerModal } from '../modal
 import { ImportModal } from '../modals/ImportModal'
 import { ProjectCreateModal } from '../modals/ProjectCreateModal'
 
-/** Resolves true if confirmed, false if cancelled. */
 export function confirmDialog(app: App, message: string, confirmLabel = 'Delete'): Promise<boolean> {
   return new Promise((resolve) => {
     const modal = new ConfirmModal(app, message, confirmLabel, resolve)
@@ -15,7 +14,6 @@ export function confirmDialog(app: App, message: string, confirmLabel = 'Delete'
   })
 }
 
-/** Resolves to the chosen mode, or null if cancelled. */
 export function confirmDuplicateSubtasks(app: App, taskTitle: string): Promise<'with-subtasks' | 'task-only' | null> {
   return new Promise((resolve) => {
     const modal = new DuplicateSubtasksModal(app, taskTitle, resolve)

@@ -183,7 +183,6 @@ export class FakeVault {
     const parentPath = path.slice(0, idx)
     const existing = this.folders.get(parentPath)
     if (existing) return existing
-    // Create parent chain recursively.
     const grandParent = this.ensureFolderForPath(parentPath)
     const folder = makeFolder(parentPath, grandParent)
     this.folders.set(parentPath, folder)

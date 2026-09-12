@@ -230,7 +230,6 @@ export class ProjectStore implements TaskSource {
     return ts !== undefined && Date.now() - ts < ProjectStore.SELF_WRITE_WINDOW_MS
   }
 
-  /** Returns the unsubscribe function. */
   onProjectChanged(handler: (path: string) => void): () => void {
     this.changeHandlers.add(handler)
     return () => this.changeHandlers.delete(handler)
@@ -587,7 +586,6 @@ export class ProjectStore implements TaskSource {
     this.hydratedBodies.add(task)
   }
 
-  /** Same as loadTaskBody but for the project file's body. */
   async loadProjectBody(project: Project): Promise<void> {
     if (this.hydratedBodies.has(project)) return
     const file = this.app.vault.getAbstractFileByPath(project.filePath)

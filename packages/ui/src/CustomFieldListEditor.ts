@@ -23,7 +23,6 @@ export interface CustomFieldListEditorOpts {
   renderExtra?: (row: HTMLElement, field: CustomFieldDef) => void
 }
 
-/** Name, type, the option list a select needs, delete, and the add row. */
 export function renderCustomFieldListEditor(container: HTMLElement, opts: CustomFieldListEditorOpts): void {
   const rerender = opts.redraw ?? ((): void => renderCustomFieldListEditor(container, opts))
   container.empty()
@@ -56,7 +55,6 @@ function renderRow(
   renderCustomFieldOptions(row, field, opts.onChanged)
 }
 
-/** Appends the name and type inputs to `parent`. Changing the type runs `redraw`. */
 export function renderCustomFieldFields(
   parent: HTMLElement,
   field: CustomFieldDef,
@@ -82,7 +80,6 @@ export function renderCustomFieldFields(
   })
 }
 
-/** The choices a select or multi-select offers. Nothing at all for the other types. */
 export function renderCustomFieldOptions(parent: HTMLElement, field: CustomFieldDef, onChanged: () => void): void {
   if (field.type !== 'select' && field.type !== 'multiselect') return
   const options = field.options ?? []

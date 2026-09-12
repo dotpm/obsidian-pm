@@ -10,7 +10,6 @@ export interface TaskMenuContext {
   onRefresh: () => Promise<void>
 }
 
-/** Edit, Add subtask, Archive/Unarchive, Delete. */
 export function buildTaskContextMenu(menu: Menu, task: Task, ctx: TaskMenuContext): Menu {
   menu.addItem((item) =>
     item
