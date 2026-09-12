@@ -942,9 +942,47 @@ export class ProjectStore implements TaskSource {
     if (live) live.parentPath = parentPath
   }
 
-  async rewriteTaskFiles(project: Project, taskIds: string[]): Promise<void> {
-    this.markDirty(project, taskIds, 'full')
-    await this.saveProject(project)
+  /**
+   * Writes the reference fields of the named notes, and nothing else: a note keeps its
+   * name, its body and every other property. A note whose references already say what
+   * they would be written as is left alone, so nothing is written twice.
+   */
+  async normalizeTaskRefs(project: Project, taskIds: string[], includeProjectNote: boolean): Promise<void> {
+    for (const id of taskIds) {
+      const entry = project.taskIndex.get(id)
+      const path = entry?.task.filePath
+      if (!entry || !path) continue
+      const file = this.app.vault.getAbstractFileByPath(path)
+      if (!(file instanceof TFile)) continue
+
+      const refs = this.refsFor(project, path)
+      const parent = entry.parentId ? findTaskById(project, entry.parentId) : null
+      const next = {
+        projectId: refs.link(project.filePath, project.title),
+        parentId: parent ? (refs.task(parent) ?? parent.id) : null,
+        subtaskIds: entry.task.subtasks.map((s) => refs.task(s) ?? s.id),
+        dependencies: entry.task.dependencies.map((depId) => refs.dependency(depId) ?? depId)
+      }
+      await this.writeRefFields(file, next)
+    }
+
+    if (!includeProjectNote) return
+    const file = this.app.vault.getAbstractFileByPath(project.filePath)
+    if (!(file instanceof TFile)) return
+    const refs = this.refsFor(project, project.filePath)
+    await this.writeRefFields(file, { taskIds: project.tasks.map((t) => refs.task(t) ?? t.id) })
+  }
+
+  private async writeRefFields(file: TFile, next: Record<string, unknown>): Promise<void> {
+    const current = this.app.metadataCache.getFileCache(file)?.frontmatter
+    const unchanged = Object.entries(next).every(
+      ([key, value]) => JSON.stringify(current?.[key] ?? null) === JSON.stringify(value)
+    )
+    if (unchanged) return
+    this.markSelfWrite(file.path)
+    await this.app.fileManager.processFrontMatter(file, (fm: Record<string, unknown>) => {
+      Object.assign(fm, next)
+    })
   }
 
   async insertTask(project: Project, task: Task, parentId: string | null = null): Promise<void> {
