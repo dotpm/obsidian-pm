@@ -28,6 +28,7 @@ import { updateSelectCheckboxes, getVisibleTaskIds } from './TableRenderer'
 import type { TableContext, TableState, TableTreeRow } from './TableRenderer'
 import { openTaskModal } from '../../ui/ModalFactory'
 import { buildTaskContextMenu } from '../../ui/TaskContextMenu'
+import { toggleCollapsed } from '../collapse'
 import { linkedRefs } from '../linkedRefs'
 
 export function renderTaskRow(tbody: HTMLElement, flat: TableTreeRow, ctx: TableContext): void {
@@ -79,9 +80,10 @@ export function renderTaskRow(tbody: HTMLElement, flat: TableTreeRow, ctx: Table
 
   new ExpandCell(row, {
     hasSubtasks: task.subtasks.length > 0,
-    collapsed: task.collapsed,
+    collapsed: ctx.collapsedIds.has(task.id),
     onToggle: safeAsync(async () => {
-      await ctx.plugin.toggleTaskCollapsed(project, task.id)
+      toggleCollapsed(ctx.plugin.settings, project, task.id)
+      await ctx.plugin.saveSettings()
       await ctx.onRefresh()
     })
   })

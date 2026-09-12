@@ -107,7 +107,6 @@ export function mapRawToTask(r: Record<string, unknown>, overrides?: Partial<Tas
       typeof r.customFields === 'object' && r.customFields !== null
         ? { ...(r.customFields as Record<string, unknown>) }
         : {},
-    collapsed: r.collapsed === true,
     createdAt: (r.createdAt as string) ?? new Date().toISOString(),
     updatedAt: (r.updatedAt as string) ?? new Date().toISOString(),
     ...overrides

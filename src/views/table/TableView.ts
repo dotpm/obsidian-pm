@@ -5,6 +5,7 @@ import type { FilterState, Project } from '@dotpm/core'
 import type { ProjectScope } from '../../store'
 import { safeAsync } from '@dotpm/ui'
 import type { SubView } from '../SubView'
+import { collapsedTaskIds } from '../collapse'
 import { renderTable, refreshTableBody, handleTableKeyDown, ROW_HEIGHT_ESTIMATE } from './TableRenderer'
 import type { SortKey, SortDir, TableState } from './TableRenderer'
 import { updateSelectAllCheckbox } from './TableRow'
@@ -233,6 +234,7 @@ export class TableView implements SubView {
       priorityIcons: config.priorityIcons,
       showSubtreeConnections: config.showSubtreeConnections,
       lineBorders: config.lineBorders,
+      collapsedIds: collapsedTaskIds(this.plugin.settings, this.scope.projects),
       state: this.state,
       onRefresh: this.onRefresh,
       onSelectionChange: () => {

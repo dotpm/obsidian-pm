@@ -6,23 +6,21 @@ export interface FlatTask {
   task: Task
   depth: number
   parentId: string | null
+  /** False when an ancestor is collapsed. Every row is visible when no ids are given. */
   visible: boolean
 }
 
-export function flattenTasks(
-  tasks: Task[],
-  depth = 0,
-  parentId: string | null = null,
-  ancestorCollapsed = false
-): FlatTask[] {
+export function flattenTasks(tasks: Task[], collapsedIds?: ReadonlySet<string>): FlatTask[] {
   const result: FlatTask[] = []
-  for (const task of tasks) {
-    const visible = !ancestorCollapsed
-    result.push({ task, depth, parentId, visible })
-    if (task.subtasks.length > 0) {
-      result.push(...flattenTasks(task.subtasks, depth + 1, task.id, ancestorCollapsed || task.collapsed))
+  const walk = (list: Task[], depth: number, parentId: string | null, hidden: boolean): void => {
+    for (const task of list) {
+      result.push({ task, depth, parentId, visible: !hidden })
+      if (task.subtasks.length > 0) {
+        walk(task.subtasks, depth + 1, task.id, hidden || collapsedIds?.has(task.id) === true)
+      }
     }
   }
+  walk(tasks, 0, null, false)
   return result
 }
 
@@ -101,7 +99,6 @@ function cloneNode(source: Task, includeSubtasks: boolean, idMap: Map<string, st
     filePath: undefined,
     createdAt: now,
     updatedAt: now,
-    collapsed: false,
     subtasks: includeSubtasks ? source.subtasks.map((s) => cloneNode(s, true, idMap)) : [],
     dependencies: [...source.dependencies],
     assignees: [...source.assignees],

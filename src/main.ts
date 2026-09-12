@@ -6,7 +6,6 @@ import {
   type Project,
   type Task,
   flattenTasks,
-  findTask,
   dedupePeople,
   displayName,
   localApiPortFor
@@ -498,11 +497,20 @@ export default class PMPlugin extends Plugin {
     }
     const cleanedCollapsed: typeof this.settings.collapsedTasks = {}
     for (const [path, ids] of Object.entries(this.settings.collapsedTasks)) {
-      if (this.app.vault.getAbstractFileByPath(path)) {
-        cleanedCollapsed[path] = ids
-      } else {
+      if (!this.app.vault.getAbstractFileByPath(path)) {
         dirty = true
+        continue
       }
+      // Only a project the index has tasks for can show that a collapsed id is gone.
+      const known = this.index.taskRefs(path)
+      if (!known.length) {
+        cleanedCollapsed[path] = ids
+        continue
+      }
+      const live = new Set(known.map((ref) => ref.id))
+      const kept = ids.filter((id) => live.has(id))
+      if (kept.length !== ids.length) dirty = true
+      cleanedCollapsed[path] = kept
     }
     const collapsedProjects = this.settings.collapsedProjects.filter((path) =>
       this.app.vault.getAbstractFileByPath(path)
@@ -517,24 +525,6 @@ export default class PMPlugin extends Plugin {
     }
   }
 
-  /** A project with no record yet keeps whatever legacy frontmatter said. */
-  applyCollapsedState(project: Project): void {
-    const ids = this.settings.collapsedTasks[project.filePath]
-    if (!ids) return
-    const set = new Set(ids)
-    for (const { task } of flattenTasks(project.tasks)) {
-      task.collapsed = set.has(task.id)
-    }
-  }
-
-  /** Call after toggling task.collapsed. */
-  async persistCollapsedState(project: Project): Promise<void> {
-    this.settings.collapsedTasks[project.filePath] = flattenTasks(project.tasks)
-      .filter((f) => f.task.collapsed)
-      .map((f) => f.task.id)
-    await this.saveSettings()
-  }
-
   isProjectCollapsed(path: string): boolean {
     return this.settings.collapsedProjects.includes(path)
   }
@@ -545,14 +535,6 @@ export default class PMPlugin extends Plugin {
     if (at === -1) collapsed.push(path)
     else collapsed.splice(at, 1)
     await this.saveSettings()
-  }
-
-  /** Resolves by id against the live tree, so it works when a view renders filtered clones. */
-  async toggleTaskCollapsed(project: Project, taskId: string): Promise<void> {
-    const task = findTask(project.tasks, taskId)
-    if (!task) return
-    task.collapsed = !task.collapsed
-    await this.persistCollapsedState(project)
   }
 
   async saveSettings(): Promise<void> {

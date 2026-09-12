@@ -33,17 +33,22 @@ describe('flattenTasks', () => {
   })
 
   it('marks descendants of a collapsed parent as invisible', () => {
-    const tasks = [task({ id: 'a', collapsed: true, subtasks: [task({ id: 'a1' })] })]
-    const flat = flattenTasks(tasks)
+    const tasks = [task({ id: 'a', subtasks: [task({ id: 'a1' })] })]
+    const flat = flattenTasks(tasks, new Set(['a']))
     expect(flat[0].visible).toBe(true)
     expect(flat[1].visible).toBe(false)
+  })
+
+  it('keeps every row visible when no ids are collapsed', () => {
+    const tasks = [task({ id: 'a', subtasks: [task({ id: 'a1' })] })]
+    expect(flattenTasks(tasks).every((f) => f.visible)).toBe(true)
   })
 
   it('propagates invisibility through multiple levels', () => {
     const grandchild = task({ id: 'a1x' })
     const child = task({ id: 'a1', subtasks: [grandchild] })
-    const root = task({ id: 'a', collapsed: true, subtasks: [child] })
-    const flat = flattenTasks([root])
+    const root = task({ id: 'a', subtasks: [child] })
+    const flat = flattenTasks([root], new Set(['a']))
     expect(flat.find((f) => f.task.id === 'a1x')?.visible).toBe(false)
   })
 })

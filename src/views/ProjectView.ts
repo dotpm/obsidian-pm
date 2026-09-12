@@ -203,7 +203,6 @@ export class ProjectView extends ItemView {
       this.renderEmptyScope()
       return
     }
-    for (const project of projects) this.plugin.applyCollapsedState(project)
     if (this.defaultViewAppliedFor !== this.projectScope.key) {
       this.defaultViewAppliedFor = this.projectScope.key
       this.currentView = this.projectScope.config.defaultView
