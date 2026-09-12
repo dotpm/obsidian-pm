@@ -720,6 +720,27 @@ describe('ProjectStore metadataCache fast path', () => {
     expect(reloadedTask.description).toBe('real description')
   })
 
+  it('a project description edited in the note outlives a leftover description property', async () => {
+    const { store, vault, app } = newStore()
+    const project = await store.createProject('Edited', 'Projects')
+    await store.updateProject(project, { description: 'first' })
+    const file = fileAt(app, project.filePath)
+    const written = await vault.cachedRead(file)
+    // A note an older version wrote, whose prose has since been edited elsewhere.
+    await vault.modify(file, written.replace('---\n', '---\ndescription: "first"\n').replace('\nfirst\n', '\nsecond\n'))
+
+    const store2 = new ProjectStore(app, () => SETTINGS)
+    const reloaded = expectDefined(await store2.loadProject(file))
+    await store2.loadProjectBody(reloaded)
+    expect(reloaded.description).toBe('second')
+
+    await store2.saveProject(reloaded)
+    const content = await vault.cachedRead(fileAt(app, reloaded.filePath))
+    const parsed = parseFrontmatter(content)
+    expect(parsed.kind === 'frontmatter' ? parsed.frontmatter : {}).not.toHaveProperty('description')
+    expect(content).toContain('second')
+  })
+
   it('an fm-only save on a cache-loaded task preserves the on-disk description', async () => {
     const { store, vault, app } = newStore()
     const project = await store.createProject('Preserve', 'Projects')
