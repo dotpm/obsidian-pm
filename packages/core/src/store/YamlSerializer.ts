@@ -16,6 +16,7 @@ export const PROJECT_FRONTMATTER_KEYS: ReadonlySet<string> = new Set([
   FRONTMATTER_KEY,
   'id',
   'title',
+  // Written by older versions; owned so a save drops it.
   'description',
   'color',
   'icon',
@@ -114,7 +115,6 @@ export function serializeProject(
     [FRONTMATTER_KEY]: true,
     id: project.id,
     title: project.title,
-    description: project.description,
     color: project.color,
     icon: project.icon,
     taskIds,

@@ -15,9 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - A note's properties name every task and project it points at as a link, including notes written before links were used
+- A project's description is kept in the note itself, and the next save drops it from the note's properties
 
 ### Fixed
 
+- A project description edited in the project note was undone by the next save
 - A subtask appeared twice under its parent when the parent's properties listed it more than once ([#306](https://github.com/dotpm/obsidian-pm/issues/306))
 - Collapsed parent tasks in the table and timeline expanded again when a task note changed outside the plugin ([#305](https://github.com/dotpm/obsidian-pm/issues/305))
 - A task failed to save when its note name differed from its title only by capitalization ([#308](https://github.com/dotpm/obsidian-pm/issues/308))
