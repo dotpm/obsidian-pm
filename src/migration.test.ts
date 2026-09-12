@@ -200,10 +200,39 @@ describe('migrateTaskRefs', () => {
   it('rewrites nothing on a second run', async () => {
     const { plugin } = await idRefVault()
     await migrateTaskRefs(plugin)
-    const rewrite = vi.spyOn(plugin.store, 'rewriteTaskFiles')
+    const rewrite = vi.spyOn(plugin.store, 'normalizeTaskRefs')
 
     await migrateTaskRefs(plugin)
 
     expect(rewrite).not.toHaveBeenCalled()
+  })
+})
+
+describe('migrateTaskRefs leaves the note itself alone', () => {
+  it('keeps the name and the body of a note the user renamed and wrote in', async () => {
+    const { app, vault } = makeFakeApp({ liveMetadataCache: true })
+    const typed = app as unknown as App
+    await vault.create('Projects/Roadmap/Roadmap.md', idRefProject())
+    const body = ['', 'My research notes.', '', '## Subtasks', '', 'Notes I wrote under my own heading.'].join('\n')
+    await vault.create(
+      'Projects/Roadmap/_tasks/my-own-name.md',
+      idRefTask('t1', 'Design the thing', ['subtaskIds:', '  - t2']) + body
+    )
+    await vault.create('Projects/Roadmap/_tasks/child.md', idRefTask('t2', 'Child', ['parentId: t1']))
+
+    const settings: PMSettings = structuredClone(DEFAULT_SETTINGS)
+    const index = new VaultIndex(typed, () => settings)
+    index.build()
+    const store = new ProjectStore(typed, () => settings, index)
+    const plugin = { app, index, store, settings, saveSettings: async () => {} } as unknown as PMPlugin
+
+    await migrateTaskRefs(plugin)
+
+    const content = await contentAt(typed, 'Projects/Roadmap/_tasks/my-own-name.md')
+    expect(content).toContain('subtaskIds: ["[[child|Child]]"]')
+    expect(content).toContain('Notes I wrote under my own heading.')
+    expect(typed.vault.getMarkdownFiles().map((f) => f.path)).not.toContain(
+      'Projects/Roadmap/_tasks/design-the-thing.md'
+    )
   })
 })
