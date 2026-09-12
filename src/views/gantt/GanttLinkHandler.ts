@@ -14,7 +14,6 @@ export function makeLinkState(): LinkState {
   return { active: false, taskId: null, side: null, dotEl: null }
 }
 
-/** Resets the state and clears the highlight on the active dot. */
 export function cancelLink(link: LinkState): void {
   if (link.dotEl) link.dotEl.classList.remove('pm-gantt-link-dot--active')
   link.active = false

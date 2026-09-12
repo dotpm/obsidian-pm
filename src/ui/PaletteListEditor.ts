@@ -33,7 +33,6 @@ export interface PaletteEntry {
   icon: string
 }
 
-/** Appends the icon, label, and color inputs to `parent`, in that order. */
 export function renderPaletteFields(parent: HTMLElement, item: PaletteEntry, onChanged: () => void): void {
   const iconCell = parent.createDiv('pm-settings-status-icon')
   renderIconControl({
@@ -60,7 +59,6 @@ export function renderPaletteFields(parent: HTMLElement, item: PaletteEntry, onC
   })
 }
 
-/** Marks which statuses count as complete. */
 export function renderStatusDoneToggle(parent: HTMLElement, status: StatusConfig, onChanged: () => void): void {
   const wrapper = parent.createEl('label', { cls: 'pm-settings-complete-toggle' })
   const checkbox = wrapper.createEl('input', { type: 'checkbox' })
@@ -84,7 +82,6 @@ interface PaletteListEditorOpts<T extends PaletteEntry> {
   renderExtra?: (row: HTMLElement, item: T) => void
 }
 
-/** Drag handle, icon picker, label, color, delete. */
 function renderPaletteListEditor<T extends PaletteEntry>(container: HTMLElement, opts: PaletteListEditorOpts<T>): void {
   const rerender = (): void => renderPaletteListEditor(container, opts)
   container.empty()
@@ -122,7 +119,6 @@ export interface StatusListEditorOpts {
   onDeleted?: (deleted: StatusConfig) => void
 }
 
-/** Palette rows plus the per-status Done toggle. */
 export function renderStatusListEditor(container: HTMLElement, opts: StatusListEditorOpts): void {
   renderPaletteListEditor<StatusConfig>(container, {
     items: opts.statuses,

@@ -168,7 +168,6 @@ export class VaultIndex {
     )
   }
 
-  /** Returns the unsubscribe function. */
   onChange(handler: () => void): () => void {
     this.changeHandlers.add(handler)
     return () => this.changeHandlers.delete(handler)

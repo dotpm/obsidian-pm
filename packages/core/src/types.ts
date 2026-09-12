@@ -46,12 +46,12 @@ export interface Task {
   id: string
   title: string
   description: string
-  type: TaskType // 'task' or 'milestone' (zero-duration)
+  type: TaskType // a milestone has zero duration
   status: TaskStatus
   priority: TaskPriority
   start: string // YYYY-MM-DD, empty string = unset
   due: string // YYYY-MM-DD, empty string = unset
-  progress: number // 0–100
+  progress: number // 0-100
   completed: string // YYYY-MM-DD, empty string = not completed; stamped when status becomes complete
   assignees: string[]
   tags: string[]
@@ -66,7 +66,7 @@ export interface Task {
   createdAt: string
   updatedAt: string
   filePath?: string // vault path to this task's .md file
-  archived?: boolean // runtime only — derived from file location in Archive/ subfolder
+  archived?: boolean // runtime only, derived from file location in Archive/ subfolder
 }
 
 export interface Project {

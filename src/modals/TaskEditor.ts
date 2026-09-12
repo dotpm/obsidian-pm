@@ -34,7 +34,6 @@ import { NoteLinkSuggest } from './NoteLinkSuggest'
 /** What the editor needs from whatever surface hosts it: a modal, a tab. */
 export interface TaskEditorHost {
   surface: 'modal' | 'tab'
-  /** Dismiss the surface. */
   close: () => void
   /** Keymap scope the save shortcut is registered on. */
   scope: Scope

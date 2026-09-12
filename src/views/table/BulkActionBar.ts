@@ -35,7 +35,6 @@ export interface BulkActionBarOpts {
   onAction: (action: BulkAction) => void
 }
 
-/** Shown only while something is selected. */
 export function renderBulkActionBar(opts: BulkActionBarOpts): void {
   const { ctx, onAction } = opts
   const existing = ctx.container.querySelector('.pm-bulk-bar')

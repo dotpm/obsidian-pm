@@ -652,7 +652,7 @@ describe('ProjectStore metadataCache fast path', () => {
 
     stubTaskCache(app, taskPath, { 'pm-task': true, id: task.id, title: 'cached task' })
 
-    // Strip the file so a real read would throw — proving the cache path didn't read.
+    // Strip the file so a real read would throw, proving the cache path didn't read.
     const f = vault.getAbstractFileByPath(taskPath)
     if (!(f instanceof TFile)) throw new Error('task file missing')
     await vault.trashFile(f)
@@ -673,7 +673,7 @@ describe('ProjectStore metadataCache fast path', () => {
     await store.updateTask(project, task.id, { description: 'real description' })
     const taskPath = expectDefined(task.filePath)
 
-    // Reload through a fresh store with cache hits — task arrives unhydrated.
+    // Reload through a fresh store with cache hits: task arrives unhydrated.
     stubTaskCache(app, taskPath, {
       'pm-task': true,
       id: task.id,
@@ -712,7 +712,7 @@ describe('ProjectStore metadataCache fast path', () => {
     if (!reloaded) throw new Error('reload failed')
     const reloadedTask = reloaded.tasks[0]
 
-    // priority is frontmatter-only — the body must not be touched.
+    // priority is frontmatter-only, so the body must not be touched.
     await store2.updateTask(reloaded, reloadedTask.id, { priority: 'high' })
 
     const file = vault.getAbstractFileByPath(taskPath)
