@@ -11,7 +11,8 @@ export default defineConfig([
       'packages/*/dist/**',
       'packages/ui/src/dom-shim.ts',
       'packages/ui/src/dom-platform.ts',
-      'packages/viewer/**'
+      'packages/viewer/**',
+      'packages/cli/**'
     ]
   },
   {

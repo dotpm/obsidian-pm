@@ -116,6 +116,8 @@ claude mcp add --transport http dotpm http://127.0.0.1:<port>/mcp --header "Auth
 
 Everything a client changes goes through the same code the views use, so it shows up in Obsidian at once. The endpoints, the MCP tools and the change feed are documented in [docs/api.md](docs/api.md).
 
+The same tasks can be listed, searched and edited from a terminal with the `dotpm` command, installed from npm as `@dotpm/cli`. Run it inside the vault folder and it finds the server on its own; `dotpm mcp` serves MCP over stdio for clients that cannot use HTTP. See [docs/cli.md](docs/cli.md).
+
 ## Using with TaskNotes
 
 dotpm works alongside the [TaskNotes](https://github.com/callumalpass/tasknotes) plugin (4.10 or newer).

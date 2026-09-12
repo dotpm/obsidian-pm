@@ -4,7 +4,8 @@ import { coverageConfigDefaults, defineConfig } from 'vitest/config'
 export default defineConfig({
   define: {
     __STYLEGUIDE__: 'false',
-    __VIEWER_TEMPLATE__: JSON.stringify('')
+    __VIEWER_TEMPLATE__: JSON.stringify(''),
+    __CLI_VERSION__: JSON.stringify('0.0.0-test')
   },
   resolve: {
     alias: {

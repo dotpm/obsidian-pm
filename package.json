@@ -23,7 +23,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "build:viewer": "node scripts/build-viewer.mjs"
+    "build:viewer": "node scripts/build-viewer.mjs",
+    "build:cli": "pnpm --filter @dotpm/cli build"
   },
   "devDependencies": {
     "@2bad/axiom": "2.1.0",

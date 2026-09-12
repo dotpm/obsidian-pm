@@ -30,3 +30,4 @@ jobs:
       - run: pnpm check
       - run: pnpm check:submission
       - run: pnpm build
+      - run: pnpm build:cli

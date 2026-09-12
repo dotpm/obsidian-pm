@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "exports": {
-    ".": "./src/index.ts"
+    ".": "./src/index.ts",
+    "./client": "./src/client.ts",
+    "./contract": "./src/contract.ts",
+    "./testing": "./test/fakeApi.ts"
   },
   "dependencies": {
     "@dotpm/core": "workspace:*",

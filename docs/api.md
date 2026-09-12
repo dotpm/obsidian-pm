@@ -2,12 +2,13 @@
 
 dotpm can serve the projects and tasks in the current vault to other programs on the same computer. Turn it on in Settings under "Local API". It is off by default, desktop only, listens on `127.0.0.1` only, and every request needs the bearer token shown in settings.
 
-Two clients speak to the same server:
+Three clients speak to the same server:
 
 - Plain HTTP with JSON bodies, at `http://127.0.0.1:<port>/v1/...`.
 - The Model Context Protocol (MCP) over Streamable HTTP, at `http://127.0.0.1:<port>/mcp`, for coding agents and chat clients.
+- The `dotpm` command from npm, for terminals, scripts and agents that launch commands, documented in [cli.md](cli.md).
 
-The port is shown in settings. Each vault starts with its own, derived from the vault name so two open vaults never want the same one, and it can be changed there. Both surfaces read and write the same markdown notes the views use, through the same code, so a change made by a client shows up in Obsidian at once and vice versa.
+The port is shown in settings. Each vault starts with its own, derived from the vault name so two open vaults never want the same one, and it can be changed there. All of them read and write the same markdown notes the views use, through the same code, so a change made by a client shows up in Obsidian at once and vice versa.
 
 ## Connecting an MCP client
 
