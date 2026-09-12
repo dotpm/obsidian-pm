@@ -42,7 +42,6 @@ import type { RendererContext } from './GanttRenderer'
 import { renderTaskLabel } from './TaskLabelRenderer'
 
 export class GanttView implements SubView {
-  private granularity: GanttGranularity
   private scrollEl!: HTMLElement
   private svgEl!: SVGSVGElement
   private headerSvgEl!: SVGSVGElement
@@ -70,9 +69,7 @@ export class GanttView implements SubView {
     private onRefresh: () => Promise<void>,
     private filter: FilterState,
     private keyScope: Scope
-  ) {
-    this.granularity = plugin.settings.ganttGranularity
-  }
+  ) {}
 
   destroy(): void {
     for (const fn of this.cleanupFns) fn()
@@ -104,7 +101,7 @@ export class GanttView implements SubView {
     const activeTasks = this.getVisibleTasks()
     this.collapsedIds = collapsedTaskIds(this.plugin.settings, this.scope.projects)
     this.flatTasks = flattenTasks(activeTasks, this.collapsedIds).filter((f) => f.visible || f.depth === 0)
-    this.cfg = buildTimelineConfig(activeTasks, this.granularity)
+    this.cfg = buildTimelineConfig(activeTasks, this.plugin.settings.ganttGranularity)
 
     this.renderGranularityControls()
     this.renderGantt()
@@ -123,9 +120,8 @@ export class GanttView implements SubView {
 
     new SegmentedControl<GanttGranularity>(bar, {
       options: levels.map((level) => ({ id: level, label: labels[level] })),
-      active: this.granularity,
+      active: this.plugin.settings.ganttGranularity,
       onChange: (level) => {
-        this.granularity = level
         this.plugin.settings.ganttGranularity = level
         void this.plugin.saveSettings()
         this.render()
