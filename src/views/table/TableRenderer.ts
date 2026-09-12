@@ -57,6 +57,7 @@ export interface TableContext {
   priorityIcons: PriorityIconSet
   showSubtreeConnections: boolean
   lineBorders: LineBorders
+  collapsedIds: ReadonlySet<string>
   state: TableState
   onRefresh: () => Promise<void>
   onSelectionChange: () => void
@@ -186,7 +187,7 @@ function fillTableBody(ctx: TableContext): void {
   // rebuilding the table around it.
   ctx.state.wrapper?.setAttr('data-borders', ctx.lineBorders)
 
-  let flat = flattenTasks(ctx.scope.tasks())
+  let flat = flattenTasks(ctx.scope.tasks(), ctx.collapsedIds)
   const hasActiveFilter = isFilterActive(ctx.state.filter)
   flat = applyTaskFilterFlat(flat, ctx.state.filter, ctx.statuses, personKeyer(ctx.plugin.app))
 

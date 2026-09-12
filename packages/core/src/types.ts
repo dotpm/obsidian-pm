@@ -61,8 +61,6 @@ export interface Task {
   timeEstimate?: number // hours
   timeLogs?: TimeLog[]
   customFields: Record<string, unknown>
-  /** UI state, persisted per project in plugin settings (data.json), not in frontmatter. */
-  collapsed: boolean
   createdAt: string
   updatedAt: string
   filePath?: string // vault path to this task's .md file
@@ -323,7 +321,6 @@ export function makeTask(overrides: Partial<Task> = {}): Task {
     subtasks: [],
     dependencies: [],
     customFields: {},
-    collapsed: false,
     createdAt: now,
     updatedAt: now,
     ...overrides

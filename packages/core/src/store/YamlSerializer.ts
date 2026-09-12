@@ -54,6 +54,7 @@ export const TASK_FRONTMATTER_KEYS: ReadonlySet<string> = new Set([
   'timeEstimate',
   'timeLogs',
   'customFields',
+  // Written by older versions; owned so a save drops it.
   'collapsed'
 ])
 

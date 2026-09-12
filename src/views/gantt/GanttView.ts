@@ -25,6 +25,7 @@ import {
 } from '@dotpm/ui'
 import { openAddTask } from '../addTask'
 import type { SubView } from '../SubView'
+import { collapsedTaskIds, setAllCollapsed } from '../collapse'
 import { makeDragState } from './GanttDragHandler'
 import type { DragState } from './GanttDragHandler'
 import { makeLinkState, cancelLink } from './GanttLinkHandler'
@@ -46,6 +47,8 @@ export class GanttView implements SubView {
   private svgEl!: SVGSVGElement
   private headerSvgEl!: SVGSVGElement
   private flatTasks: FlatTask[] = []
+  /** Read from settings once per render pass. */
+  private collapsedIds: ReadonlySet<string> = new Set()
   private cfg!: TimelineCfg
   private drag: DragState = makeDragState()
   private link: LinkState = makeLinkState()
@@ -99,7 +102,8 @@ export class GanttView implements SubView {
     this.container.addClass('pm-gantt-view')
 
     const activeTasks = this.getVisibleTasks()
-    this.flatTasks = flattenTasks(activeTasks).filter((f) => f.visible || f.depth === 0)
+    this.collapsedIds = collapsedTaskIds(this.plugin.settings, this.scope.projects)
+    this.flatTasks = flattenTasks(activeTasks, this.collapsedIds).filter((f) => f.visible || f.depth === 0)
     this.cfg = buildTimelineConfig(activeTasks, this.granularity)
 
     this.renderGranularityControls()
@@ -285,6 +289,7 @@ export class GanttView implements SubView {
       plugin: this.plugin,
       scope: this.scope,
       statuses: this.scope.config.statuses,
+      collapsedIds: this.collapsedIds,
       onRefresh: this.onRefresh
     }
     let rowIndex = 0
@@ -293,7 +298,7 @@ export class GanttView implements SubView {
         renderTaskLabel(leftBody, task, depth, rowIndex, labelCtx)
         renderTaskBar(barsGroup, task, rowIndex, depth, ctx)
         rowIndex++
-        if (!task.collapsed && task.subtasks.length) {
+        if (!this.collapsedIds.has(task.id) && task.subtasks.length) {
           renderFlatList(task.subtasks, depth + 1)
         }
       }
@@ -335,10 +340,8 @@ export class GanttView implements SubView {
   }
 
   private setAllCollapsed(collapsed: boolean): void {
-    for (const { task } of flattenTasks(this.scope.tasks())) {
-      if (task.subtasks.length > 0) task.collapsed = collapsed
-    }
-    for (const project of this.scope.projects) void this.plugin.persistCollapsedState(project)
+    setAllCollapsed(this.plugin.settings, this.scope.projects, collapsed)
+    void this.plugin.saveSettings()
     this.render()
   }
 }
