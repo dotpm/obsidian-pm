@@ -17,7 +17,7 @@ import {
   findTask,
   flattenTasks
 } from '@dotpm/core'
-import { ProjectStore, UnreadableNoteError } from './ProjectStore'
+import { ProjectStore, TaskFileNameConflictError, UnreadableNoteError } from './ProjectStore'
 import { projectTaskFolder } from './vaultFs'
 import { VaultIndex } from './VaultIndex'
 
@@ -907,6 +907,74 @@ describe('ProjectStore duplicate long titles', () => {
     for (const p of paths) {
       expect(vault.getAbstractFileByPath(expectDefined(p))).toBeInstanceOf(TFile)
     }
+  })
+})
+
+describe('ProjectStore on a case-insensitive filesystem', () => {
+  function newCaseInsensitiveStore(): { store: ProjectStore; vault: FakeVault; app: App } {
+    const { app, vault } = makeFakeApp({ caseInsensitive: true })
+    const store = new ProjectStore(app as unknown as App, () => SETTINGS)
+    return { store, vault, app: app as unknown as App }
+  }
+
+  /** A note the user named themselves, keeping capitals the slug would have dropped. */
+  async function renameOnDisk(app: App, task: Task, to: string): Promise<string> {
+    await app.vault.rename(fileAt(app, expectDefined(task.filePath)), to)
+    task.filePath = to
+    return to
+  }
+
+  it('saves a task whose file name differs from its slug only by case', async () => {
+    const { store, vault, app } = newCaseInsensitiveStore()
+    const project = await store.createProject('Personal', 'Projects')
+    const task = await addNamed(store, project, 'Testproject--water-item')
+    const capitalized = await renameOnDisk(app, task, 'Projects/Personal/_tasks/Testproject--water-item.md')
+
+    await store.updateTask(project, task.id, { status: 'in-progress' })
+
+    expect(task.filePath).toBe(capitalized)
+    expect(vault.getAbstractFileByPath(capitalized)).toBeInstanceOf(TFile)
+    expect(vault.getAbstractFileByPath('Projects/Personal/_tasks/testproject--water-item.md')).toBeNull()
+    expect(await readStatus(app, capitalized)).toBe('in-progress')
+  })
+
+  it('reports a retitle onto a differently-cased note as a file name conflict', async () => {
+    const { store, app } = newCaseInsensitiveStore()
+    const project = await store.createProject('Personal', 'Projects')
+    const task = await addNamed(store, project, 'Alpha')
+    await app.vault.create('Projects/Personal/_tasks/Beta.md', '')
+
+    await expect(store.updateTask(project, task.id, { title: 'Beta' })).rejects.toBeInstanceOf(
+      TaskFileNameConflictError
+    )
+  })
+
+  it('finds the conflict before the save when a differently-cased note holds the name', async () => {
+    const { store, app } = newCaseInsensitiveStore()
+    const project = await store.createProject('Personal', 'Projects')
+    const task = await addNamed(store, project, 'Alpha')
+    await app.vault.create('Projects/Personal/_tasks/Beta.md', '')
+
+    expect(store.findTaskFileConflict(project, { ...task, title: 'Beta' })).toBeInstanceOf(TaskFileNameConflictError)
+  })
+
+  it('refuses a project whose name differs from an existing one only by case', async () => {
+    const { store } = newCaseInsensitiveStore()
+    await store.createProject('Personal', 'Projects')
+
+    await expect(store.createProject('personal', 'Projects')).rejects.toThrow('already exists here')
+  })
+
+  it('leaves a project note alone when its new title is taken by a differently-cased sibling', async () => {
+    const { store, app } = newCaseInsensitiveStore()
+    await store.createProject('Beta', 'Projects')
+    const project = await store.createProject('Alpha', 'Projects')
+
+    await store.updateProject(project, { title: 'beta' })
+
+    expect(project.title).toBe('beta')
+    expect(project.filePath).toBe('Projects/Alpha/Alpha.md')
+    expect(app.vault.getAbstractFileByPath('Projects/Beta/Beta.md')).toBeInstanceOf(TFile)
   })
 })
 

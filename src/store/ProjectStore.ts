@@ -51,6 +51,7 @@ import type { VaultIndex } from './VaultIndex'
 import { refLink, refListToIds, refToId } from './refs'
 import {
   ensureFolder,
+  findIgnoringCase,
   folderOf,
   keepProjectStorageWithNote,
   moveTaskAttachmentFolder,
@@ -81,6 +82,9 @@ function resolveTaskPath(task: Task, folder: string, previousPath: string | unde
   const previousFolder = previousPath.slice(0, previousPath.lastIndexOf('/'))
   const previousBasename = previousPath.slice(previousPath.lastIndexOf('/') + 1).replace(/\.md$/, '')
   if (previousFolder !== folder) return desired
+  // A note named by hand keeps capitals the lowercase slug drops; on macOS and Windows
+  // it is already the file the slug names.
+  if (previousBasename.toLowerCase() === desiredBasename.toLowerCase()) return previousPath
   const legacyBasename = `${desiredBasename}-${task.id.slice(0, 8)}`
   if (previousBasename === legacyBasename) return previousPath
   if (previousBasename.length === LEGACY_SLUG_CAP && previousBasename === desiredBasename.slice(0, LEGACY_SLUG_CAP)) {
@@ -641,14 +645,14 @@ export class ProjectStore implements TaskSource {
     if (!desiredBasename) return
     const dir = folderOf(currentPath)
     const target = normalizePath(dir ? `${dir}/${desiredBasename}.md` : `${desiredBasename}.md`)
-    if (target === currentPath || this.app.vault.getAbstractFileByPath(target)) return
+    if (target === currentPath || findIgnoringCase(this.app, target)) return
 
     // The note takes its folder with it; skip the whole rename if that folder's new
     // name is already taken, rather than leaving the note and its folder mismatched.
     const own = projectFolderOf(this.app, currentPath)
     if (own) {
       const folderTarget = normalizePath(`${folderOf(own)}/${desiredBasename}`)
-      if (folderTarget !== own && this.app.vault.getAbstractFileByPath(folderTarget)) return
+      if (folderTarget !== own && findIgnoringCase(this.app, folderTarget)) return
     }
 
     this.markSelfWrite(currentPath)
@@ -789,8 +793,9 @@ export class ProjectStore implements TaskSource {
       }
 
       const existing = this.app.vault.getAbstractFileByPath(filePath)
-      if (existing instanceof TFile && existing.path !== previousPath) {
-        throw new TaskFileNameConflictError(filePath)
+      const taken = existing ?? findIgnoringCase(this.app, filePath)
+      if (taken instanceof TFile && taken.path !== previousPath) {
+        throw new TaskFileNameConflictError(taken.path)
       }
 
       if (existing instanceof TFile) {
@@ -859,12 +864,14 @@ export class ProjectStore implements TaskSource {
     const folder = task.archived ? normalizePath(baseFolder + '/Archive') : baseFolder
     const desired = normalizePath(resolveTaskPath(task, folder, task.filePath))
     if (desired === task.filePath) return null
-    const existing = this.app.vault.getAbstractFileByPath(desired)
-    return existing instanceof TFile ? new TaskFileNameConflictError(desired) : null
+    const existing = findIgnoringCase(this.app, desired)
+    return existing instanceof TFile ? new TaskFileNameConflictError(existing.path) : null
   }
 
   async createProject(title: string, folder: string, patch?: ProjectPatch): Promise<Project> {
-    const project = makeProject(title, projectFilePath(title, folder))
+    const filePath = projectFilePath(title, folder)
+    if (findIgnoringCase(this.app, filePath)) throw new Error(`A project named "${title}" already exists here.`)
+    const project = makeProject(title, filePath)
     if (patch) Object.assign(project, patch)
     await this.saveProject(project)
     return project
@@ -1067,7 +1074,7 @@ export class ProjectStore implements TaskSource {
   async duplicateProject(source: Project, title: string): Promise<Project> {
     const dir = folderOf(projectFolderOf(this.app, source.filePath) ?? source.filePath)
     const filePath = projectFilePath(title, dir)
-    if (this.app.vault.getAbstractFileByPath(filePath) || this.app.vault.getAbstractFileByPath(folderOf(filePath))) {
+    if (findIgnoringCase(this.app, filePath) || findIgnoringCase(this.app, folderOf(filePath))) {
       throw new Error(`A project named "${title}" already exists here.`)
     }
 
@@ -1427,7 +1434,7 @@ export class ProjectStore implements TaskSource {
     const base = dot > 0 ? fileName.slice(0, dot) : fileName
     const ext = dot > 0 ? fileName.slice(dot) : ''
     let candidate = normalizePath(`${folder}/${base}${ext}`)
-    for (let n = 1; this.app.vault.getAbstractFileByPath(candidate); n++) {
+    for (let n = 1; findIgnoringCase(this.app, candidate); n++) {
       candidate = normalizePath(`${folder}/${base} ${n}${ext}`)
     }
     return candidate

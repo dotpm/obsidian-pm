@@ -22,9 +22,19 @@ export class FakeVault {
   createCount = new Map<string, number>()
   trashCount = new Map<string, number>()
 
-  constructor() {
+  constructor(private readonly caseInsensitive = false) {
     const root = makeFolder('', null)
     this.folders.set('', root)
+  }
+
+  /** Windows and default macOS: the path map stays case-sensitive, the filesystem under it does not. */
+  private caseClash(path: string, self?: string): boolean {
+    if (!this.caseInsensitive) return false
+    const lower = path.toLowerCase()
+    for (const known of [...this.files.keys(), ...this.folders.keys()]) {
+      if (known !== self && known !== path && known.toLowerCase() === lower) return true
+    }
+    return false
   }
 
   on(name: string, handler: VaultHandler): VaultHandler {
@@ -44,6 +54,10 @@ export class FakeVault {
   getAbstractFileByPath(path: string): TAbstractFile | null {
     const n = normalizePath(path)
     return this.files.get(n)?.file ?? this.folders.get(n) ?? null
+  }
+
+  getRoot(): TFolder {
+    return expectDefined(this.folders.get(''))
   }
 
   async cachedRead(file: TFile): Promise<string> {
@@ -75,6 +89,7 @@ export class FakeVault {
   async create(path: string, content: string): Promise<TFile> {
     const n = normalizePath(path)
     if (this.files.has(n)) throw new Error(`create: ${n} already exists`)
+    if (this.caseClash(n)) throw new Error('File already exists.')
     const parent = this.ensureFolderForPath(n)
     const file = makeFile(n, parent)
     this.files.set(n, { file, content })
@@ -87,6 +102,7 @@ export class FakeVault {
   async createBinary(path: string, _data: ArrayBuffer): Promise<TFile> {
     const n = normalizePath(path)
     if (this.files.has(n)) throw new Error(`createBinary: ${n} already exists`)
+    if (this.caseClash(n)) throw new Error('File already exists.')
     const parent = this.ensureFolderForPath(n)
     const file = makeFile(n, parent)
     this.files.set(n, { file, content: '' })
@@ -99,6 +115,7 @@ export class FakeVault {
   async createFolder(path: string): Promise<void> {
     const n = normalizePath(path)
     if (this.folders.has(n)) throw new Error('Folder already exists')
+    if (this.caseClash(n)) throw new Error('Folder already exists.')
     const parent = this.ensureFolderForPath(n)
     const folder = makeFolder(n, parent)
     this.folders.set(n, folder)
@@ -109,6 +126,7 @@ export class FakeVault {
     const to = normalizePath(newPath)
     const from = file.path
     if (this.getAbstractFileByPath(to)) throw new Error(`rename: ${to} already exists`)
+    if (this.caseClash(to, from)) throw new Error('File already exists.')
     if (file instanceof TFolder) {
       const folders = [file, ...[...this.folders.values()].filter((f) => f.path.startsWith(from + '/'))]
       const entries = [...this.files.values()].filter((e) => e.file.path.startsWith(from + '/'))
@@ -248,8 +266,11 @@ export class FakeMetadataCache {
   }
 }
 
-export function makeFakeApp(opts: { liveMetadataCache?: boolean } = {}): { app: FakeAppLike; vault: FakeVault } {
-  const vault = new FakeVault()
+export function makeFakeApp(opts: { liveMetadataCache?: boolean; caseInsensitive?: boolean } = {}): {
+  app: FakeAppLike
+  vault: FakeVault
+} {
+  const vault = new FakeVault(opts.caseInsensitive)
   const app: FakeAppLike = {
     vault,
     fileManager: {

@@ -20,6 +20,7 @@ export {
 } from './people'
 export type { PersonCandidate, PersonLinkState, PersonMatch, PersonRef } from './people'
 export {
+  findIgnoringCase,
   folderOf,
   projectFilePath,
   projectFolderOf,
