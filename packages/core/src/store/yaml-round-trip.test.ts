@@ -179,6 +179,27 @@ describe('project round-trip', () => {
     expect(project.teamMembers).toEqual(['Alice', 'Bob'])
   })
 
+  it('keeps the description out of the properties and reads it back from the note', () => {
+    const p = makeProject('P', 'Projects/P.md')
+    p.description = 'Line one.\n\nLine two.'
+    p.tasks = [makeTask({ id: 't1', title: 'T', filePath: 'Projects/P/_tasks/t.md' })]
+
+    const { project, frontmatter } = roundTripProject(p)
+    expect(frontmatter.description).toBeUndefined()
+    expect(project.description).toBe('Line one.\n\nLine two.')
+  })
+
+  it('reads the description from a note that carries it only as a property', () => {
+    const project = hydrateProjectFromFrontmatter({ description: 'From properties' }, '# P', 'Projects/P.md', 'P')
+    expect(project.description).toBe('From properties')
+  })
+
+  it('prefers the note over a description property an older version left behind', () => {
+    const body = '# P\n\nFrom the note\n\n## Tasks\n- [ ] [[t|T]]'
+    const project = hydrateProjectFromFrontmatter({ description: 'From properties' }, body, 'Projects/P.md', 'P')
+    expect(project.description).toBe('From the note')
+  })
+
   it('preserves saved views with filter, sortKey, and sortDir', () => {
     const p = makeProject('P', 'Projects/P.md')
     const view: SavedView = {

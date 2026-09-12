@@ -32,6 +32,7 @@ import {
   hydrateProjectFromFrontmatter,
   hydrateTaskFromFile,
   hydrateTasks,
+  projectDescription,
   FRONTMATTER_KEY,
   TASK_FRONTMATTER_KEY,
   parseFrontmatter,
@@ -611,8 +612,7 @@ export class ProjectStore implements TaskSource {
     const note = await this.readNote(file)
     // Leave the description alone and stay unhydrated, so the next read can retry.
     if (!note) return
-    const fmDesc = note.frontmatter.description
-    project.description = typeof fmDesc === 'string' ? fmDesc : note.body
+    project.description = projectDescription(note.frontmatter, note.body)
     this.hydratedBodies.add(project)
   }
 
@@ -696,8 +696,7 @@ export class ProjectStore implements TaskSource {
           if (parsed.kind === 'malformed') throw new UnreadableNoteError(project.filePath)
           const frontmatter = parsed.kind === 'frontmatter' ? parsed.frontmatter : null
           if (!this.hydratedBodies.has(project)) {
-            const fmDesc = frontmatter?.description
-            project.description = typeof fmDesc === 'string' ? fmDesc : parsed.body.trim()
+            project.description = projectDescription(frontmatter ?? {}, parsed.body)
           }
           return serializeProject(
             project,
