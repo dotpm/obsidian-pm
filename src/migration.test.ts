@@ -1,8 +1,8 @@
 import type { App } from 'obsidian'
 import { TFile } from 'obsidian'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { makeFakeApp } from '../test/fakeVault'
-import { migrateProjectLayout } from './migration'
+import { migrateProjectLayout, migrateTaskRefs } from './migration'
 import type PMPlugin from './main'
 import { ProjectStore, VaultIndex } from './store'
 import { DEFAULT_SETTINGS, makeDefaultFilter, type PMSettings } from '@dotpm/core'
@@ -143,5 +143,67 @@ describe('migrateProjectLayout', () => {
 
     expect(app.vault.getAbstractFileByPath('Projects/Roadmap/Roadmap.md')).toBe(before)
     expect(app.vault.getAbstractFileByPath('Projects/Roadmap/Roadmap')).toBeNull()
+  })
+})
+
+const idRefProject = (): string =>
+  ['---', 'pm-project: true', 'id: p1', 'title: Roadmap', 'taskIds:', '  - t1', '---', ''].join('\n')
+
+const idRefTask = (id: string, title: string, extra: string[]): string =>
+  ['---', 'pm-task: true', `id: ${id}`, 'projectId: p1', `title: ${title}`, 'status: todo', ...extra, '---', ''].join(
+    '\n'
+  )
+
+async function idRefVault(): Promise<{ plugin: PMPlugin; app: App }> {
+  const { app, vault } = makeFakeApp({ liveMetadataCache: true })
+  const typed = app as unknown as App
+  await vault.create('Projects/Roadmap/Roadmap.md', idRefProject())
+  await vault.create('Projects/Roadmap/_tasks/parent.md', idRefTask('t1', 'Parent', ['subtaskIds:', '  - t2']))
+  await vault.create('Projects/Roadmap/_tasks/child.md', idRefTask('t2', 'Child', ['parentId: t1']))
+
+  const settings: PMSettings = structuredClone(DEFAULT_SETTINGS)
+  const index = new VaultIndex(typed, () => settings)
+  index.build()
+  const store = new ProjectStore(typed, () => settings, index)
+  const plugin = { app, index, store, settings, saveSettings: async () => {} } as unknown as PMPlugin
+  return { plugin, app: typed }
+}
+
+const contentAt = async (app: App, path: string): Promise<string> => {
+  const file = app.vault.getAbstractFileByPath(path)
+  if (!(file instanceof TFile)) throw new Error(`no file at ${path}`)
+  return app.vault.cachedRead(file)
+}
+
+describe('migrateTaskRefs', () => {
+  it('names a parent and its subtasks by link in notes that still hold ids', async () => {
+    const { plugin, app } = await idRefVault()
+
+    await migrateTaskRefs(plugin)
+
+    expect(await contentAt(app, 'Projects/Roadmap/_tasks/parent.md')).toContain('subtaskIds: ["[[child|Child]]"]')
+    expect(await contentAt(app, 'Projects/Roadmap/_tasks/child.md')).toContain('parentId: "[[parent|Parent]]"')
+    expect(await contentAt(app, 'Projects/Roadmap/Roadmap.md')).toContain('taskIds: ["[[parent|Parent]]"]')
+  })
+
+  it('keeps the tree it rewrote', async () => {
+    const { plugin, app } = await idRefVault()
+
+    await migrateTaskRefs(plugin)
+
+    const store = new ProjectStore(app, () => structuredClone(DEFAULT_SETTINGS))
+    const reloaded = expectDefined(await store.loadProjectByPath('Projects/Roadmap/Roadmap.md'))
+    expect(reloaded.tasks.map((t) => t.id)).toEqual(['t1'])
+    expect(reloaded.tasks[0].subtasks.map((t) => t.id)).toEqual(['t2'])
+  })
+
+  it('rewrites nothing on a second run', async () => {
+    const { plugin } = await idRefVault()
+    await migrateTaskRefs(plugin)
+    const rewrite = vi.spyOn(plugin.store, 'rewriteTaskFiles')
+
+    await migrateTaskRefs(plugin)
+
+    expect(rewrite).not.toHaveBeenCalled()
   })
 })

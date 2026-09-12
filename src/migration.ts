@@ -1,6 +1,7 @@
 import { Notice, TFile } from 'obsidian'
 import type PMPlugin from './main'
 import type { ScopeSpec } from './store'
+import { isRefLink } from './store/refs'
 import { parseFrontmatter, isOldFormat } from '@dotpm/core'
 
 /** Rewrites projects whose tasks are embedded in frontmatter as one file per task. */
@@ -31,6 +32,54 @@ export async function migrateProjects(plugin: PMPlugin): Promise<void> {
 
   if (migrated > 0) {
     new Notice(`dotpm: Migrated ${migrated} project(s) to new format.`)
+  }
+}
+
+const REF_KEYS = ['projectId', 'parentId', 'subtaskIds', 'dependencies', 'taskIds']
+
+function holdsBareId(frontmatter: Record<string, unknown> | undefined): boolean {
+  if (!frontmatter) return false
+  for (const key of REF_KEYS) {
+    const value = frontmatter[key]
+    const entries = Array.isArray(value) ? value : [value]
+    if (entries.some((entry) => typeof entry === 'string' && entry !== '' && !isRefLink(entry))) return true
+  }
+  return false
+}
+
+function frontmatterOf(plugin: PMPlugin, path: string): Record<string, unknown> | undefined {
+  const file = plugin.app.vault.getAbstractFileByPath(path)
+  return file instanceof TFile ? plugin.app.metadataCache.getFileCache(file)?.frontmatter : undefined
+}
+
+/**
+ * Writes the notes that still name a task or project by id rather than by link. Both forms
+ * read the same, so this only makes a vault written across the change consistent. It reads
+ * the frontmatter cache rather than the notes, and rewrites nothing in a vault that holds
+ * no ids, which is what makes a second run free.
+ */
+export async function migrateTaskRefs(plugin: PMPlugin): Promise<void> {
+  let rewritten = 0
+
+  for (const path of plugin.index.projectPaths()) {
+    const stale = plugin.index
+      .taskRefs(path)
+      .filter((ref) => holdsBareId(frontmatterOf(plugin, ref.path)))
+      .map((ref) => ref.id)
+    if (stale.length === 0 && !holdsBareId(frontmatterOf(plugin, path))) continue
+
+    try {
+      const project = await plugin.store.loadProjectByPath(path)
+      if (!project) continue
+      await plugin.store.rewriteTaskFiles(project, stale)
+      rewritten += stale.length
+    } catch (e) {
+      console.error(`[PM] Failed to update the references in "${path}":`, e)
+    }
+  }
+
+  if (rewritten > 0) {
+    new Notice(`dotpm: Updated the references in ${rewritten} task note(s).`)
   }
 }
 

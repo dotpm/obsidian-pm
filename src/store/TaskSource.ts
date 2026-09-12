@@ -47,6 +47,8 @@ export interface TaskSource {
   moveProjectIntoOwnFolder(projectPath: string): Promise<string | null>
   /** Writes a sub-project's `parent` link again, for when the parent note moved. */
   repointProjectParent(childPath: string, parentPath: string): Promise<void>
+  /** Writes the named task notes again in full, for when only their references changed. */
+  rewriteTaskFiles(project: Project, taskIds: string[]): Promise<void>
   saveProject(project: Project): Promise<void>
   updateProject(project: Project, patch: ProjectPatch): Promise<void>
   deleteProject(project: Project): Promise<void>

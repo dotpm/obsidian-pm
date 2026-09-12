@@ -215,6 +215,17 @@ type MetadataHandler = (file: TFile, oldPath?: string) => void
  * Parses frontmatter straight from the vault's current content, and reports changes the
  * way Obsidian does: 'changed' on create, edit and rename, 'deleted' on trash.
  */
+function firstLinkpathDest(vault: FakeVault, linkpath: string): TFile | null {
+  const direct = vault.getAbstractFileByPath(linkpath.endsWith('.md') ? linkpath : `${linkpath}.md`)
+  if (direct instanceof TFile) return direct
+  return vault.getMarkdownFiles().find((f) => f.basename === linkpath) ?? null
+}
+
+function linktextFor(vault: FakeVault, file: TFile): string {
+  const sameName = vault.getMarkdownFiles().filter((f) => f.basename === file.basename)
+  return sameName.length > 1 ? file.path.replace(/\.md$/, '') : file.basename
+}
+
 export class FakeMetadataCache {
   private handlers = new Map<string, Set<MetadataHandler>>()
 
@@ -241,14 +252,11 @@ export class FakeMetadataCache {
   }
 
   getFirstLinkpathDest(linkpath: string, _sourcePath: string): TFile | null {
-    const direct = this.vault.getAbstractFileByPath(linkpath.endsWith('.md') ? linkpath : `${linkpath}.md`)
-    if (direct instanceof TFile) return direct
-    return this.vault.getMarkdownFiles().find((f) => f.basename === linkpath) ?? null
+    return firstLinkpathDest(this.vault, linkpath)
   }
 
   fileToLinktext(file: TFile, _sourcePath: string): string {
-    const sameName = this.vault.getMarkdownFiles().filter((f) => f.basename === file.basename)
-    return sameName.length > 1 ? file.path.replace(/\.md$/, '') : file.basename
+    return linktextFor(this.vault, file)
   }
 
   on(name: string, handler: MetadataHandler): MetadataHandler {
@@ -288,15 +296,15 @@ export function makeFakeApp(opts: { liveMetadataCache?: boolean; caseInsensitive
         })
       }
     },
-    // Minimal metadataCache: always misses, forcing the store's fallback read+parse path.
-    // Tests that want to exercise the cache hit pass liveMetadataCache, or override
-    // getFileCache per-test.
+    // Minimal metadataCache: the frontmatter cache always misses, forcing the store's
+    // fallback read+parse path, while links still resolve as they do in Obsidian. Tests
+    // that want the cache hit pass liveMetadataCache, or override getFileCache per-test.
     metadataCache: opts.liveMetadataCache
       ? new FakeMetadataCache(vault)
       : {
           getFileCache: () => null,
-          getFirstLinkpathDest: () => null,
-          fileToLinktext: (file: TFile) => file.basename,
+          getFirstLinkpathDest: (linkpath: string) => firstLinkpathDest(vault, linkpath),
+          fileToLinktext: (file: TFile) => linktextFor(vault, file),
           on: () => undefined
         }
   }

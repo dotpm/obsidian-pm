@@ -6,6 +6,7 @@ import { serializeProject, serializeTask, type RefWriter } from './YamlSerialize
 
 const refs: RefWriter = {
   link: (targetPath, title) => `[[${targetPath.replace(/^.*\//, '').replace(/\.md$/, '')}|${title}]]`,
+  task: (task) => (task.filePath ? refs.link(task.filePath, task.title) : null),
   dependency: () => null
 }
 
