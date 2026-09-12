@@ -53,9 +53,9 @@ function frontmatterOf(plugin: PMPlugin, path: string): Record<string, unknown> 
 }
 
 /**
- * Writes the notes that still name a task or project by id rather than by link. Both forms
+ * Points the notes that still name a task or project by id at the note itself. Both forms
  * read the same, so this only makes a vault written across the change consistent. It reads
- * the frontmatter cache rather than the notes, and rewrites nothing in a vault that holds
+ * the frontmatter cache rather than the notes, and touches nothing in a vault that holds
  * no ids, which is what makes a second run free.
  */
 export async function migrateTaskRefs(plugin: PMPlugin): Promise<void> {
@@ -66,12 +66,13 @@ export async function migrateTaskRefs(plugin: PMPlugin): Promise<void> {
       .taskRefs(path)
       .filter((ref) => holdsBareId(frontmatterOf(plugin, ref.path)))
       .map((ref) => ref.id)
-    if (stale.length === 0 && !holdsBareId(frontmatterOf(plugin, path))) continue
+    const projectNoteStale = holdsBareId(frontmatterOf(plugin, path))
+    if (stale.length === 0 && !projectNoteStale) continue
 
     try {
       const project = await plugin.store.loadProjectByPath(path)
       if (!project) continue
-      await plugin.store.rewriteTaskFiles(project, stale)
+      await plugin.store.normalizeTaskRefs(project, stale, projectNoteStale)
       rewritten += stale.length
     } catch (e) {
       console.error(`[PM] Failed to update the references in "${path}":`, e)
