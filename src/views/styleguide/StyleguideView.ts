@@ -87,8 +87,7 @@ const SAMPLE_PEOPLE: AvatarPerson[] = [
 
 /**
  * Gallery of every primitive and composite variant, in a real pane so the CSS cascade is
- * the one users get. Mock data only. Compiled in only when `__STYLEGUIDE__` is true;
- * the catalog is docs/styleguide.md.
+ * the one users get. Mock data only. Compiled in only when `__STYLEGUIDE__` is true.
  */
 export class StyleguideView extends ItemView {
   constructor(leaf: WorkspaceLeaf) {

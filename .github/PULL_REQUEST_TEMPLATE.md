@@ -11,4 +11,4 @@
 - [ ] `pnpm check`, `pnpm check:submission` and `pnpm test` pass
 - [ ] One change per PR
 - [ ] `CHANGELOG.md` has an entry under Unreleased if users will notice the change
-- [ ] The styleguide catalog and gallery are updated if a UI component changed
+- [ ] The styleguide gallery is updated if a UI component changed
