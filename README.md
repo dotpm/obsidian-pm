@@ -1,291 +1,158 @@
 <div align="center">
 
-# dotpm for Obsidian
-*Full-featured project management, natively in your vault.*
+# dotpm
 
-[![Obsidian community plugin](https://img.shields.io/badge/Obsidian-Community%20Plugin-7c3aed?style=for-the-badge&logo=obsidian&logoColor=white)](https://community.obsidian.md/plugins/project-manager)
-[![Downloads](https://img.shields.io/github/downloads/dotpm/obsidian-pm/total?style=for-the-badge&color=2ea44f)](https://github.com/dotpm/obsidian-pm/releases)
-[![Stars](https://img.shields.io/github/stars/dotpm/obsidian-pm?style=for-the-badge&color=007acc)](https://github.com/dotpm/obsidian-pm/stargazers)
-[![Support](https://img.shields.io/badge/Donate-Buy%20Me%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/kropachev)
+**Project management inside Obsidian. Table, Gantt and Kanban over plain Markdown notes.**
 
-**[Install from Obsidian](https://community.obsidian.md/plugins/project-manager)** · **[Website](https://dotpm.pm)** · **[Changelog](CHANGELOG.md)**
+[![Obsidian community plugin](https://img.shields.io/badge/Obsidian-community%20plugin-7c3aed?logo=obsidian&logoColor=white)](https://obsidian.md/plugins?id=project-manager)
+[![Downloads](https://img.shields.io/github/downloads/dotpm/obsidian-pm/total?color=2ea44f)](https://github.com/dotpm/obsidian-pm/releases)
+[![License](https://img.shields.io/github/license/dotpm/obsidian-pm)](LICENSE)
+[![Buy me a coffee](https://img.shields.io/badge/buy%20me%20a%20coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/kropachev)
+
+[Install](#install) | [Quick start](#quick-start) | [Docs](docs) | [Website](https://dotpm.pm) | [Changelog](CHANGELOG.md)
+
+<img width="1422" alt="dotpm dashboard" src="https://github.com/user-attachments/assets/ca6bc67f-e656-45be-b93a-17410555ec1a" />
 
 </div>
 
-Table views, Gantt charts, Kanban boards, custom fields, time tracking, smart scheduling — all stored as plain Markdown with YAML frontmatter. No external services. No sync subscriptions. Your data stays yours.
+Project tools keep the plan in one app and the thinking about it in another. dotpm keeps both in the vault. A project is a note, a task is a note, and the table, the timeline and the board are three ways of looking at the same files.
 
-<img width="1422" height="791" alt="dotpm dashboard" src="https://github.com/user-attachments/assets/ca6bc67f-e656-45be-b93a-17410555ec1a" />
+- Scheduling, not checkboxes. Tasks have start and due dates, dependencies drawn as arrows, and a Gantt chart that moves dependents when a blocker slips.
+- Tasks are full notes. Each has a body, backlinks, tags and properties, so search, the graph, templates and Dataview all work on them.
+- Agents and scripts can work the board. A local HTTP and MCP server and a command line client edit the same notes the views do, so a coding agent can pick up a task, update it and close it.
+- Nothing to sign up for. Projects sync with whatever already syncs the vault, and a project folder can be diffed and reviewed in git like any other code.
+- Runs on desktop and mobile, and any view exports to one HTML file that opens without Obsidian.
 
-## What's inside
+## Install
 
-- **Plain-text data** — Projects and tasks live as `.md` files in your vault. Portable, searchable, version-controllable. No lock-in, ever.
-- **Three powerful views** — Table, Gantt, and Kanban. Switch freely; same data, different lenses.
-- **Real project management** — Not just checkboxes. Dependencies, milestones, subtasks, time tracking, recurring tasks, smart scheduling, bulk actions.
-- **Customizable everything** — Custom fields, statuses, priorities, saved views — adapt the tool to your workflow, not the other way around.
-- **Works offline** — No cloud, no API calls, no accounts. Just Obsidian.
+In Obsidian, open **Settings > Community plugins > Browse**, search for **dotpm**, install and enable it. Or open [the listing](https://obsidian.md/plugins?id=project-manager) directly.
+
+Needs Obsidian 1.13 or newer. Works on desktop and mobile.
+
+<details>
+<summary>Beta builds and manual install</summary>
+
+**BRAT:** install [BRAT](https://github.com/TfTHacker/obsidian42-brat), choose **Add beta plugin** and enter `dotpm/obsidian-pm`.
+
+**Manual:** download `main.js`, `manifest.json` and `styles.css` from the [latest release](https://github.com/dotpm/obsidian-pm/releases/latest) into `<vault>/.obsidian/plugins/project-manager/`, then reload Obsidian and enable the plugin.
+
+</details>
+
+## Quick start
+
+1. Click the timeline icon in the ribbon, or run **dotpm: Open projects pane**.
+2. Click **New project**, give it a name, and open it.
+3. Click **Add task**. Set a status, a due date, an assignee, whatever you need.
+4. Switch between **Table**, **Gantt** and **Kanban** at the top of the view.
+5. Look in your vault. There is a `Projects/Your project.md` note and a `Projects/Your project_tasks/` folder with one note per task.
+
+Already have notes you want as tasks? Run **dotpm: Import notes as tasks**. To turn an existing note into a project, add `pm-project: true` to its properties and run **dotpm: Open current file as project**.
 
 ## Views
 
 ### Table
 
-Sortable, filterable task grid with inline editing. Save custom filter/sort combinations as named views. Quick-add tasks from the top bar. Select multiple tasks and apply bulk actions — change status, priority, assignee, or delete in one move.
+Rows sort, filter and edit inline. A multi-row selection changes status, priority, assignee, tags, due date or parent for all of them at once. A filter and sort combination can be saved as a named view.
 
-<video src="https://github.com/user-attachments/assets/104bd993-d4c1-42e7-9d6a-ae46fd7ce6a8" autoplay loop muted playsinline width="400"></video>
+<video src="https://github.com/user-attachments/assets/104bd993-d4c1-42e7-9d6a-ae46fd7ce6a8" autoplay loop muted playsinline width="600"></video>
 
 ### Gantt
 
-Interactive timeline with draggable bars, resizable edges, and dependency arrows. Zoom from day to year. Drag to reschedule, resize to adjust duration. Milestones render as diamonds. A "today" line keeps you oriented.
+Dragging a bar reschedules the task, dragging its edge changes the duration, and dragging from one bar to another adds a dependency. The scale zooms from days to years. Milestones are diamonds and a line marks today.
 
-<video src="https://github.com/user-attachments/assets/916f7100-44ef-401c-abb3-e003a0f7720a" autoplay loop muted playsinline width="400"></video>
+<video src="https://github.com/user-attachments/assets/916f7100-44ef-401c-abb3-e003a0f7720a" autoplay loop muted playsinline width="600"></video>
 
 ### Kanban
 
-Card-based board grouped by status. Drag cards between columns to update status instantly. Cards show priority, assignees, and tags at a glance.
+One column per status. Dragging a card to another column changes its status. Cards show priority, assignees, tags and due date.
 
-<video src="https://github.com/user-attachments/assets/316fc43b-6915-499a-a6ad-0680c462d014" autoplay loop muted playsinline width="400"></video>
+<video src="https://github.com/user-attachments/assets/316fc43b-6915-499a-a6ad-0680c462d014" autoplay loop muted playsinline width="600"></video>
 
 ## Features
 
-### Task management
-- **Subtasks** — Nest tasks to any depth. Collapse/expand hierarchies across all views.
-- **Dependencies** — Link blocking/dependent tasks. Visualized as arrows on the Gantt chart.
-- **Milestones** — Zero-duration tasks for key dates and deliverables.
-- **Archive** — Archive completed tasks without deleting. Toggle visibility at any time. Completed tasks can also be archived automatically once they have been done for a set number of days, or on demand with **dotpm: Archive completed tasks**.
+**Tasks**
 
-### Scheduling & time
-- **Drag-and-drop scheduling** — Reschedule tasks by dragging bars on the Gantt chart.
-- **Smart scheduling** — Auto-adjust dependent task dates when a blocker's dates change. Cycle detection prevents circular dependencies. Optionally pull dependents earlier when a blocker is completed ahead of its due date.
-- **Recurring tasks** — Daily, weekly, monthly, or yearly recurrence with configurable end dates.
-- **Time estimates & logging** — Set estimated hours, log actual time with date and notes. Visual progress bar shows logged vs. estimated.
-- **Due date notifications** — Get reminders before tasks are due. Configurable lead time.
+- Subtasks to any depth
+- Dependencies, within a project or across projects, and milestones
+- Start and due dates, progress, assignees, tags
+- Recurring tasks
+- Time estimates and time logs
+- Custom fields: text, number, date, select, multi-select, person, checkbox, URL
+- A Markdown body on every task
 
-### Customization
-- **Custom fields** — Add per-project fields: text, number, date, select, multi-select, person, checkbox, URL.
-- **Custom statuses & priorities** — Edit labels, colors, and icons for each status and priority level.
-- **Per-project settings** — A project can define its own statuses and priorities and override the default view, auto-scheduling, early-finish pull-forward, the auto-archive window, and board display options. Project-defined statuses replace the global ones everywhere in that project, from kanban columns to pickers; statuses still in use by tasks always stay visible.
-- **Saved views** — Save filter/sort combinations in Table view and switch between them instantly.
-- **Team roster** — Manage a global team list for assignment across all projects, plus per-project team members.
+**Planning**
 
-### Bulk operations
-- Multi-select tasks in Table view for batch actions:
-  - Set status, priority, assignee, tag, or due date
-  - Adjust progress
-  - Archive/unarchive
-  - Set a parent task
-  - Delete
+- Auto-scheduling: dependents move when a blocker moves
+- Due date reminders
+- Archive, by hand or automatically after a set number of days
+- Undo and redo
 
-### Import
-You can add any existing note from your vault to project as a task. Run **dotpm: Import notes as tasks** in the Command Palette, pick a project, select files, then choose default status, default priority, and whether to **move** files into the task folder or **copy** them. Already-imported notes are skipped.
+**Organizing**
 
-https://github.com/user-attachments/assets/64e386c5-09b5-42a6-9599-089cc54c98eb
+- Sub-projects, with an overview page per project: progress, milestones, sub-projects, properties
+- One view over a project, its subtree, a folder or the whole vault
+- Saved views: named filter and sort combinations
+- Bulk edit from the table
+- People notes for assignees, with a per-person task list
 
-- If a project view is open, import auto-targets that project (no picker shown).
-- If no project view is open, a project picker appears first, then the import modal.
+**Customizing**
 
-You can also create a project from a note. Add `pm-project: true` to any note's frontmatter, then run **Open current file as project**.
+- Statuses and priorities with label, color and icon, global or per project
+- Per-project overrides for default view, scheduling and archiving
+- Team members, global and per project
 
+## File format
 
-## Collaboration over the Project
+A task looks like this. Open it in Obsidian, edit it in any text editor, or diff it in git.
 
-The vault is the database. Anything that syncs your vault syncs your projects.
+```yaml
+---
+pm-task: true
+projectId: '[[Website redesign]]'
+title: 'Write the launch post'
+type: 'task'
+status: 'in-progress'
+priority: 'high'
+start: '2026-09-01'
+due: '2026-09-20'
+progress: 40
+assignees: ['[[Alice]]']
+tags: ['marketing']
+dependencies: ['[[Design the homepage]]']
+---
+Draft, review with the team, publish on launch day.
+```
 
-**Git** works well. Commit your projects folder, push, pull. Sync conflicts show up as regular Markdown conflicts. Resolve them like any other file.
-**Obsidian Sync, iCloud, Dropbox, Syncthing** all work without extra setup.
+Sync works the way it does for any other note. Obsidian Sync, iCloud, Syncthing and git all carry projects along. Two people editing the same task at the same moment produce an ordinary sync conflict, and there is no real-time collaboration beyond that.
 
-For teams:
+## Outside Obsidian
 
-- Add people in **Settings > Team members**, or to a project's own member list from the project modal.
-- Assign tasks via the Assignees field. Filter by assignee in the Table view.
-- Notifications are local. Each person sees their own due date reminders.
+**Share a view.** **dotpm: Export current view as HTML** writes the open table, timeline or board to a single file that opens in any browser, with the tasks, the filter and the icons inside it.
 
-There is no real-time multi-user editing. Two people editing the same task at once produces a sync conflict, same as any Markdown note.
-
-## Share a view as a page
-
-The command **Export current view as HTML** writes the table, timeline or board you are looking at to one HTML file next to the project note, with every task, the filter you had on, and the icons it needs inside it. It opens in any browser without Obsidian, works offline, and switches between the three views on the page. Send it to someone or drop it on any web host; nothing in it calls home.
-
-## Local API and MCP
-
-Other programs on the same computer can read and edit your tasks: a coding agent through the Model Context Protocol, a script over plain HTTP. Turn it on in **Settings > Local API**. It is off by default and only exists on desktop.
-
-When it is on, dotpm listens on `127.0.0.1` on the port shown in settings. Each vault starts with its own port, derived from the vault name so two open vaults never want the same one, and you can change it. Nothing outside this computer can connect, and every request needs the token shown next to the port. Point an MCP client at `http://127.0.0.1:<port>/mcp` with `Authorization: Bearer <token>`; Claude Code, for example:
+**Local API and MCP.** Turn on **Settings > Local API** and the desktop app serves the vault's projects on `127.0.0.1` with a bearer token. Scripts use plain HTTP; coding agents connect over the Model Context Protocol:
 
 ```sh
 claude mcp add --transport http dotpm http://127.0.0.1:<port>/mcp --header "Authorization: Bearer <token>"
 ```
 
-Everything a client changes goes through the same code the views use, so it shows up in Obsidian at once. The endpoints, the MCP tools and the change feed are documented in [docs/api.md](docs/api.md).
+**Command line.** `npm install -g @dotpm/cli` installs the `dotpm` command. Run inside the vault folder, it finds the server on its own.
 
-The same tasks can be listed, searched and edited from a terminal with the `dotpm` command, installed from npm as `@dotpm/cli`. Run it inside the vault folder and it finds the server on its own; `dotpm mcp` serves MCP over stdio for clients that cannot use HTTP. See [docs/cli.md](docs/cli.md).
-
-## Using with TaskNotes
-
-dotpm works alongside the [TaskNotes](https://github.com/callumalpass/tasknotes) plugin (4.10 or newer).
-
-### Import TaskNotes tasks
-
-The regular **Import notes as tasks** command recognizes TaskNotes tasks and converts them with their fields intact:
-
-- scheduled and due dates map to start and due
-- `blockedBy` dependencies between imported notes become task dependencies
-- project links between imported notes become parent/subtask relationships
-- tags, time estimates, completion dates, simple recurrence, and archive state carry over
-- statuses and priorities the imported tasks use are added to your palettes automatically
-
-Choose **move** to turn the TaskNotes notes into task files inside the project's task folder, or **copy** to keep the originals untouched.
-
-### Align statuses and priorities
-
-**Settings > Import from TaskNotes** copies TaskNotes' status and priority palettes into dotpm, so both plugins use the same values, names, and colors. Entries TaskNotes doesn't know are kept.
-
-### Let TaskNotes see dotpm tasks
-
-TaskNotes can be configured to list and edit dotpm tasks in place, without conversion:
-
-1. In TaskNotes settings, set task identification to **property** with name `pm-task` and value `true`.
-2. In its field mapping, map **scheduled** to `start`.
-3. Add your dotpm status and priority values to TaskNotes' palettes.
-
-Task hierarchy and dependencies don't resolve on the TaskNotes side (it uses project links and `blockedBy`, dotpm uses id references), but both plugins edit frontmatter non-destructively, so each one's extra fields survive the other's writes.
-
-## Settings
-
-| Setting | Description |
-|---|---|
-| Projects folder | Vault folder where project and task files are stored |
-| Open projects in | Overview page, or straight to the project's tasks |
-| Default tasks view | Table, Gantt, or Kanban |
-| Open tasks in | Modal or tab. On tab, task notes open in the task editor instead of Obsidian's. |
-| Gantt granularity | Default timeline scale (day / week / month / quarter / year) |
-| Gantt week labels | Week number, date range, or both |
-| Due date notifications | Reminders N days before due dates |
-| Notifications on/off | Master switch for due date reminders, separate from lead time |
-| Auto-schedule | When a blocking task moves, its dependents shift to match. Cycles are refused. |
-| Pull dependents forward on early finish | Off by default. When a task is completed before its due date, its dependents move earlier by the days it saved, keeping any slack they already had. |
-| Auto-archive completed tasks | Move completed tasks to the project's archive after this many days. Set it to 0 to keep them in place. |
-| Hide done in Gantt | Skip completed and cancelled tasks on the timeline |
-| Show subtasks in Kanban | Render subtasks as their own cards, not just inside the parent |
-| Custom statuses | Edit labels, colors, and icons for each status |
-| Custom priorities | Edit labels, colors, and icons for each priority |
-| Team members | Global roster for task assignment |
-
-## Task properties
-
-Each task is a `.md` file in your vault supporting:
-
-| Property | Description |
-|---|---|
-| Title | Task name |
-| Description | Rich text body (Markdown) |
-| Type | Task, Subtask, or Milestone |
-| Status | To do, In progress, Blocked, In review, Done, Cancelled |
-| Priority | Critical, High, Medium, Low |
-| Start / Due date | Schedule boundaries |
-| Progress | 0–100% completion |
-| Time estimate | Estimated hours |
-| Time logs | Logged hours with date and notes |
-| Assignees | One or more team members |
-| Tags | Freeform labels |
-| Subtasks | Nested child tasks |
-| Dependencies | Blocking/dependent task links |
-| Recurrence | Repeat interval and end date |
-| Custom fields | Any per-project fields you define |
-
-## Installation
-
-### From Obsidian (recommended)
-
-1. Open **Settings > Community plugins** and make sure Restricted mode is off.
-2. Click **Browse**, search for **dotpm**, and click **Install**.
-3. Click **Enable**.
-
-Or open the listing directly: [community.obsidian.md/plugins/project-manager](https://community.obsidian.md/plugins/project-manager).
-
-### Via BRAT (beta releases)
-
-1. Install the [BRAT plugin](https://github.com/TfTHacker/obsidian42-brat) from the community store.
-2. Open BRAT settings > **Add Beta Plugin**.
-3. Enter: `https://github.com/dotpm/obsidian-pm`
-4. Enable the plugin in **Settings > Community plugins**.
-
-### Manual
-
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](../../releases/latest).
-2. Create a folder: `<vault>/.obsidian/plugins/project-manager/`
-3. Copy the three files into that folder.
-4. Reload Obsidian and enable the plugin under **Settings > Community plugins**.
-
-## Quick start
-
-1. Click the dashboard icon in the ribbon (or run **Open projects pane** from the command palette).
-2. Click **New project** to create your first project. Give it a name, color, and icon.
-3. Open the project — it opens in Table view by default.
-4. Press **+ Add task** to create your first task.
-5. Switch views using the Table / Gantt / Kanban tabs at the top.
-
-**Commands:**
-| Command | What it does |
-|---|---|
-| Open projects pane | Open the project list |
-| Create new project | Open the new project modal |
-| Create new task | Pick a project, then create a task |
-| Create new subtask | Pick a project and a parent task |
-| Import notes as tasks | Convert Markdown notes into tasks |
-| Open current file as project | Open the active note as a project (needs `pm-project: true`) |
-| Undo last action | Revert the last change |
-| Redo last action | Reapply an undone change |
-
-## Data format
-
-Everything is stored as Markdown files with YAML frontmatter in a configurable vault folder (default: `Projects/`). Plain text — readable, portable, and version-controllable.
-
-```yaml
----
-pm-task: true
-title: "Ship v1.0"
-status: in-progress
-priority: high
-due: "2026-04-01"
-progress: 60
-assignees: ["alice", "bob"]
-tags: ["launch"]
-dependencies: ["task-abc123"]
----
-
-Task description in Markdown goes here.
+```sh
+dotpm projects
+dotpm create <projectId> --title "Write the release notes" --due 2026-09-20
+dotpm search release --status todo
 ```
 
-## Settings
+Everything a client changes goes through the same code the views use and shows up in Obsidian at once. See [docs/api.md](docs/api.md) and [docs/cli.md](docs/cli.md).
 
-| Setting | Description |
-|---|---|
-| Projects folder | Vault folder where project and task files are stored |
-| Default tasks view | Table, Gantt, or Kanban |
-| Gantt granularity | Default timeline scale (day / week / month / quarter / year) |
-| Gantt week labels | Week number, date range, or both |
-| Due date notifications | Reminders N days before due dates |
-| Custom statuses | Edit labels, colors, and icons for each status |
-| Custom priorities | Edit labels, colors, and icons for each priority |
-| Team members | Global roster for task assignment |
-
-## Requirements
-
-- Obsidian **1.4.0** or later
-- Desktop and mobile supported
+**TaskNotes.** dotpm imports TaskNotes tasks with their dates, dependencies and hierarchy, and can share statuses and priorities with it. See [docs/tasknotes.md](docs/tasknotes.md).
 
 ## Contributing
 
-I appreciate community interest in the project! However, since this plugin is maintained by one person in their spare time, I have strict rules to keep the codebase clean, stable, and manageable. 
+Bug reports and feature requests go in [issues](https://github.com/dotpm/obsidian-pm/issues). Pull requests are welcome. For anything larger than a fix, open an issue first so the approach can be agreed on before the work is done.
 
-If you want to contribute, please follow these rules:
-
-1. **Open an Issue first:** Do not submit a Pull Request for new features, architecture changes, or major refactoring without discussing it in an issue first. Uncoordinated PRs will be closed.
-2. **No AI-generated bulk code:** I do not accept massive, AI-generated PRs. Code must be human-readable, minimalistic, and match the existing project style.
-3. **Pass the CI:** Make sure your code passes all strict type checks, linters, and tests. Run `pnpm check`, `pnpm check:submission`, and `pnpm test` locally before pushing.
-4. **Keep it small:** PRs should be strictly focused on a single issue. 
-
-Bug fixes and thoroughly discussed features are always welcome!
+The repo is a pnpm workspace on Node 24. `pnpm dev` builds into the vault named by `VAULT_PATH`, and `pnpm check`, `pnpm check:submission` and `pnpm test` are what CI runs.
 
 ## License
 
-MIT
+[MIT](LICENSE)

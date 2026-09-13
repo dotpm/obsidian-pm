@@ -1,0 +1,38 @@
+name: Bug report
+description: Something does not work the way it should
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open a project in the table view
+        2. Select two tasks
+        3. Change the status
+  - type: input
+    id: dotpm-version
+    attributes:
+      label: dotpm version
+      description: Settings > Community plugins, or the top of the changelog you installed from.
+    validations:
+      required: true
+  - type: input
+    id: obsidian-version
+    attributes:
+      label: Obsidian version and platform
+      placeholder: 1.13.2, Windows / macOS / Linux / iOS / Android
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: The task or project note that triggers it, console errors (Ctrl+Shift+I on desktop), other plugins involved, sync setup.
