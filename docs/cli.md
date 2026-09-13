@@ -1,21 +1,25 @@
 # Command line
 
-`dotpm` is a command for the terminal, and for agents and scripts, that reads and edits the projects and tasks of a vault open in Obsidian. It talks to the plugin through its local API, so turn that on first: Settings > Local API in Obsidian. Everything the command changes goes through the same code the views use and shows up in Obsidian at once.
+`dotpm` reads and edits the projects and tasks of a vault open in Obsidian, from a terminal, a script or an agent. It talks to the plugin through the [local API](api.md), so that has to be on: Settings > Local API in Obsidian. Everything it changes goes through the same code the views use and shows in Obsidian at once.
 
-Install it from npm, or run it without installing:
+## Install
 
 ```sh
 npm install -g @dotpm/cli
 dotpm --help
+```
 
+Or without installing:
+
+```sh
 npx @dotpm/cli projects
 ```
 
-It needs Node 22 or newer and the desktop app, since the mobile app has no local API.
+Needs Node 22 or newer and the Obsidian desktop app. The mobile app has no local API.
 
-## Finding the vault
+## Connecting
 
-Run it from anywhere inside the vault folder and it finds the vault on its own, reading the port and token the plugin saved there. Outside the vault, name it:
+Run from anywhere inside the vault folder and the command finds the vault on its own, reading the port and token the plugin saved there. From elsewhere, name the vault:
 
 ```sh
 dotpm --vault ~/Notes projects
@@ -35,7 +39,7 @@ dotpm --url http://127.0.0.1:27140 --token <token> status
 | Command | What it does |
 | --- | --- |
 | `dotpm projects` | Every project with its id, title and task counts |
-| `dotpm project <projectId> [--tasks] [--archived]` | One project: team, custom fields and the status and priority ids its tasks may use; its tasks when asked |
+| `dotpm project <projectId> [--tasks] [--archived]` | One project: team, custom fields, and the status and priority ids its tasks may use |
 | `dotpm tasks <projectId> [--archived]` | A project's tasks in tree order |
 | `dotpm task <taskId>` | One task with its description |
 | `dotpm search [text] [--project <id>] [--status <id>] [--assignee <person>] [--archived] [--limit <n>]` | Tasks across every project |
@@ -43,14 +47,18 @@ dotpm --url http://127.0.0.1:27140 --token <token> status
 | `dotpm update <taskId> [fields] [--if-match <updatedAt>]` | Change the fields passed; `--if-match` refuses the write when the task changed since that `updatedAt` |
 | `dotpm move <taskId> [--parent <id>] [--top] [--project <id>] [--before <id>] [--after <id>]` | Re-parent, move to another project, or reorder among siblings |
 | `dotpm archive <taskId> [--restore]` | Archive a task and its subtasks, or bring them back |
-| `dotpm delete <taskId> --yes` | Delete a task and its subtasks; cannot be undone |
-| `dotpm changes [--since <cursor>] [--follow] [--interval <seconds>]` | What changed after a cursor; without one, only the current cursor. `--follow` keeps polling and prints each change as it appears |
+| `dotpm delete <taskId> --yes` | Delete a task and its subtasks. Cannot be undone |
+| `dotpm changes [--since <cursor>] [--follow] [--interval <seconds>]` | What changed after a cursor; without one, only the current cursor |
 | `dotpm status` | Check the connection |
 | `dotpm mcp` | Serve MCP over stdio, see below |
 
-Task fields for `create` and `update`: `--title`, `--description`, `--type` (`task`, `milestone`, `subtask`), `--status`, `--priority`, `--start`, `--due` (`YYYY-MM-DD`, or empty to clear), `--progress` (0 to 100), `--estimate` (hours), and the repeatable `--assignee`, `--tag` and `--depends-on`, each of which replaces the whole list. Anything else, such as `recurrence` or `customFields`, goes in `--data` as a JSON object with the field names from [the API](api.md); `--data -` reads it from stdin, and flags override what it holds.
+### Task fields
 
-Read the project first: `--status` and `--priority` must be ids the project lists, and a write with any other value is refused with the list of allowed ones.
+`create` and `update` take `--title`, `--description`, `--type` (`task`, `milestone`, `subtask`), `--status`, `--priority`, `--start`, `--due` (`YYYY-MM-DD`, or empty to clear), `--progress` (0 to 100), `--estimate` (hours), and the repeatable `--assignee`, `--tag` and `--depends-on`, each of which replaces the whole list.
+
+Anything else, such as `recurrence` or `customFields`, goes in `--data` as a JSON object using the field names from [the API](api.md). `--data -` reads it from stdin, and flags override what it holds.
+
+`--status` and `--priority` must be ids the project lists. Read the project first; a write with any other value is refused with the list of allowed ones.
 
 ```sh
 dotpm project 8f3k2a1x --tasks
@@ -59,19 +67,21 @@ dotpm update k2j9d0sa --status done
 dotpm search "release" --status todo
 ```
 
-
 ## Following changes
 
-`dotpm changes --follow` polls the change feed every two seconds (`--interval` sets the period) and prints each change on its own line as it appears, until interrupted with Ctrl-C. Without `--since` it starts from now; with a cursor it first prints everything after that cursor. In JSON mode each line is one change object, so a script can read the stream line by line:
+`dotpm changes --follow` polls the change feed every two seconds (`--interval` sets the period) and prints each change on its own line until Ctrl-C. Without `--since` it starts from now. With a cursor it first prints everything after that cursor.
+
+In JSON mode each line is one change object, so a script can read the stream line by line:
 
 ```sh
 dotpm changes --follow | while read -r change; do echo "$change"; done
 ```
 
-A `reset` line means the cursor was older than what the server keeps; list what you need again, then keep reading.
+A `reset` line means the cursor was older than what the server keeps. List what you need again, then keep reading.
+
 ## Output and exit codes
 
-When stdout is a terminal the command prints tables; when it is a pipe, or `--json` is passed, it prints JSON, the same resources the API returns. Errors go to stderr, as `{ "error": { "code", "message" } }` in JSON mode.
+When stdout is a terminal the command prints tables. When it is a pipe, or `--json` is passed, it prints JSON, the same resources the API returns. Errors go to stderr, as `{ "error": { "code", "message" } }` in JSON mode.
 
 | Exit code | Meaning |
 | --- | --- |
@@ -85,7 +95,7 @@ When stdout is a terminal the command prints tables; when it is a pipe, or `--js
 
 ## MCP over stdio
 
-Most MCP clients can use the plugin's HTTP endpoint directly, as described in [the API documentation](api.md). For a client that only launches a command, or cannot send an authorization header, `dotpm mcp` bridges stdio to that endpoint and finds the token itself, so no secret sits in the client's config:
+Most MCP clients can use the plugin's HTTP endpoint directly, as described in [api.md](api.md). For a client that only launches a command, or cannot send an authorization header, `dotpm mcp` bridges stdio to that endpoint and finds the token itself, so no secret sits in the client's config:
 
 ```json
 {
