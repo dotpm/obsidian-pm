@@ -1,6 +1,6 @@
 import { TFile } from 'obsidian'
-import type PMPlugin from '../main'
-import type { ProjectRef, TaskRef } from '../store'
+import type PMPlugin from '#main'
+import type { ProjectRef, TaskRef } from '#store'
 import { safeAsync } from '@dotpm/ui'
 
 const DEBOUNCE_MS = 5000

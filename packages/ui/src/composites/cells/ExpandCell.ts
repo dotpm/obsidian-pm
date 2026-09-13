@@ -1,4 +1,4 @@
-import { CollapseToggle } from '../../primitives/CollapseToggle'
+import { CollapseToggle } from '#primitives/CollapseToggle'
 
 export interface ExpandCellProps {
   hasSubtasks: boolean

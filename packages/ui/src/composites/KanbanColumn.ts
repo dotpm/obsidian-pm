@@ -1,9 +1,9 @@
-import { setIcon } from '../platform'
+import { setIcon } from '#platform'
 import type { Task } from '@dotpm/core'
-import { formatBadgeText, isIconName } from '../icons'
-import { safeAsync } from '../dom'
+import { formatBadgeText, isIconName } from '#icons'
+import { safeAsync } from '#dom'
 import { KanbanCard } from './KanbanCard'
-import type { AvatarPerson } from '../primitives/AvatarStack'
+import type { AvatarPerson } from '#primitives/AvatarStack'
 
 export interface KanbanColumnStatus {
   id: string

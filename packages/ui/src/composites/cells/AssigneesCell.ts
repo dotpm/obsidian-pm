@@ -1,4 +1,4 @@
-import { AvatarStack, type AvatarPerson } from '../../primitives/AvatarStack'
+import { AvatarStack, type AvatarPerson } from '#primitives/AvatarStack'
 
 export class AssigneesCell {
   el: HTMLTableCellElement

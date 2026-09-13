@@ -1,11 +1,11 @@
 import { type App, ButtonComponent, Modal } from 'obsidian'
-import type PMPlugin from '../main'
+import type PMPlugin from '#main'
 import { type Project, type Task, flattenTasks } from '@dotpm/core'
-import type { ProjectRef } from '../store'
-import { TaskModal } from '../modals/TaskModal'
-import { PersonLookupModal, ProjectPickerModal, TaskPickerModal } from '../modals/PickerModals'
-import { ImportModal } from '../modals/ImportModal'
-import { ProjectCreateModal } from '../modals/ProjectCreateModal'
+import type { ProjectRef } from '#store'
+import { TaskModal } from '#modals/TaskModal'
+import { PersonLookupModal, ProjectPickerModal, TaskPickerModal } from '#modals/PickerModals'
+import { ImportModal } from '#modals/ImportModal'
+import { ProjectCreateModal } from '#modals/ProjectCreateModal'
 
 export function confirmDialog(app: App, message: string, confirmLabel = 'Delete'): Promise<boolean> {
   return new Promise((resolve) => {

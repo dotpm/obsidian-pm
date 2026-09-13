@@ -11,9 +11,9 @@ import {
   today
 } from '@dotpm/core'
 import { addPaletteMenuItem } from '@dotpm/ui'
-import { promptText } from '../../ui/ModalFactory'
-import { peopleSource } from '../../ui/PersonPicker'
-import { TaskPickerModal } from '../../modals/PickerModals'
+import { promptText } from '#ui/ModalFactory'
+import { peopleSource } from '#ui/PersonPicker'
+import { TaskPickerModal } from '#modals/PickerModals'
 import type { TableContext } from './TableRenderer'
 import { updateSelectAllCheckbox } from './TableRow'
 

@@ -1,5 +1,5 @@
 import { ButtonComponent, ItemView, WorkspaceLeaf } from 'obsidian'
-import type PMPlugin from '../../main'
+import type PMPlugin from '#main'
 import {
   type PriorityConfig,
   type PriorityIconSet,

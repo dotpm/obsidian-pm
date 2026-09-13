@@ -1,8 +1,8 @@
-import { setIcon } from '../../platform'
-import { safeAsync } from '../../dom'
-import { Popover } from '../../primitives/Popover'
-import { Chip } from '../../primitives/Chip'
-import { Avatar } from '../../primitives/Avatar'
+import { setIcon } from '#platform'
+import { safeAsync } from '#dom'
+import { Popover } from '#primitives/Popover'
+import { Chip } from '#primitives/Chip'
+import { Avatar } from '#primitives/Avatar'
 import { renderDepRow, type DepLink } from './depRow'
 import { renderOptionRow } from './optionList'
 

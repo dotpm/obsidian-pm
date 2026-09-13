@@ -1,6 +1,6 @@
 import { SuggestModal, App } from 'obsidian'
 import { type Task, displayName } from '@dotpm/core'
-import type { ProjectRef } from '../store'
+import type { ProjectRef } from '#store'
 import { renderGlyph } from '@dotpm/ui'
 
 /** Lists projects from the index, so picking one doesn't load every project in the vault. */

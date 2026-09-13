@@ -1,5 +1,5 @@
 import type { App } from 'obsidian'
-import { resolvePeople } from '../store'
+import { resolvePeople } from '#store'
 import type { AvatarPerson } from '@dotpm/ui'
 
 /**

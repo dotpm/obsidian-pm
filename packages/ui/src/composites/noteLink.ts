@@ -1,4 +1,4 @@
-import { makeActivatable } from '../dom'
+import { makeActivatable } from '#dom'
 
 export interface NoteLinkProps {
   label: string

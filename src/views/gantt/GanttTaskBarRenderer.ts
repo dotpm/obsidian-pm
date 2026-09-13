@@ -18,7 +18,7 @@ import {
   getSnapPoints,
   snapX
 } from '@dotpm/ui'
-import { openTaskModal } from '../../ui/ModalFactory'
+import { openTaskModal } from '#ui/ModalFactory'
 import { attachBarDrag } from './GanttDragHandler'
 import { handleLinkDotClick } from './GanttLinkHandler'
 import type { RendererContext } from './GanttRenderer'

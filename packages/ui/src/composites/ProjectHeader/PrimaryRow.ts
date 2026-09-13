@@ -1,7 +1,7 @@
-import { createButton, createMenu, type PlatformButton } from '../../platform'
+import { createButton, createMenu, type PlatformButton } from '#platform'
 import { type FilterState, type SavedView, isFilterActive } from '@dotpm/core'
-import { safeAsync } from '../../dom'
-import { ChipButton } from '../../primitives/ChipButton'
+import { safeAsync } from '#dom'
+import { ChipButton } from '#primitives/ChipButton'
 
 export interface PrimaryRowProps {
   savedViews: SavedView[]

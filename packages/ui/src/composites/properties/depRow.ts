@@ -1,5 +1,5 @@
-import { setIcon, setTooltip } from '../../platform'
-import { IconButton } from '../../primitives/IconButton'
+import { setIcon, setTooltip } from '#platform'
+import { IconButton } from '#primitives/IconButton'
 import { renderNoteLink } from '../noteLink'
 
 /** The note a row's task lives in, and what activating the row leads to. */

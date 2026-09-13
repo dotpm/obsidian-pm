@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { TFile, type App } from 'obsidian'
-import { makeFakeApp } from '../../test/fakeVault'
+import { makeFakeApp } from '#test/fakeVault'
 import {
   createPersonLink,
   createPersonNote,

@@ -1,5 +1,5 @@
-import { setIcon } from '../../platform'
-import { Popover } from '../../primitives/Popover'
+import { setIcon } from '#platform'
+import { Popover } from '#primitives/Popover'
 import { formatDate, today, type DueTone } from '@dotpm/core'
 
 export interface DateControlOpts {

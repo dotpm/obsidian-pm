@@ -1,4 +1,4 @@
-import { createButton, type PlatformButton } from '../platform'
+import { createButton, type PlatformButton } from '#platform'
 
 export interface SegmentedOption<T extends string> {
   id: T

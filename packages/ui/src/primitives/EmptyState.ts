@@ -1,4 +1,4 @@
-import { createButton } from '../platform'
+import { createButton } from '#platform'
 
 export class EmptyState {
   el: HTMLElement

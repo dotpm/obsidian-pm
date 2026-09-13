@@ -1,6 +1,6 @@
 import { createRequire } from 'node:module'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { FakeApi } from '../../packages/api/test/fakeApi'
+import { FakeApi } from '@dotpm/api/testing'
 import { LocalApiServer } from './LocalApiServer'
 
 const TOKEN = 'secret-token-0123456789'

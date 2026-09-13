@@ -10,8 +10,8 @@ import {
   type SnapshotProject
 } from '@dotpm/api'
 import type { SortDir, SortKey } from '@dotpm/ui'
-import type PMPlugin from '../main'
-import type { ProjectScope } from '../store'
+import type PMPlugin from '#main'
+import type { ProjectScope } from '#store'
 
 export interface ExportViewState {
   mode: ViewMode

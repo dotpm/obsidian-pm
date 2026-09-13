@@ -1,4 +1,4 @@
-import { ProgressBar } from '../../primitives/ProgressBar'
+import { ProgressBar } from '#primitives/ProgressBar'
 import { makeInlineEdit } from './inlineEdit'
 
 export interface ProgressCellProps {

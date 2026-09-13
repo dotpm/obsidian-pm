@@ -1,4 +1,4 @@
-import { setIcon, setTooltip } from '../platform'
+import { setIcon, setTooltip } from '#platform'
 
 export type ChipVariant = 'solid' | 'outline' | 'plain'
 

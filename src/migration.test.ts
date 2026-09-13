@@ -1,7 +1,7 @@
 import type { App } from 'obsidian'
 import { TFile } from 'obsidian'
 import { describe, expect, it, vi } from 'vitest'
-import { makeFakeApp } from '../test/fakeVault'
+import { makeFakeApp } from '#test/fakeVault'
 import { migrateProjectLayout, migrateTaskRefs } from './migration'
 import type PMPlugin from './main'
 import { ProjectStore, VaultIndex } from './store'

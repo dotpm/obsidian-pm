@@ -1,6 +1,6 @@
-import type PMPlugin from '../main'
+import type PMPlugin from '#main'
 import { type Project, today, isTerminalStatus } from '@dotpm/core'
-import { type ArchiveCandidate, collectArchivable, withoutBlockedDependents } from '../store'
+import { type ArchiveCandidate, collectArchivable, withoutBlockedDependents } from '#store'
 import { safeAsync } from '@dotpm/ui'
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000

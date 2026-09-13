@@ -1,6 +1,6 @@
-import { setIcon } from '../../platform'
-import { isIconName } from '../../icons'
-import { Avatar } from '../../primitives/Avatar'
+import { setIcon } from '#platform'
+import { isIconName } from '#icons'
+import { Avatar } from '#primitives/Avatar'
 
 export interface SelectItem {
   id: string

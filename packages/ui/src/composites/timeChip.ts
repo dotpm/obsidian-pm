@@ -1,4 +1,4 @@
-import { Chip } from '../primitives/Chip'
+import { Chip } from '#primitives/Chip'
 
 /** Goes solid red once logged hours exceed the estimate. */
 export function renderTimeChip(

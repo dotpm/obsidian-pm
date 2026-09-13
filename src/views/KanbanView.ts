@@ -1,5 +1,5 @@
 import { Menu } from 'obsidian'
-import type PMPlugin from '../main'
+import type PMPlugin from '#main'
 import {
   type Task,
   type TaskStatus,
@@ -12,10 +12,10 @@ import {
   dueUrgency,
   getPriorityConfig
 } from '@dotpm/core'
-import { personKeyer, type ProjectScope } from '../store'
+import { personKeyer, type ProjectScope } from '#store'
 import { safeAsync, KanbanColumn, type KanbanCardData, renderProjectChip } from '@dotpm/ui'
-import { openTaskModal } from '../ui/ModalFactory'
-import { buildTaskContextMenu } from '../ui/TaskContextMenu'
+import { openTaskModal } from '#ui/ModalFactory'
+import { buildTaskContextMenu } from '#ui/TaskContextMenu'
 import { linkedRefs } from './linkedRefs'
 import type { SubView } from './SubView'
 

@@ -1,10 +1,10 @@
 import { App, ButtonComponent, ExtraButtonComponent, Keymap, Modal, setIcon } from 'obsidian'
-import type PMPlugin from '../main'
+import type PMPlugin from '#main'
 import { DEFAULT_PROJECT_COLOR, DEFAULT_PROJECT_ICON } from '@dotpm/core'
-import { findIgnoringCase, folderOf, projectFilePath, projectFolderOf } from '../store'
+import { findIgnoringCase, folderOf, projectFilePath, projectFolderOf } from '#store'
 import { safeAsync, renderPropRow, renderIconControl, renderSelectControl } from '@dotpm/ui'
 import { saveShortcutLabel } from '../utils'
-import { renderPersonPicker } from '../ui/PersonPicker'
+import { renderPersonPicker } from '#ui/PersonPicker'
 
 interface Draft {
   title: string

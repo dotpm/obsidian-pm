@@ -1,4 +1,4 @@
-import { safeAsync } from '../../dom'
+import { safeAsync } from '#dom'
 
 export interface InlineEditOpts {
   container: HTMLElement

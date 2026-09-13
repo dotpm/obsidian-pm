@@ -1,6 +1,6 @@
-import { setTooltip } from '../platform'
+import { setTooltip } from '#platform'
 import { displayName, stringToColor } from '@dotpm/core'
-import { makeActivatable } from '../dom'
+import { makeActivatable } from '#dom'
 
 function initialsFor(name: string): string {
   const parts = name.trim().split(/\s+/).filter(Boolean)

@@ -1,6 +1,6 @@
 import type { App } from 'obsidian'
 import { describe, expect, it } from 'vitest'
-import { makeFakeApp } from '../../test/fakeVault'
+import { makeFakeApp } from '#test/fakeVault'
 import { projectFolderOf, projectPathForTaskPath, projectTaskFolder } from './vaultFs'
 
 async function vaultWith(paths: string[]): Promise<App> {

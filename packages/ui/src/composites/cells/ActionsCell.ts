@@ -1,4 +1,4 @@
-import { IconButton } from '../../primitives/IconButton'
+import { IconButton } from '#primitives/IconButton'
 
 export interface ActionsCellProps {
   onClick: (e: MouseEvent) => void

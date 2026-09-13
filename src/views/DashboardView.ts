@@ -1,5 +1,5 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian'
-import type PMPlugin from '../main'
+import type PMPlugin from '#main'
 import { renderProjectListToolbar, renderProjectListContent } from './ProjectListRenderer'
 import type { ProjectListContext } from './ProjectListRenderer'
 

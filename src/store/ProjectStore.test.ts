@@ -1,7 +1,7 @@
 import type { App, Plugin } from 'obsidian'
 import { TFile, TFolder } from 'obsidian'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { makeFakeApp, type FakeVault } from '../../test/fakeVault'
+import { makeFakeApp, type FakeVault } from '#test/fakeVault'
 import {
   today,
   DEFAULT_SETTINGS,

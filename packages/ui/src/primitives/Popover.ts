@@ -1,4 +1,4 @@
-import { activeDocument, activeWindow, isPhone } from '../platform'
+import { activeDocument, activeWindow, isPhone } from '#platform'
 
 export interface PopoverOptions {
   anchor: HTMLElement

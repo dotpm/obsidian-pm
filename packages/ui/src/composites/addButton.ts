@@ -1,4 +1,4 @@
-import { setIcon } from '../platform'
+import { setIcon } from '#platform'
 
 /** The ghost "+ label" shared by every add row. */
 export function renderAddButton(

@@ -1,4 +1,4 @@
-import { createMenu } from '../../platform'
+import { createMenu } from '#platform'
 import {
   type Task,
   type FilterState,
@@ -13,7 +13,7 @@ import {
   priorityIcon
 } from '@dotpm/core'
 import { renderFilterDropdown } from '../../FilterDropdown'
-import { ChipButton } from '../../primitives/ChipButton'
+import { ChipButton } from '#primitives/ChipButton'
 
 export interface FilterRowProps {
   tasks: Task[]

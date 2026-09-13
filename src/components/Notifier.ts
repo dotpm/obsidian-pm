@@ -1,5 +1,5 @@
 import { Notice } from 'obsidian'
-import type PMPlugin from '../main'
+import type PMPlugin from '#main'
 import { Temporal, today, parsePlainDate } from '@dotpm/core'
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000

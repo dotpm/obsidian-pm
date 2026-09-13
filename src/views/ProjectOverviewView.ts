@@ -1,5 +1,5 @@
 import { ButtonComponent, Component, ItemView, MarkdownRenderer, WorkspaceLeaf } from 'obsidian'
-import type PMPlugin from '../main'
+import type PMPlugin from '#main'
 import {
   type Project,
   type ResolvedProjectConfig,
@@ -16,7 +16,7 @@ import {
   isTerminalStatus,
   truncateTitle
 } from '@dotpm/core'
-import { personKeyer, type ProjectRef } from '../store'
+import { personKeyer, type ProjectRef } from '#store'
 import {
   safeAsync,
   Avatar,

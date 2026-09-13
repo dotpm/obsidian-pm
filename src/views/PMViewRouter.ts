@@ -1,6 +1,6 @@
 import { TFile, type WorkspaceLeaf } from 'obsidian'
-import type PMPlugin from '../main'
-import type { ScopeSpec } from '../store'
+import type PMPlugin from '#main'
+import type { ScopeSpec } from '#store'
 import { PM_DASHBOARD_VIEW_TYPE } from './DashboardView'
 import { PM_PROJECT_EDIT_VIEW_TYPE } from './ProjectEditView'
 import { PM_PROJECT_OVERVIEW_VIEW_TYPE } from './ProjectOverviewView'

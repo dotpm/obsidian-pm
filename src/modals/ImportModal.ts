@@ -1,5 +1,5 @@
 import { App, ButtonComponent, Modal, TFile, Notice } from 'obsidian'
-import type PMPlugin from '../main'
+import type PMPlugin from '#main'
 import {
   type PriorityConfig,
   type Project,

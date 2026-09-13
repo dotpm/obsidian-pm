@@ -1,6 +1,6 @@
-import type PMPlugin from '../../main'
+import type PMPlugin from '#main'
 import type { StatusConfig, FlatTask } from '@dotpm/core'
-import type { ProjectScope } from '../../store'
+import type { ProjectScope } from '#store'
 import type { GanttCanvas } from '@dotpm/ui'
 import type { DragState } from './GanttDragHandler'
 import type { LinkState } from './GanttLinkHandler'

@@ -1,5 +1,5 @@
 import { ButtonComponent, type Scope } from 'obsidian'
-import type PMPlugin from '../../main'
+import type PMPlugin from '#main'
 import {
   type Task,
   type GanttGranularity,
@@ -10,7 +10,7 @@ import {
   Temporal,
   today
 } from '@dotpm/core'
-import { personKeyer, type ProjectScope } from '../../store'
+import { personKeyer, type ProjectScope } from '#store'
 import {
   renderAddButton,
   SegmentedControl,

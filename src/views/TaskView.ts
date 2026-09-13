@@ -1,8 +1,8 @@
 import { ItemView, Scope, WorkspaceLeaf } from 'obsidian'
-import type PMPlugin from '../main'
+import type PMPlugin from '#main'
 import { type Task, flattenTasks, truncateTitle } from '@dotpm/core'
 import { EmptyState } from '@dotpm/ui'
-import { TaskEditor } from '../modals/TaskEditor'
+import { TaskEditor } from '#modals/TaskEditor'
 
 export const PM_TASK_VIEW_TYPE = 'pm-task'
 

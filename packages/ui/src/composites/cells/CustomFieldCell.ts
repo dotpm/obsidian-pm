@@ -1,6 +1,6 @@
-import { setIcon } from '../../platform'
-import { AvatarStack, type AvatarPerson } from '../../primitives/AvatarStack'
-import { makeActivatable } from '../../dom'
+import { setIcon } from '#platform'
+import { AvatarStack, type AvatarPerson } from '#primitives/AvatarStack'
+import { makeActivatable } from '#dom'
 
 export type CustomFieldValue =
   | { kind: 'text'; text: string }

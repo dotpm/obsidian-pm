@@ -1,5 +1,5 @@
 import { ButtonComponent, ItemView, WorkspaceLeaf } from 'obsidian'
-import type PMPlugin from '../main'
+import type PMPlugin from '#main'
 import {
   type CustomFieldDef,
   type PriorityConfig,
@@ -28,9 +28,9 @@ import {
   EmptyState,
   IconButton
 } from '@dotpm/ui'
-import { confirmDialog } from '../ui/ModalFactory'
-import { renderPersonPicker } from '../ui/PersonPicker'
-import { renderPriorityListEditor, renderStatusListEditor } from '../ui/PaletteListEditor'
+import { confirmDialog } from '#ui/ModalFactory'
+import { renderPersonPicker } from '#ui/PersonPicker'
+import { renderPriorityListEditor, renderStatusListEditor } from '#ui/PaletteListEditor'
 
 export const PM_PROJECT_EDIT_VIEW_TYPE = 'pm-project-edit'
 

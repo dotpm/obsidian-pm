@@ -17,8 +17,8 @@ import {
   type TaskSearch,
   type TaskWrite
 } from '@dotpm/api'
-import type PMPlugin from '../main'
-import type { ProjectRef } from '../store'
+import type PMPlugin from '#main'
+import type { ProjectRef } from '#store'
 import { ChangeLog } from './ChangeLog'
 
 const SCHEDULE_FIELDS: Array<keyof TaskWrite> = ['start', 'due', 'dependencies', 'status', 'type']

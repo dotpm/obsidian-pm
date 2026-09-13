@@ -1,6 +1,6 @@
 import { Notice } from 'obsidian'
 import { safeAsync, type TimelineCfg, xToDate, getSnapPoints, snapX } from '@dotpm/ui'
-import type PMPlugin from '../../main'
+import type PMPlugin from '#main'
 import type { Project, Task } from '@dotpm/core'
 
 export interface DragState {

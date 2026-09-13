@@ -1,4 +1,4 @@
-import { createExtraButton } from '../platform'
+import { createExtraButton } from '#platform'
 
 export interface ViewSwitcherOption<T extends string> {
   id: T

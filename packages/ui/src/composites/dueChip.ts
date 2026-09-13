@@ -1,4 +1,4 @@
-import { Chip } from '../primitives/Chip'
+import { Chip } from '#primitives/Chip'
 
 export type DueUrgency = 'normal' | 'near' | 'overdue'
 

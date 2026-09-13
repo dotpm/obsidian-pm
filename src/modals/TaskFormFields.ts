@@ -1,4 +1,4 @@
-import type PMPlugin from '../main'
+import type PMPlugin from '#main'
 import {
   type Project,
   type Task,
@@ -26,7 +26,7 @@ import {
   type HiddenProperty
 } from '@dotpm/ui'
 import { renderCustomFieldInput } from './CustomFieldInputs'
-import { renderPersonPicker } from '../ui/PersonPicker'
+import { renderPersonPicker } from '#ui/PersonPicker'
 
 export interface TaskFormFieldsContext {
   task: Task

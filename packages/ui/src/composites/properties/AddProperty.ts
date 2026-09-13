@@ -1,6 +1,6 @@
-import { setIcon } from '../../platform'
+import { setIcon } from '#platform'
 import { renderAddButton } from '../addButton'
-import { Popover } from '../../primitives/Popover'
+import { Popover } from '#primitives/Popover'
 
 export interface HiddenProperty {
   id: string

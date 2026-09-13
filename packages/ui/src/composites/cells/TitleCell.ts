@@ -1,6 +1,6 @@
 import type { Task } from '@dotpm/core'
-import { Chip } from '../../primitives/Chip'
-import { IconButton } from '../../primitives/IconButton'
+import { Chip } from '#primitives/Chip'
+import { IconButton } from '#primitives/IconButton'
 import { renderTagChip } from '../tagChip'
 import { renderTreeGuides } from '../treeGuides'
 import { makeInlineEdit } from './inlineEdit'

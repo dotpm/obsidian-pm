@@ -1,4 +1,4 @@
-import type PMPlugin from '../../main'
+import type PMPlugin from '#main'
 import {
   type FilterState,
   type LineBorders,
@@ -11,9 +11,9 @@ import {
   applyTaskFilterFlat,
   isFilterActive
 } from '@dotpm/core'
-import { personKeyer, type ProjectScope } from '../../store'
+import { personKeyer, type ProjectScope } from '#store'
 import { renderAddButton, childTreeGuides, compareTask, type SortDir, type SortKey } from '@dotpm/ui'
-import { openTaskModal } from '../../ui/ModalFactory'
+import { openTaskModal } from '#ui/ModalFactory'
 import { openAddTask } from '../addTask'
 import { renderTaskRow, updateSelectedRow, updateSelectAllCheckbox } from './TableRow'
 

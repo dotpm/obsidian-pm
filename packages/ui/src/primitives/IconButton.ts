@@ -1,4 +1,4 @@
-import { createExtraButton, type PlatformExtraButton } from '../platform'
+import { createExtraButton, type PlatformExtraButton } from '#platform'
 
 export class IconButton {
   el: HTMLElement

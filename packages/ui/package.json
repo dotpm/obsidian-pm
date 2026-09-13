@@ -3,6 +3,12 @@
   "version": "0.0.0",
   "private": true,
   "type": "module",
+  "imports": {
+    "#platform": "./src/platform.ts",
+    "#dom": "./src/dom.ts",
+    "#icons": "./src/icons.ts",
+    "#primitives/*": "./src/primitives/*.ts"
+  },
   "exports": {
     ".": "./src/index.ts",
     "./dom-shim": "./src/dom-shim.ts",

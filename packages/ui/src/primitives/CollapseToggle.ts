@@ -1,4 +1,4 @@
-import { setIcon } from '../platform'
+import { setIcon } from '#platform'
 
 export interface CollapseToggleProps {
   collapsed: boolean

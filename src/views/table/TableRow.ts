@@ -26,8 +26,8 @@ import {
 } from '@dotpm/ui'
 import { updateSelectCheckboxes, getVisibleTaskIds } from './TableRenderer'
 import type { TableContext, TableState, TableTreeRow } from './TableRenderer'
-import { openTaskModal } from '../../ui/ModalFactory'
-import { buildTaskContextMenu } from '../../ui/TaskContextMenu'
+import { openTaskModal } from '#ui/ModalFactory'
+import { buildTaskContextMenu } from '#ui/TaskContextMenu'
 import { toggleCollapsed } from '../collapse'
 import { linkedRefs } from '../linkedRefs'
 

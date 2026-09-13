@@ -1,7 +1,7 @@
 import type { App, Plugin } from 'obsidian'
 import { TFile } from 'obsidian'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { makeFakeApp, type FakeVault } from '../../test/fakeVault'
+import { makeFakeApp, type FakeVault } from '#test/fakeVault'
 import { DEFAULT_SETTINGS, type PMSettings } from '@dotpm/core'
 import { VaultIndex } from './VaultIndex'
 

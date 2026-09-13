@@ -1,5 +1,5 @@
-import type PMPlugin from '../main'
-import { createPersonLink, personCandidates, personKeyer, type PersonCandidate } from '../store'
+import type PMPlugin from '#main'
+import { createPersonLink, personCandidates, personKeyer, type PersonCandidate } from '#store'
 import { renderMultiSelect } from '@dotpm/ui'
 import { dedupePeople, displayName } from '@dotpm/core'
 

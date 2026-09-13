@@ -5,6 +5,14 @@
   "repository": "github:dotpm/obsidian-pm",
   "main": "main.js",
   "type": "module",
+  "imports": {
+    "#main": "./src/main.ts",
+    "#store": "./src/store/index.ts",
+    "#store/*": "./src/store/*.ts",
+    "#ui/*": "./src/ui/*.ts",
+    "#modals/*": "./src/modals/*.ts",
+    "#test/*": "./test/*.ts"
+  },
   "scripts": {
     "dev": "run-p dev:js dev:css",
     "dev:js": "pnpm build:viewer && tsdown --watch",

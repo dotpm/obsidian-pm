@@ -1,5 +1,5 @@
-import { getIconIds, setIcon } from '../../platform'
-import { Popover } from '../../primitives/Popover'
+import { getIconIds, setIcon } from '#platform'
+import { Popover } from '#primitives/Popover'
 import { renderGlyph, renderOptionRow } from './optionList'
 
 export interface IconControlOpts {

@@ -12,7 +12,7 @@ import {
   setIcon,
   setTooltip
 } from 'obsidian'
-import type PMPlugin from '../main'
+import type PMPlugin from '#main'
 import {
   type Project,
   type Task,
@@ -22,10 +22,10 @@ import {
   getDefaultPriorityId,
   getPriorityConfig
 } from '@dotpm/core'
-import { TaskFileNameConflictError } from '../store'
+import { TaskFileNameConflictError } from '#store'
 import { safeAsync, renderGlyph } from '@dotpm/ui'
 import { saveShortcutLabel } from '../utils'
-import { confirmDialog, openTaskByPath } from '../ui/ModalFactory'
+import { confirmDialog, openTaskByPath } from '#ui/ModalFactory'
 import { renderTaskFormFields } from './TaskFormFields'
 import { renderTimeTrackingPanel } from './TimeTrackingPanel'
 import { renderSubtasksPanel } from './SubtasksPanel'

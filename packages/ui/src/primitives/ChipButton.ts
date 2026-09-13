@@ -1,4 +1,4 @@
-import { createButton, type PlatformButton } from '../platform'
+import { createButton, type PlatformButton } from '#platform'
 
 export class ChipButton {
   el: HTMLButtonElement
