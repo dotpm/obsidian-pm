@@ -7,7 +7,7 @@
 [![Obsidian community plugin](https://img.shields.io/badge/Obsidian-community%20plugin-7c3aed?logo=obsidian&logoColor=white)](https://obsidian.md/plugins?id=project-manager)
 [![Downloads](https://img.shields.io/github/downloads/dotpm/obsidian-pm/total?color=2ea44f)](https://github.com/dotpm/obsidian-pm/releases)
 [![License](https://img.shields.io/github/license/dotpm/obsidian-pm)](LICENSE)
-[![Buy me a coffee](https://img.shields.io/badge/buy%20me%20a%20coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/kropachev)
+[![Donate](https://img.shields.io/badge/Donate-Buy%20me%20a%20coffee-ffdd00?logo=buy-me-a-coffee&logoColor=black)](https://www.buymeacoffee.com/kropachev)
 
 [Install](#install) | [Quick start](#quick-start) | [Docs](docs) | [Website](https://dotpm.pm) | [Changelog](CHANGELOG.md)
 
