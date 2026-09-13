@@ -1,18 +1,18 @@
 import { Menu, ButtonComponent } from 'obsidian'
 import type PMPlugin from '#main'
 import type { ProjectRef } from '#store'
-import { formatDateShort, dateUrgency } from '@dotpm/core'
+import { formatDateShort, dateUrgency, t, tn } from '@dotpm/core'
 import { safeAsync, EmptyState, ProjectRow, childTreeGuides } from '@dotpm/ui'
 import { openProjectCreate } from '#ui/ModalFactory'
 import { linkedRefs } from './linkedRefs'
 
-const COLUMNS: { label: string; cls?: string }[] = [
+const COLUMNS = (): { label: string; cls?: string }[] => [
   { label: '' },
-  { label: 'Project', cls: 'pm-project-th-title' },
-  { label: 'Progress' },
-  { label: 'Tasks' },
-  { label: 'Members' },
-  { label: 'Due' },
+  { label: t('Project'), cls: 'pm-project-th-title' },
+  { label: t('Progress') },
+  { label: t('Tasks') },
+  { label: t('Members') },
+  { label: t('Due') },
   { label: '' }
 ]
 
@@ -26,12 +26,12 @@ export interface ProjectListContext {
 export function renderProjectListToolbar(ctx: ProjectListContext): void {
   ctx.toolbarEl.empty()
   const left = ctx.toolbarEl.createDiv('pm-toolbar-left')
-  left.createEl('h2', { text: 'Projects', cls: 'pm-toolbar-title' })
+  left.createEl('h2', { text: t('Projects'), cls: 'pm-toolbar-title' })
   const line = countLine(ctx)
   if (line) left.createSpan({ cls: 'pm-project-list-count', text: line })
 
   new ButtonComponent(ctx.toolbarEl)
-    .setButtonText('+ new project')
+    .setButtonText(t('+ new project'))
     .setCta()
     .onClick(() => openProjectCreate(ctx.plugin))
 }
@@ -40,8 +40,8 @@ function countLine(ctx: ProjectListContext): string {
   const refs = ctx.plugin.index.projectRefs()
   if (refs.length === 0) return ''
   const behind = refs.filter((ref) => ctx.plugin.index.dueSummary(ref).overdue > 0).length
-  const bits = [refs.length === 1 ? '1 project' : `${refs.length} projects`]
-  if (behind) bits.push(`${behind} with tasks past due`)
+  const bits = [tn(refs.length, '{n} project', '{n} projects')]
+  if (behind) bits.push(t('{n} with tasks past due', { n: behind }))
   return bits.join(' · ')
 }
 
@@ -51,14 +51,14 @@ export function renderProjectListContent(ctx: ProjectListContext): void {
 
   if (roots.length === 0) {
     if (!ctx.plugin.index.ready) {
-      new EmptyState(ctx.contentEl).setIcon('📋').setTitle('Looking for projects')
+      new EmptyState(ctx.contentEl).setIcon('📋').setTitle(t('Looking for projects'))
       return
     }
     new EmptyState(ctx.contentEl)
       .setIcon('📋')
-      .setTitle('No projects yet')
-      .setBody('Create your first project to get started.')
-      .setAction('+ new project', () => openProjectCreate(ctx.plugin))
+      .setTitle(t('No projects yet'))
+      .setBody(t('Create your first project to get started.'))
+      .setAction(t('+ new project'), () => openProjectCreate(ctx.plugin))
     return
   }
 
@@ -66,7 +66,7 @@ export function renderProjectListContent(ctx: ProjectListContext): void {
   wrapper.setAttr('data-borders', ctx.plugin.settings.lineBorders)
   const table = wrapper.createEl('table', { cls: 'pm-table pm-project-table' })
   const headRow = table.createEl('thead').createEl('tr')
-  for (const column of COLUMNS) headRow.createEl('th', { text: column.label, cls: column.cls })
+  for (const column of COLUMNS()) headRow.createEl('th', { text: column.label, cls: column.cls })
   renderRows(ctx, table.createEl('tbody'), roots, [])
 }
 
@@ -111,27 +111,27 @@ function openProjectContextMenu(ctx: ProjectListContext, ref: ProjectRef, e: Mou
   const menu = new Menu()
   menu.addItem((item) =>
     item
-      .setTitle('Open overview')
+      .setTitle(t('Open overview'))
       .setIcon('file-text')
       .onClick(safeAsync(() => ctx.plugin.router.openProjectOverview(ref.path)))
   )
   menu.addItem((item) =>
     item
-      .setTitle('Open tasks')
+      .setTitle(t('Open tasks'))
       .setIcon('table')
       .onClick(safeAsync(() => ctx.plugin.router.openScope({ kind: 'project', path: ref.path })))
   )
   if (ctx.plugin.index.childRefs(ref.path).length) {
     menu.addItem((item) =>
       item
-        .setTitle('Open with sub-projects')
+        .setTitle(t('Open with sub-projects'))
         .setIcon('layers')
         .onClick(safeAsync(() => ctx.plugin.router.openScope({ kind: 'subtree', path: ref.path })))
     )
   }
   menu.addItem((item) =>
     item
-      .setTitle('Duplicate project')
+      .setTitle(t('Duplicate project'))
       .setIcon('copy')
       .onClick(
         safeAsync(async () => {
@@ -143,13 +143,13 @@ function openProjectContextMenu(ctx: ProjectListContext, ref: ProjectRef, e: Mou
   )
   menu.addItem((item) =>
     item
-      .setTitle('Edit project')
+      .setTitle(t('Edit project'))
       .setIcon('settings')
       .onClick(safeAsync(() => ctx.plugin.router.openProjectEdit(ref.path)))
   )
   menu.addItem((item) =>
     item
-      .setTitle('Delete project')
+      .setTitle(t('Delete project'))
       .setIcon('trash')
       .onClick(
         safeAsync(async () => {

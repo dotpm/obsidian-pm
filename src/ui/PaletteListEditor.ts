@@ -1,5 +1,6 @@
 import { Notice } from 'obsidian'
 import type { PriorityConfig, StatusConfig } from '@dotpm/core'
+import { t } from '@dotpm/core'
 import { IconButton, renderIconControl } from '@dotpm/ui'
 
 /** On drop, moves the dragged item to this row's index. */
@@ -63,7 +64,7 @@ export function renderStatusDoneToggle(parent: HTMLElement, status: StatusConfig
   const wrapper = parent.createEl('label', { cls: 'pm-settings-complete-toggle' })
   const checkbox = wrapper.createEl('input', { type: 'checkbox' })
   checkbox.checked = status.complete
-  wrapper.createSpan({ text: 'Done', cls: 'pm-settings-complete-text' })
+  wrapper.createSpan({ text: t('Done'), cls: 'pm-settings-complete-text' })
   checkbox.addEventListener('change', () => {
     status.complete = checkbox.checked
     onChanged()
@@ -99,7 +100,7 @@ function renderPaletteListEditor<T extends PaletteEntry>(container: HTMLElement,
 
     new IconButton(row)
       .setIcon('x')
-      .setTooltip('Remove')
+      .setTooltip(t('Remove'))
       .onClick(() => {
         if (opts.items.length <= 1) {
           new Notice(opts.minOneMessage)
@@ -124,7 +125,7 @@ export function renderStatusListEditor(container: HTMLElement, opts: StatusListE
     items: opts.statuses,
     onChanged: opts.onChanged,
     onDeleted: opts.onDeleted,
-    minOneMessage: 'You must have at least one status.',
+    minOneMessage: t('You must have at least one status.'),
     renderExtra: (row, status) => renderStatusDoneToggle(row, status, opts.onChanged)
   })
 }
@@ -140,6 +141,6 @@ export function renderPriorityListEditor(container: HTMLElement, opts: PriorityL
     items: opts.priorities,
     onChanged: opts.onChanged,
     onDeleted: opts.onDeleted,
-    minOneMessage: 'You must have at least one priority.'
+    minOneMessage: t('You must have at least one priority.')
   })
 }

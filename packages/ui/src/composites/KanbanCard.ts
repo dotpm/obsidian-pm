@@ -1,4 +1,4 @@
-import { type Task, formatDateShort } from '@dotpm/core'
+import { type Task, formatDateShort, t } from '@dotpm/core'
 import { AvatarStack, type AvatarPerson } from '#primitives/AvatarStack'
 import { Chip } from '#primitives/Chip'
 import { ProgressBar } from '#primitives/ProgressBar'
@@ -52,15 +52,15 @@ export class KanbanCard {
         .setVariant('solid')
         .setSize('sm')
         .setColor('var(--color-purple)')
-        .setTooltip('Milestone')
+        .setTooltip(t('Milestone'))
     }
     if (task.type === 'subtask') {
       new Chip(titleRow)
-        .setLabel('Sub')
+        .setLabel(t('Sub'))
         .setVariant('solid')
         .setSize('sm')
         .setColor('var(--color-green)')
-        .setTooltip('Subtask')
+        .setTooltip(t('Subtask'))
     }
     if (task.recurrence) {
       new Chip(titleRow)
@@ -68,7 +68,7 @@ export class KanbanCard {
         .setVariant('solid')
         .setSize('sm')
         .setColor('var(--color-blue)')
-        .setTooltip('Recurring')
+        .setTooltip(t('Recurring'))
     }
 
     if (props.descriptionPreview) {

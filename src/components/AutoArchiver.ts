@@ -1,5 +1,5 @@
 import type PMPlugin from '#main'
-import { type Project, today, isTerminalStatus } from '@dotpm/core'
+import { type Project, today, isTerminalStatus, t } from '@dotpm/core'
 import { type ArchiveCandidate, collectArchivable, withoutBlockedDependents } from '#store'
 import { safeAsync } from '@dotpm/ui'
 
@@ -46,7 +46,11 @@ export class AutoArchiver {
       const tasks = await this.apply(plans)
       settings.lastAutoArchiveDate = stamp
       await this.plugin.saveSettings()
-      if (tasks) this.plugin.showNotice(`Archived ${tasks} completed task(s) in ${plans.length} project(s).`)
+      if (tasks) {
+        this.plugin.showNotice(
+          t('Archived {tasks} completed task(s) in {projects} project(s).', { tasks, projects: plans.length })
+        )
+      }
     } finally {
       this.running = false
     }

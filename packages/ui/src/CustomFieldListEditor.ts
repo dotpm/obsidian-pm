@@ -1,4 +1,4 @@
-import { type CustomFieldDef, CUSTOM_FIELD_TYPES, makeId } from '@dotpm/core'
+import { type CustomFieldDef, CUSTOM_FIELD_TYPES, makeId, t } from '@dotpm/core'
 import { IconButton } from './primitives/IconButton'
 import { renderAddButton } from './composites/addButton'
 
@@ -27,8 +27,8 @@ export function renderCustomFieldListEditor(container: HTMLElement, opts: Custom
   const rerender = opts.redraw ?? ((): void => renderCustomFieldListEditor(container, opts))
   container.empty()
   opts.fields.forEach((field, index) => renderRow(container, field, index, opts, rerender))
-  renderAddButton(container, 'Add custom field', () => {
-    opts.fields.push({ id: makeId(), name: 'New field', type: 'text', options: [] })
+  renderAddButton(container, t('Add custom field'), () => {
+    opts.fields.push({ id: makeId(), name: t('New field'), type: 'text', options: [] })
     opts.onChanged()
     rerender()
   })
@@ -46,7 +46,7 @@ function renderRow(
   opts.renderExtra?.(row, field)
   new IconButton(row)
     .setIcon('x')
-    .setTooltip('Remove field')
+    .setTooltip(t('Remove field'))
     .onClick(() => {
       opts.fields.splice(index, 1)
       opts.onChanged()
@@ -62,7 +62,7 @@ export function renderCustomFieldFields(
   redraw: () => void
 ): void {
   const name = parent.createEl('input', { type: 'text', value: field.name, cls: 'pm-input pm-cf-name' })
-  name.placeholder = 'Field name'
+  name.placeholder = t('Field name')
   name.addEventListener('change', () => {
     field.name = name.value
     onChanged()
@@ -70,7 +70,7 @@ export function renderCustomFieldFields(
 
   const type = parent.createEl('select', { cls: 'pm-input pm-select pm-cf-type' })
   for (const id of CUSTOM_FIELD_TYPES) {
-    const el = type.createEl('option', { value: id, text: CUSTOM_FIELD_TYPE_LABELS[id] })
+    const el = type.createEl('option', { value: id, text: t(CUSTOM_FIELD_TYPE_LABELS[id]) })
     if (id === field.type) el.selected = true
   }
   type.addEventListener('change', () => {
@@ -90,21 +90,21 @@ export function renderCustomFieldOptions(parent: HTMLElement, field: CustomField
     options.forEach((option, i) => {
       const optionRow = optionsWrap.createDiv('pm-cf-opt-row')
       const input = optionRow.createEl('input', { type: 'text', value: option, cls: 'pm-input pm-cf-opt-input' })
-      input.placeholder = `Option ${i + 1}`
+      input.placeholder = t('Option {n}', { n: i + 1 })
       input.addEventListener('change', () => {
         options[i] = input.value
         onChanged()
       })
       new IconButton(optionRow)
         .setIcon('x')
-        .setTooltip('Remove option')
+        .setTooltip(t('Remove option'))
         .onClick(() => {
           options.splice(i, 1)
           onChanged()
           drawOptions()
         })
     })
-    renderAddButton(optionsWrap, 'Add option', () => {
+    renderAddButton(optionsWrap, t('Add option'), () => {
       options.push('')
       drawOptions()
     })

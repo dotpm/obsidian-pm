@@ -1,6 +1,6 @@
 import { App, ButtonComponent, ExtraButtonComponent, Keymap, Modal, setIcon } from 'obsidian'
 import type PMPlugin from '#main'
-import { DEFAULT_PROJECT_COLOR, DEFAULT_PROJECT_ICON } from '@dotpm/core'
+import { DEFAULT_PROJECT_COLOR, DEFAULT_PROJECT_ICON, t } from '@dotpm/core'
 import { findIgnoringCase, folderOf, projectFilePath, projectFolderOf } from '#store'
 import { safeAsync, renderPropRow, renderIconControl, renderSelectControl } from '@dotpm/ui'
 import { saveShortcutLabel } from '../utils'
@@ -82,11 +82,11 @@ export class ProjectCreateModal extends Modal {
     this.crumbFolder = crumb.createSpan({ cls: 'pm-te-crumb-name', text: this.targetFolder() })
     const sep = crumb.createSpan({ cls: 'pm-te-crumb-sep' })
     setIcon(sep, 'chevron-right')
-    crumb.createSpan({ text: 'New project' })
+    crumb.createSpan({ text: t('New project') })
 
     this.header.createDiv('pm-te-header-spacer')
 
-    const closeBtn = new ExtraButtonComponent(this.header).setIcon('x').setTooltip('Close')
+    const closeBtn = new ExtraButtonComponent(this.header).setIcon('x').setTooltip(t('Close'))
     closeBtn.extraSettingsEl.addClass('pm-te-header-btn')
     closeBtn.onClick(() => this.close())
   }
@@ -99,7 +99,7 @@ export class ProjectCreateModal extends Modal {
     const wrap = parent.createDiv('pm-te-title-wrap')
     this.titleInput = wrap.createEl('textarea', { cls: 'pm-te-title' })
     this.titleInput.rows = 1
-    this.titleInput.placeholder = 'Project name'
+    this.titleInput.placeholder = t('Project name')
     this.titleInput.spellcheck = false
     this.titleError = wrap.createDiv({ cls: 'pm-modal-title-error', attr: { hidden: '' } })
 
@@ -121,7 +121,7 @@ export class ProjectCreateModal extends Modal {
   private renderIcon(parent: HTMLElement): void {
     renderPropRow(
       parent,
-      'Icon',
+      t('Icon'),
       () => {
         this.iconHost = createDiv('pm-prop-value')
         this.drawIcon()
@@ -146,7 +146,7 @@ export class ProjectCreateModal extends Modal {
   private renderColor(parent: HTMLElement): void {
     renderPropRow(
       parent,
-      'Color',
+      t('Color'),
       () => {
         const cell = createDiv('pm-prop-value pm-prop-color')
         const picker = cell.createEl('input', { type: 'color', cls: 'pm-color-custom' })
@@ -165,7 +165,7 @@ export class ProjectCreateModal extends Modal {
   private renderParent(parent: HTMLElement): void {
     renderPropRow(
       parent,
-      'Parent',
+      t('Parent'),
       () => {
         const cell = createDiv('pm-prop-value')
         const draw = (): void => {
@@ -173,10 +173,10 @@ export class ProjectCreateModal extends Modal {
           renderSelectControl({
             container: cell,
             value: this.draft.parentPath,
-            placeholder: 'No parent',
+            placeholder: t('No parent'),
             search: true,
             options: [
-              { id: '', label: 'No parent' },
+              { id: '', label: t('No parent') },
               ...this.plugin.index.projectRefs().map((ref) => ({ id: ref.path, label: ref.title, color: ref.color }))
             ],
             onChange: (path) => {
@@ -196,7 +196,7 @@ export class ProjectCreateModal extends Modal {
   private renderMembers(parent: HTMLElement): void {
     renderPropRow(
       parent,
-      'Members',
+      t('Members'),
       () => {
         const cell = createDiv('pm-prop-value')
         renderPersonPicker({
@@ -204,7 +204,7 @@ export class ProjectCreateModal extends Modal {
           plugin: this.plugin,
           // The note doesn't exist yet, so links are resolved from the vault root.
           sourcePath: '',
-          addLabel: 'Add member',
+          addLabel: t('Add member'),
           selected: () => this.draft.teamMembers,
           add: (value) => {
             this.draft.teamMembers.push(value)
@@ -221,9 +221,9 @@ export class ProjectCreateModal extends Modal {
 
   private renderDescription(parent: HTMLElement): void {
     const section = parent.createDiv('pm-modal-section pm-modal-desc-section')
-    section.createEl('h4', { text: 'Description', cls: 'pm-modal-section-title' })
+    section.createEl('h4', { text: t('Description'), cls: 'pm-modal-section-title' })
     const area = section.createEl('textarea', { cls: 'pm-modal-description' })
-    area.placeholder = 'What this project covers and what done looks like'
+    area.placeholder = t('What this project covers and what done looks like')
     const autoResize = () => {
       area.setCssProps({ '--desc-height': 'auto' })
       area.setCssProps({ '--desc-height': area.scrollHeight + 'px' })
@@ -244,9 +244,11 @@ export class ProjectCreateModal extends Modal {
 
     footer.createDiv('pm-footer-spacer')
 
-    new ButtonComponent(footer).setButtonText('Cancel').onClick(() => this.close())
+    new ButtonComponent(footer).setButtonText(t('Cancel')).onClick(() => this.close())
     this.submit = new ButtonComponent(footer)
-      .setButtonText(`Create project (${saveShortcutLabel(this.plugin.settings.editorSaveModifier)})`)
+      .setButtonText(
+        t('Create project ({shortcut})', { shortcut: saveShortcutLabel(this.plugin.settings.editorSaveModifier) })
+      )
       .setCta()
       .onClick(() => this.create())
   }
@@ -260,7 +262,7 @@ export class ProjectCreateModal extends Modal {
     this.pathHint.lastElementChild?.setText(path)
     this.pathHint.toggleClass('pm-hidden', !path)
     if (taken) {
-      this.titleError.setText('A note with this name is already there.')
+      this.titleError.setText(t('A note with this name is already there.'))
       this.titleError.removeAttribute('hidden')
       this.titleInput.addClass('pm-input-error')
     } else {

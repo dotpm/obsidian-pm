@@ -1,6 +1,6 @@
 import { Notice } from 'obsidian'
 import type PMPlugin from '#main'
-import { Temporal, today, parsePlainDate } from '@dotpm/core'
+import { Temporal, today, parsePlainDate, t } from '@dotpm/core'
 
 const CHECK_INTERVAL_MS = 60 * 60 * 1000
 
@@ -49,14 +49,25 @@ export class Notifier {
         if (isOverdue && !this.notifiedIds.has(notifKey + '-overdue')) {
           this.notifiedIds.add(notifKey + '-overdue')
           const daysAgo = now.since(due, { largestUnit: 'days' }).days
-          new Notice(`⚠️ Overdue: "${task.title}" in ${project.title} was due ${daysAgo}d ago`, 8000)
+          new Notice(
+            t('⚠️ Overdue: "{task}" in {project} was due {days}d ago', {
+              task: task.title,
+              project: project.title,
+              days: daysAgo
+            }),
+            8000
+          )
         } else if (isDueSoon && !this.notifiedIds.has(notifKey + '-soon')) {
           this.notifiedIds.add(notifKey + '-soon')
           const daysLeft = due.since(now, { largestUnit: 'days' }).days
           const msg =
             daysLeft === 0
-              ? `📅 Due today: "${task.title}" in ${project.title}`
-              : `📅 Due in ${daysLeft}d: "${task.title}" in ${project.title}`
+              ? t('📅 Due today: "{task}" in {project}', { task: task.title, project: project.title })
+              : t('📅 Due in {days}d: "{task}" in {project}', {
+                  days: daysLeft,
+                  task: task.title,
+                  project: project.title
+                })
           new Notice(msg, 6000)
         }
       }

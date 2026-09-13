@@ -45,7 +45,8 @@ import {
   TASK_FRONTMATTER_KEYS,
   taskFilePath,
   TASK_SLUG_MAX_LENGTH,
-  type RefWriter
+  type RefWriter,
+  t
 } from '@dotpm/core'
 import { archiveTask as doArchiveTask, unarchiveTask as doUnarchiveTask } from './ArchiveOps'
 import type { VaultIndex } from './VaultIndex'
@@ -96,7 +97,7 @@ function resolveTaskPath(task: Task, folder: string, previousPath: string | unde
 
 export class TaskFileNameConflictError extends Error {
   constructor(public readonly path: string) {
-    super(`A note named "${fileNameFromPath(path)}" already exists.`)
+    super(t('A note named "{file}" already exists.', { file: fileNameFromPath(path) }))
     this.name = 'TaskFileNameConflictError'
   }
 
@@ -107,7 +108,7 @@ export class TaskFileNameConflictError extends Error {
 
 export class UnreadableNoteError extends Error {
   constructor(public readonly path: string) {
-    super(`Could not read the properties of "${fileNameFromPath(path)}".`)
+    super(t('Could not read the properties of "{file}".', { file: fileNameFromPath(path) }))
     this.name = 'UnreadableNoteError'
   }
 }
@@ -451,7 +452,7 @@ export class ProjectStore implements TaskSource {
       return project
     } catch (e) {
       console.error(`[PM] Failed to load project ${file.path}:`, e)
-      new Notice(`dotpm: Failed to load "${file.basename}". Check console for details.`)
+      new Notice(t('dotpm: Failed to load "{file}". Check console for details.', { file: file.basename }))
       return null
     }
   }
@@ -577,7 +578,7 @@ export class ProjectStore implements TaskSource {
         console.warn(`[PM] Task file no longer exists, skipping: ${file.path}`)
       } else {
         console.error(`[PM] Failed to load task ${file.path}:`, e)
-        new Notice(`dotpm: Failed to load task "${file.basename}". Check console for details.`)
+        new Notice(t('dotpm: Failed to load task "{file}". Check console for details.', { file: file.basename }))
       }
       return { task: null, subtaskIds: [], parentId: null }
     }
@@ -724,11 +725,11 @@ export class ProjectStore implements TaskSource {
       if (e instanceof TaskFileNameConflictError) throw e
       if (e instanceof UnreadableNoteError) {
         console.error(`[PM] Refused to rewrite an unreadable note while saving "${project.title}":`, e)
-        new Notice(`dotpm: "${project.title}" was not saved because a note could not be read.`)
+        new Notice(t('dotpm: "{title}" was not saved because a note could not be read.', { title: project.title }))
         throw e
       }
       console.error(`[PM] Failed to save project "${project.title}":`, e)
-      new Notice(`dotpm: Failed to save "${project.title}". Check console for details.`)
+      new Notice(t('dotpm: Failed to save "{title}". Check console for details.', { title: project.title }))
       throw e
     }
   }
@@ -777,7 +778,12 @@ export class ProjectStore implements TaskSource {
     if (errors.length) {
       const typed = errors.find((e) => e instanceof TaskFileNameConflictError || e instanceof UnreadableNoteError)
       if (errors.length === 1 && typed) throw typed
-      throw new Error(`Failed to save ${errors.length} task(s): ${errors.map((e) => e.message).join('; ')}`)
+      throw new Error(
+        t('Failed to save {n} task(s): {messages}', {
+          n: errors.length,
+          messages: errors.map((e) => e.message).join('; ')
+        })
+      )
     }
   }
 
@@ -887,7 +893,9 @@ export class ProjectStore implements TaskSource {
 
   async createProject(title: string, folder: string, patch?: ProjectPatch): Promise<Project> {
     const filePath = projectFilePath(title, folder)
-    if (findIgnoringCase(this.app, filePath)) throw new Error(`A project named "${title}" already exists here.`)
+    if (findIgnoringCase(this.app, filePath)) {
+      throw new Error(t('A project named "{title}" already exists here.', { title }))
+    }
     const project = makeProject(title, filePath)
     if (patch) Object.assign(project, patch)
     await this.saveProject(project)
@@ -1135,7 +1143,7 @@ export class ProjectStore implements TaskSource {
     const dir = folderOf(projectFolderOf(this.app, source.filePath) ?? source.filePath)
     const filePath = projectFilePath(title, dir)
     if (findIgnoringCase(this.app, filePath) || findIgnoringCase(this.app, folderOf(filePath))) {
-      throw new Error(`A project named "${title}" already exists here.`)
+      throw new Error(t('A project named "{title}" already exists here.', { title }))
     }
 
     await this.loadProjectBody(source)

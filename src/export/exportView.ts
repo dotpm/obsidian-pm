@@ -1,5 +1,5 @@
 import { Notice, Platform, normalizePath } from 'obsidian'
-import { sanitizeFileName } from '@dotpm/core'
+import { sanitizeFileName, t } from '@dotpm/core'
 import type PMPlugin from '#main'
 import { folderOf } from '#store'
 import type { ProjectView } from '../views/ProjectView'
@@ -16,7 +16,7 @@ export async function exportViewAsHtml(plugin: PMPlugin, view: ProjectView): Pro
   const folder = folderOf(primary.filePath)
   const path = normalizePath(`${folder ? folder + '/' : ''}${sanitizeFileName(snapshot.title)} snapshot.html`)
   await plugin.app.vault.adapter.write(path, html)
-  new Notice(`Saved ${path}`)
+  new Notice(t('Saved {path}', { path }))
   if (Platform.isDesktopApp) {
     const app = plugin.app as typeof plugin.app & { openWithDefaultApp?: (path: string) => Promise<void> }
     await app.openWithDefaultApp?.(path)

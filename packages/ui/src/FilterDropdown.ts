@@ -1,4 +1,5 @@
 import { createMenu } from './platform'
+import { t } from '@dotpm/core'
 import { ChipButton } from './primitives/ChipButton'
 import { addPaletteMenuItem } from './StatusBadge'
 
@@ -17,7 +18,7 @@ export function renderFilterDropdown(
   options: FilterOption[],
   onChange: (selected: string[]) => void
 ): HTMLElement {
-  const btn = new ChipButton(parent).setAriaLabel(`Filter by ${label}`)
+  const btn = new ChipButton(parent).setAriaLabel(t('Filter by {column}', { column: label }))
 
   const updateLabel = () => {
     const has = selected.length > 0
@@ -46,7 +47,7 @@ export function renderFilterDropdown(
     if (selected.length) {
       menu.addSeparator()
       menu.addItem((item) =>
-        item.setTitle('Clear').onClick(() => {
+        item.setTitle(t('Clear')).onClick(() => {
           selected.length = 0
           onChange(selected)
           updateLabel()

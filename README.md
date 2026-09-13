@@ -100,6 +100,7 @@ One column per status. Dragging a card to another column changes its status. Car
 - Statuses and priorities with label, color and icon, global or per project
 - Per-project overrides for default view, scheduling and archiving
 - Team members, global and per project
+- English or Simplified Chinese interface, chosen in settings
 
 ## File format
 

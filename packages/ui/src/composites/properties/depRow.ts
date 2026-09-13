@@ -1,5 +1,6 @@
 import { setIcon, setTooltip } from '#platform'
 import { IconButton } from '#primitives/IconButton'
+import { t } from '@dotpm/core'
 import { renderNoteLink } from '../noteLink'
 
 /** The note a row's task lives in, and what activating the row leads to. */
@@ -32,7 +33,7 @@ export function renderDepRow(parent: HTMLElement, props: DepRowProps): HTMLEleme
   }
   if (props.tooltip) setTooltip(row, props.tooltip)
   if (props.onRemove) {
-    new IconButton(row).setIcon('x').setTooltip('Remove dependency').onClick(props.onRemove)
+    new IconButton(row).setIcon('x').setTooltip(t('Remove dependency')).onClick(props.onRemove)
   }
   return row
 }

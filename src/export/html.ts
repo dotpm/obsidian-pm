@@ -1,3 +1,4 @@
+import { getLocale } from '@dotpm/core'
 import type { Snapshot } from '@dotpm/api'
 
 function escapeHtml(text: string): string {
@@ -12,5 +13,6 @@ function escapeHtml(text: string): string {
 export function renderSnapshotHtml(snapshot: Snapshot, template: string = __VIEWER_TEMPLATE__): string {
   if (!template) throw new Error('this build carries no viewer; run the viewer build first')
   const json = JSON.stringify(snapshot).replace(/</g, '\\u003c')
-  return template.split('__DOTPM_TITLE__').join(escapeHtml(snapshot.title)).split('__DOTPM_SNAPSHOT__').join(json)
+  const page = template.split('__DOTPM_LOCALE__').join(getLocale())
+  return page.split('__DOTPM_TITLE__').join(escapeHtml(snapshot.title)).split('__DOTPM_SNAPSHOT__').join(json)
 }

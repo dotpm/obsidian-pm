@@ -1,4 +1,5 @@
 import { IconButton } from '#primitives/IconButton'
+import { t } from '@dotpm/core'
 
 export interface ActionsCellProps {
   onClick: (e: MouseEvent) => void
@@ -11,7 +12,7 @@ export class ActionsCell {
     this.el = parentRow.createEl('td', { cls: 'pm-table-cell pm-table-cell-actions' })
     new IconButton(this.el)
       .setIcon('more-horizontal')
-      .setTooltip('Task actions')
+      .setTooltip(t('Task actions'))
       .setRevealOnHover(true)
       .onClick(props.onClick)
   }

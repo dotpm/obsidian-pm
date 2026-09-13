@@ -1,5 +1,6 @@
 export * from './types'
 export * from './dates'
+export * from './i18n'
 export * from './utils'
 export * from './yaml'
 export * from './store/TaskTreeOps'

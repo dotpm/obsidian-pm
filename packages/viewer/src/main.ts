@@ -1,4 +1,5 @@
 import '@dotpm/ui/dom-shim'
+import { setLocale, t } from '@dotpm/core'
 import { domPlatform } from '@dotpm/ui/dom-platform'
 import { isSnapshot, tasksFromResources, type Snapshot } from '@dotpm/api'
 import type { ViewMode } from '@dotpm/core'
@@ -13,10 +14,13 @@ import {
   type ViewModel
 } from '@dotpm/ui'
 
+// The exporting plugin stamps its locale into <html lang>; the viewer follows it.
+if (typeof document !== 'undefined' && document.documentElement.lang.startsWith('zh')) setLocale('zh')
+
 const MODES: { id: ViewMode; icon: string; label: string }[] = [
-  { id: 'table', icon: 'table', label: 'Table' },
-  { id: 'gantt', icon: 'git-fork', label: 'Gantt' },
-  { id: 'kanban', icon: 'layout-dashboard', label: 'Board' }
+  { id: 'table', icon: 'table', label: t('Table') },
+  { id: 'gantt', icon: 'git-fork', label: t('Gantt') },
+  { id: 'kanban', icon: 'layout-dashboard', label: t('Board') }
 ]
 
 export function viewModelFromSnapshot(snapshot: Snapshot): ViewModel {
@@ -103,7 +107,11 @@ export function mount(root: HTMLElement, snapshot: Snapshot, options: MountOptio
   const exported = new Date(snapshot.exportedAt)
   header.createDiv({
     cls: 'pm-snapshot-meta',
-    text: `${tableRows(model).length} tasks · exported ${exported.toLocaleDateString()} ${exported.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    text: t('{n} tasks · exported {date} {time}', {
+      n: tableRows(model).length,
+      date: exported.toLocaleDateString(),
+      time: exported.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    })
   })
 
   const body = root.createDiv('pm-snapshot-body')
@@ -143,7 +151,7 @@ function boot(): void {
   if (!root) return
   const snapshot = readEmbeddedSnapshot(document)
   if (!snapshot) {
-    root.setText('This page holds no readable snapshot.')
+    root.setText(t('This page holds no readable snapshot.'))
     return
   }
   followSystemTheme()

@@ -1,4 +1,5 @@
 import { Temporal } from 'temporal-polyfill'
+import { t } from './i18n'
 
 export { Temporal }
 
@@ -40,10 +41,10 @@ export function relativeDue(iso: string, from: Temporal.PlainDate = today()): { 
   const due = parsePlainDate(iso)
   if (!due) return null
   const days = from.until(due, { largestUnit: 'day' }).days
-  if (days < 0) return { text: `${-days}d overdue`, tone: 'overdue' }
-  if (days === 0) return { text: 'Today', tone: 'today' }
-  if (days === 1) return { text: 'Tomorrow', tone: 'today' }
-  if (days <= 6) return { text: `In ${days}d`, tone: 'soon' }
+  if (days < 0) return { text: t('{n}d overdue', { n: -days }), tone: 'overdue' }
+  if (days === 0) return { text: t('Today'), tone: 'today' }
+  if (days === 1) return { text: t('Tomorrow'), tone: 'today' }
+  if (days <= 6) return { text: t('In {n}d', { n: days }), tone: 'soon' }
   return null
 }
 
@@ -53,5 +54,5 @@ export function completionOutcome(due: string, completed: string): { text: strin
   const completedDate = parsePlainDate(completed)
   if (!dueDate || !completedDate) return null
   const days = dueDate.until(completedDate, { largestUnit: 'day' }).days
-  return { text: days > 0 ? `${days}d late` : 'On time', tone: 'outcome' }
+  return { text: days > 0 ? t('{n}d late', { n: days }) : t('On time'), tone: 'outcome' }
 }

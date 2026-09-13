@@ -4,7 +4,8 @@ import {
   makeTask,
   isTerminalStatus,
   getCompleteStatusId,
-  getDefaultStatusId
+  getDefaultStatusId,
+  t
 } from '@dotpm/core'
 import { renderNoteLink, Checkbox, IconButton } from '@dotpm/ui'
 
@@ -18,7 +19,7 @@ export function renderSubtasksPanel(
   const subSection = container.createDiv('pm-modal-section')
 
   const subHeader = subSection.createDiv('pm-subtasks-header')
-  const heading = subHeader.createEl('h4', { text: 'Subtasks ', cls: 'pm-modal-section-title' })
+  const heading = subHeader.createEl('h4', { text: t('Subtasks '), cls: 'pm-modal-section-title' })
   const countEl = heading.createSpan({ cls: 'pm-subtasks-count' })
 
   const subList = subSection.createDiv('pm-modal-subtask-list')
@@ -42,7 +43,7 @@ export function renderSubtasksPanel(
 
       new Checkbox(row)
         .setChecked(done)
-        .setAriaLabel(`Done: ${sub.title}`)
+        .setAriaLabel(t('Done: {title}', { title: sub.title }))
         .onChange((checked) => {
           sub.status = checked ? getCompleteStatusId(statuses) : getDefaultStatusId(statuses)
           sub.progress = checked ? 100 : 0
@@ -62,7 +63,7 @@ export function renderSubtasksPanel(
 
       new IconButton(row)
         .setIcon('x')
-        .setTooltip('Remove subtask')
+        .setTooltip(t('Remove subtask'))
         .setRevealOnHover(true)
         .onClick(() => {
           task.subtasks = task.subtasks.filter((s) => s.id !== sub.id)
@@ -79,7 +80,7 @@ export function renderSubtasksPanel(
   addRow.createSpan({ cls: 'pm-subtask-checkbox-ghost', attr: { 'aria-hidden': 'true' } })
   const addInput = addRow.createEl('input', {
     cls: 'pm-subtask-add-input',
-    attr: { placeholder: 'Add subtask…' }
+    attr: { placeholder: t('Add subtask…') }
   })
   addInput.addEventListener('keydown', (e) => {
     if (e.key !== 'Enter') return

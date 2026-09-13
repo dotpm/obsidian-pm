@@ -1,4 +1,5 @@
 import { today } from './dates'
+import type { Locale } from './i18n'
 import type { TaskIndex } from './store/TaskIndex'
 
 export type TaskStatus = string
@@ -191,6 +192,8 @@ export const PRIORITY_ICON_SET_LABELS: Record<PriorityIconSet, string> = {
 }
 
 export interface PMSettings {
+  /** UI language. 'en' keeps the built-in copy; other locales ship their own dictionaries. */
+  language: Locale
   /** Where new projects are created. Projects are discovered vault-wide, wherever they live. */
   projectsFolder: string
   peopleFolder: string
@@ -264,6 +267,7 @@ export const LOCAL_API_PORT_BASE = 27140
 export const LOCAL_API_PORT_SPAN = 100
 
 export const DEFAULT_SETTINGS: PMSettings = {
+  language: 'en',
   projectsFolder: 'Projects',
   peopleFolder: 'People',
   excludedFolders: [],

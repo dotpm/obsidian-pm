@@ -3,6 +3,7 @@ import { confirmDialog } from '#ui/ModalFactory'
 import type PMPlugin from '#main'
 import type { FilterState, Project } from '@dotpm/core'
 import type { ProjectScope } from '#store'
+import { t, tn } from '@dotpm/core'
 import { safeAsync } from '@dotpm/ui'
 import type { SubView } from '../SubView'
 import { collapsedTaskIds } from '../collapse'
@@ -12,7 +13,7 @@ import { updateSelectAllCheckbox } from './TableRow'
 import { renderBulkActionBar } from './BulkActionBar'
 import type { BulkAction } from './BulkActionBar'
 
-const taskCount = (n: number) => `${n} task${n === 1 ? '' : 's'}`
+const taskCount = (n: number) => tn(n, '{n} task', '{n} tasks')
 
 export interface TableViewState {
   sortKey: SortKey
@@ -124,7 +125,12 @@ export class TableView implements SubView {
     const groups = this.scope.groupByProject(ids)
     try {
       if (action.type === 'delete') {
-        if (!(await confirmDialog(this.plugin.app, `Delete ${taskCount(ids.length)}? This cannot be undone.`))) {
+        if (
+          !(await confirmDialog(
+            this.plugin.app,
+            t('Delete {count}? This cannot be undone.', { count: taskCount(ids.length) })
+          ))
+        ) {
           return
         }
       }
@@ -133,23 +139,23 @@ export class TableView implements SubView {
       }
       switch (action.type) {
         case 'set-parent':
-          new Notice(`Moved ${taskCount(ids.length)} under new parent`)
+          new Notice(t('Moved {count} under new parent', { count: taskCount(ids.length) }))
           break
         case 'remove-parent':
-          new Notice(`Moved ${taskCount(ids.length)} to top level`)
+          new Notice(t('Moved {count} to top level', { count: taskCount(ids.length) }))
           break
         case 'archive':
-          new Notice(`Archived ${taskCount(ids.length)}`)
+          new Notice(t('Archived {count}', { count: taskCount(ids.length) }))
           break
         case 'unarchive':
-          new Notice(`Unarchived ${taskCount(ids.length)}`)
+          new Notice(t('Unarchived {count}', { count: taskCount(ids.length) }))
           break
       }
       this.state.selectedTaskIds.clear()
       await this.onRefresh()
     } catch (err) {
       console.error('Bulk action failed', err)
-      new Notice('Bulk action failed. Please try again.')
+      new Notice(t('Bulk action failed. Please try again.'))
       await this.onRefresh()
     }
   }

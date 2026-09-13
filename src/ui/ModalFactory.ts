@@ -1,13 +1,13 @@
 import { type App, ButtonComponent, Modal } from 'obsidian'
 import type PMPlugin from '#main'
-import { type Project, type Task, flattenTasks } from '@dotpm/core'
+import { type Project, type Task, flattenTasks, t } from '@dotpm/core'
 import type { ProjectRef } from '#store'
 import { TaskModal } from '#modals/TaskModal'
 import { PersonLookupModal, ProjectPickerModal, TaskPickerModal } from '#modals/PickerModals'
 import { ImportModal } from '#modals/ImportModal'
 import { ProjectCreateModal } from '#modals/ProjectCreateModal'
 
-export function confirmDialog(app: App, message: string, confirmLabel = 'Delete'): Promise<boolean> {
+export function confirmDialog(app: App, message: string, confirmLabel = t('Delete')): Promise<boolean> {
   return new Promise((resolve) => {
     const modal = new ConfirmModal(app, message, confirmLabel, resolve)
     modal.open()
@@ -66,7 +66,7 @@ class TextPromptModal extends Modal {
 
     const btnRow = contentEl.createDiv('pm-modal-btn-row')
 
-    new ButtonComponent(btnRow).setButtonText('Cancel').onClick(() => {
+    new ButtonComponent(btnRow).setButtonText(t('Cancel')).onClick(() => {
       this.finish(null)
       this.close()
     })
@@ -77,7 +77,7 @@ class TextPromptModal extends Modal {
       this.close()
     }
 
-    new ButtonComponent(btnRow).setButtonText('OK').setCta().onClick(submit)
+    new ButtonComponent(btnRow).setButtonText(t('OK')).setCta().onClick(submit)
 
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {
@@ -132,7 +132,7 @@ class ConfirmModal extends Modal {
 
     const btnRow = contentEl.createDiv('pm-modal-btn-row')
 
-    new ButtonComponent(btnRow).setButtonText('Cancel').onClick(() => {
+    new ButtonComponent(btnRow).setButtonText(t('Cancel')).onClick(() => {
       this.finish(false)
       this.close()
     })
@@ -174,24 +174,24 @@ class DuplicateSubtasksModal extends Modal {
     this.modalEl.addClass('pm-confirm-modal')
 
     contentEl.createEl('p', {
-      text: `Duplicate "${this.taskTitle}" with its subtasks?`,
+      text: t('Duplicate "{title}" with its subtasks?', { title: this.taskTitle }),
       cls: 'pm-confirm-text'
     })
 
     const btnRow = contentEl.createDiv('pm-modal-btn-row')
 
-    new ButtonComponent(btnRow).setButtonText('Cancel').onClick(() => {
+    new ButtonComponent(btnRow).setButtonText(t('Cancel')).onClick(() => {
       this.finish(null)
       this.close()
     })
 
-    new ButtonComponent(btnRow).setButtonText('Task only').onClick(() => {
+    new ButtonComponent(btnRow).setButtonText(t('Task only')).onClick(() => {
       this.finish('task-only')
       this.close()
     })
 
     new ButtonComponent(btnRow)
-      .setButtonText('With subtasks')
+      .setButtonText(t('With subtasks'))
       .setCta()
       .onClick(() => {
         this.finish('with-subtasks')

@@ -3,6 +3,7 @@ import { Chip } from '#primitives/Chip'
 import { CollapseToggle } from '#primitives/CollapseToggle'
 import { IconButton } from '#primitives/IconButton'
 import { ProgressBar } from '#primitives/ProgressBar'
+import { t } from '@dotpm/core'
 import { renderDueChip, type DueUrgency } from './dueChip'
 import { renderGlyph } from './properties'
 import { renderTreeGuides } from './treeGuides'
@@ -45,7 +46,7 @@ export class ProjectRow {
       new CollapseToggle(expand, {
         collapsed: props.collapsed,
         onToggle: () => props.onToggleCollapsed(),
-        subject: 'sub-projects'
+        subject: 'Sub-projects'
       })
     }
 
@@ -66,7 +67,7 @@ export class ProjectRow {
     tasks.createSpan({ cls: 'pm-project-row-tasks', text: `${props.tasksDone}/${props.tasksTotal}` })
     if (props.overdue > 0) {
       new Chip(tasks)
-        .setLabel(`${props.overdue} overdue`)
+        .setLabel(t('{n} overdue', { n: props.overdue }))
         .setVariant('solid')
         .setColor('var(--color-red)')
         .setSize('sm')
@@ -83,7 +84,7 @@ export class ProjectRow {
     const actions = this.el.createEl('td', { cls: 'pm-table-cell pm-table-cell-actions' })
     new IconButton(actions)
       .setIcon('more-horizontal')
-      .setTooltip('Project actions')
+      .setTooltip(t('Project actions'))
       .setRevealOnHover(true)
       .onClick((e) => props.onActions(e))
 

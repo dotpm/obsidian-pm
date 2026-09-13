@@ -96,6 +96,11 @@ describe('renderSnapshotHtml', () => {
     expect(JSON.parse(json).title).toBe('A & <B> </script><script>alert(1)')
   })
 
+  it('stamps the current locale into the page language', () => {
+    const html = renderSnapshotHtml(snapshot, '<html lang="__DOTPM_LOCALE__"><title>__DOTPM_TITLE__</title></html>')
+    expect(html).toContain('lang="en"')
+  })
+
   it('refuses to render without a viewer', () => {
     expect(() => renderSnapshotHtml(snapshot, '')).toThrow('viewer')
   })

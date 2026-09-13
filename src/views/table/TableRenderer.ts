@@ -9,7 +9,8 @@ import {
   flattenTasks,
   findTaskById,
   applyTaskFilterFlat,
-  isFilterActive
+  isFilterActive,
+  t
 } from '@dotpm/core'
 import { personKeyer, type ProjectScope } from '#store'
 import { renderAddButton, childTreeGuides, compareTask, type SortDir, type SortKey } from '@dotpm/ui'
@@ -100,14 +101,14 @@ export function renderTable(ctx: TableContext): void {
 
   const cols: { key: SortKey | null; label: string; width?: string }[] = [
     { key: null, label: '', width: '32px' },
-    { key: 'title', label: 'Task', width: 'auto' },
-    ...(ctx.scope.isMulti ? [{ key: null, label: 'Project', width: '130px' } as const] : []),
-    { key: 'status', label: 'Status', width: '130px' },
-    { key: 'priority', label: 'Priority', width: '110px' },
-    { key: 'assignees', label: 'Assignees', width: '140px' },
-    { key: 'due', label: 'Due', width: '110px' },
-    { key: 'progress', label: 'Progress', width: '120px' },
-    { key: null, label: 'Time', width: '90px' }
+    { key: 'title', label: t('Task'), width: 'auto' },
+    ...(ctx.scope.isMulti ? [{ key: null, label: t('Project'), width: '130px' } as const] : []),
+    { key: 'status', label: t('Status'), width: '130px' },
+    { key: 'priority', label: t('Priority'), width: '110px' },
+    { key: 'assignees', label: t('Assignees'), width: '140px' },
+    { key: 'due', label: t('Due'), width: '110px' },
+    { key: 'progress', label: t('Progress'), width: '120px' },
+    { key: null, label: t('Time'), width: '90px' }
   ]
   const sortableHeaders: { key: SortKey; th: HTMLElement }[] = []
   const paintSortIndicators = () => {
@@ -128,7 +129,7 @@ export function renderTable(ctx: TableContext): void {
     if (col.key) {
       th.addClass('pm-table-th-sortable')
       th.setAttribute('role', 'button')
-      th.setAttribute('aria-label', `Sort by ${col.label}`)
+      th.setAttribute('aria-label', t('Sort by {column}', { column: col.label }))
       th.createSpan({ text: col.label })
       sortableHeaders.push({ key: col.key, th })
       th.addEventListener('click', () => {
@@ -286,7 +287,7 @@ function renderWindowRows(ctx: TableContext): void {
 
   const addRow = tbody.createEl('tr', { cls: 'pm-table-add-row' })
   const addCell = addRow.createEl('td', { attr: { colspan: String(colCount) } })
-  renderAddButton(addCell, 'Add task', (e) => {
+  renderAddButton(addCell, t('Add task'), (e) => {
     openAddTask(ctx.plugin, ctx.scope, { event: e, onSave: () => ctx.onRefresh() })
   })
 

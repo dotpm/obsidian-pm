@@ -10,7 +10,8 @@ import {
   collectAllTags,
   countActiveFilters,
   displayName,
-  priorityIcon
+  priorityIcon,
+  t
 } from '@dotpm/core'
 import { renderFilterDropdown } from '../../FilterDropdown'
 import { ChipButton } from '#primitives/ChipButton'
@@ -57,7 +58,7 @@ export class FilterRow {
 
     renderFilterDropdown(
       this.el,
-      'Status',
+      t('Status'),
       filter.statuses,
       statuses.map((s) => ({ id: s.id, label: s.label, icon: s.icon })),
       (selected) => {
@@ -68,7 +69,7 @@ export class FilterRow {
 
     renderFilterDropdown(
       this.el,
-      'Priority',
+      t('Priority'),
       filter.priorities,
       priorities.map((p) => ({
         id: p.id,
@@ -86,7 +87,7 @@ export class FilterRow {
     if (allAssignees.length) {
       renderFilterDropdown(
         this.el,
-        'Assignee',
+        t('Assignee'),
         filter.assignees,
         allAssignees.map((a) => ({ id: a, label: displayName(a) })),
         (selected) => {
@@ -100,7 +101,7 @@ export class FilterRow {
     if (allTags.length) {
       renderFilterDropdown(
         this.el,
-        'Tag',
+        t('Tag'),
         filter.tags,
         allTags.map((t) => ({ id: t, label: t })),
         (selected) => {
@@ -120,7 +121,9 @@ export class FilterRow {
     const btn = new ChipButton(this.el)
     const updateLabel = () => {
       const current = filter.dueDateFilter
-      btn.setLabel(current !== 'any' ? `Due: ${DUE_LABELS[current]}` : DUE_LABELS.any).setActive(current !== 'any')
+      btn
+        .setLabel(current !== 'any' ? t('Due: {label}', { label: t(DUE_LABELS[current]) }) : t(DUE_LABELS.any))
+        .setActive(current !== 'any')
     }
     updateLabel()
     btn.onClick((e) => {
@@ -129,7 +132,7 @@ export class FilterRow {
       for (const opt of opts) {
         menu.addItem((item) =>
           item
-            .setTitle(DUE_LABELS[opt])
+            .setTitle(t(DUE_LABELS[opt]))
             .setChecked(filter.dueDateFilter === opt)
             .onClick(() => {
               filter.dueDateFilter = opt
@@ -144,7 +147,7 @@ export class FilterRow {
 
   private renderArchivedButton(notify: () => void): void {
     const { filter } = this.props
-    const btn = new ChipButton(this.el).setLabel('Archived').setActive(filter.showArchived)
+    const btn = new ChipButton(this.el).setLabel(t('Archived')).setActive(filter.showArchived)
     btn.onClick(() => {
       filter.showArchived = !filter.showArchived
       btn.setActive(filter.showArchived)
@@ -158,7 +161,7 @@ export class FilterRow {
       this.clearBtn = null
       return
     }
-    this.clearBtn = new ChipButton(this.el).setLabel(`Clear (${count})`).onClick(() => {
+    this.clearBtn = new ChipButton(this.el).setLabel(t('Clear ({count})', { count })).onClick(() => {
       this.props.onClear()
     })
   }

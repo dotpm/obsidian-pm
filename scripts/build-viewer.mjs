@@ -33,7 +33,7 @@ if (!built) throw new Error('tsdown wrote no viewer bundle')
 const js = readFileSync(join(dist, built), 'utf8').replace(/<\/script/gi, '<\\/script')
 
 const html = `<!doctype html>
-<html lang="en">
+<html lang="__DOTPM_LOCALE__">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">

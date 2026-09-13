@@ -12,6 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - A view can be exported as a self-contained HTML page that shows the table, timeline and board in any browser
 - Other apps on the same computer can read and edit tasks over a local HTTP and MCP server when it is turned on in settings
 - Tasks can be listed, searched and edited from a terminal with the `dotpm` command, installed from npm as `@dotpm/cli`
+- The interface speaks English or Simplified Chinese, chosen in settings, and follows Obsidian's language on first run
 
 ### Changed
 
