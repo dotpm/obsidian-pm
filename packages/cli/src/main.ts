@@ -2,6 +2,7 @@
 /// <reference types="node" />
 import { existsSync, readFileSync } from 'node:fs'
 import { createInterface } from 'node:readline'
+import { setTimeout as delay } from 'node:timers/promises'
 import { runCli } from './cli'
 
 function readFile(path: string): string | null {
@@ -19,6 +20,9 @@ async function readStdin(): Promise<string> {
   return raw
 }
 
+const interrupt = new AbortController()
+process.once('SIGINT', () => interrupt.abort())
+
 process.exitCode = await runCli(process.argv.slice(2), {
   env: process.env,
   cwd: process.cwd(),
@@ -30,5 +34,7 @@ process.exitCode = await runCli(process.argv.slice(2), {
   stdinLines: () => createInterface({ input: process.stdin, crlfDelay: Infinity }),
   stdout: (text) => process.stdout.write(`${text}\n`),
   stderr: (text) => process.stderr.write(`${text}\n`),
-  fetch: (request) => fetch(request)
+  fetch: (request) => fetch(request),
+  sleep: (ms) => delay(ms, undefined, { signal: interrupt.signal }).catch(() => undefined),
+  signal: interrupt.signal
 })

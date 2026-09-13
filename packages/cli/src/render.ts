@@ -8,6 +8,8 @@ export type Output =
   | { kind: 'changes'; value: { cursor: number; changes: Change[]; reset: boolean } }
   | { kind: 'status'; value: { ok: boolean; name: string; version: string; url: string; source: string } }
   | { kind: 'deleted'; value: { id: string } }
+  | { kind: 'change'; value: Change }
+  | { kind: 'reset'; value: { cursor: number } }
 
 function table(headers: string[], rows: string[][]): string {
   const widths = headers.map((header, col) => Math.max(header.length, ...rows.map((row) => row[col].length)))
@@ -89,18 +91,14 @@ function task(value: TaskResource): string {
   return value.description ? `${head}\n\n${value.description}` : head
 }
 
+function changeRow(change: Change): string[] {
+  return [String(change.seq), change.at, change.kind, change.op, change.id, change.projectId]
+}
+
 function changes(value: { cursor: number; changes: Change[]; reset: boolean }): string {
   const head = `cursor ${value.cursor}${value.reset ? ' (reset: the cursor was too old, list again)' : ''}`
   if (value.changes.length === 0) return head
-  const rows = value.changes.map((change) => [
-    String(change.seq),
-    change.at,
-    change.kind,
-    change.op,
-    change.id,
-    change.projectId
-  ])
-  return `${head}\n${table(['SEQ', 'AT', 'KIND', 'OP', 'ID', 'PROJECT'], rows)}`
+  return `${head}\n${table(['SEQ', 'AT', 'KIND', 'OP', 'ID', 'PROJECT'], value.changes.map(changeRow))}`
 }
 
 export function render(output: Output): string {
@@ -128,5 +126,9 @@ export function render(output: Output): string {
       ])
     case 'deleted':
       return `deleted ${output.value.id}`
+    case 'change':
+      return changeRow(output.value).join('  ')
+    case 'reset':
+      return `reset: the cursor was too old, list again; following from ${output.value.cursor}`
   }
 }

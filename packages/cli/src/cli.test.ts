@@ -18,11 +18,17 @@ describe('runCli', () => {
   let host: FakeApi
   let stdin: string
   let tty: boolean
+  let interrupt: AbortController
+  let sleeps: number[]
+  let onSleep: () => void
 
   beforeEach(() => {
     host = new FakeApi()
     stdin = ''
     tty = false
+    interrupt = new AbortController()
+    sleeps = []
+    onSleep = () => interrupt.abort()
   })
 
   async function run(argv: string[], env: Record<string, string> = {}): Promise<Run> {
@@ -43,7 +49,12 @@ describe('runCli', () => {
       stdinLines: async function* () {},
       stdout: (text) => out.push(text),
       stderr: (text) => err.push(text),
-      fetch: async (request) => route(request)
+      fetch: async (request) => route(request),
+      sleep: async (ms) => {
+        sleeps.push(ms)
+        onSleep()
+      },
+      signal: interrupt.signal
     }
     const code = await runCli(argv, deps)
     const joined = out.join('\n')
@@ -142,6 +153,42 @@ describe('runCli', () => {
     expect((await run(['changes', '--since', '0'])).json).toMatchObject({ changes: [{ seq: 1 }] })
     tty = true
     expect((await run(['changes', '--since', '0'])).out).toContain('1    now  task  upsert  t1  p1')
+  })
+
+  it('follows the change feed, one line per change, until interrupted', async () => {
+    const change = (seq: number) => ({
+      seq,
+      at: 'now',
+      kind: 'task' as const,
+      op: 'upsert' as const,
+      id: `t${seq}`,
+      projectId: 'p1'
+    })
+    host.changeLog.push(change(1))
+    let polls = 0
+    onSleep = () => {
+      polls++
+      if (polls === 1) host.changeLog.push(change(2), change(3))
+      else interrupt.abort()
+    }
+    const followed = await run(['changes', '--follow', '--interval', '0.5'])
+    expect(followed.code).toBe(0)
+    expect(followed.out.split('\n').map((line) => JSON.parse(line) as { seq: number })).toMatchObject([
+      { seq: 2 },
+      { seq: 3 }
+    ])
+    expect(sleeps).toEqual([500, 500])
+    expect(host.calls.filter((call) => call.startsWith('changes'))).toEqual(['changes null', 'changes 1', 'changes 1'])
+    tty = true
+    interrupt = new AbortController()
+    onSleep = () => interrupt.abort()
+    const human = await run(['changes', '--follow', '--since', '0'])
+    expect(human.out.split('\n')).toEqual([
+      '1  now  task  upsert  t1  p1',
+      '2  now  task  upsert  t2  p1',
+      '3  now  task  upsert  t3  p1'
+    ])
+    expect((await run(['changes', '--follow', '--interval', '0'])).err).toContain('--interval must be a positive')
   })
 
   it('maps every failure to an exit code and a message', async () => {

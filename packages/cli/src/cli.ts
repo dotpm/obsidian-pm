@@ -18,6 +18,9 @@ export interface CliDeps {
   stdout: (text: string) => void
   stderr: (text: string) => void
   fetch: (request: Request) => Promise<Response>
+  sleep: (ms: number) => Promise<void>
+  /** Aborted when the user interrupts, which ends a following command. */
+  signal: AbortSignal
 }
 
 interface Flag {
@@ -35,13 +38,18 @@ interface RunContext {
   api: HttpApi
   connection: Connection
   readStdin: () => Promise<string>
+  /** Prints one result now, for commands that keep going. */
+  emit: (output: Output) => void
+  sleep: (ms: number) => Promise<void>
+  signal: AbortSignal
 }
 
 interface Command {
   args: string
   summary: string
   flags: Flags
-  run: (ctx: RunContext, positionals: string[], values: Values) => Promise<Output>
+  /** Resolves to nothing when the command already emitted everything it had to say. */
+  run: (ctx: RunContext, positionals: string[], values: Values) => Promise<Output | undefined>
 }
 
 class UsageError extends Error {
@@ -163,6 +171,18 @@ async function taskFields(values: Values, readStdin: () => Promise<string>): Pro
   const dependencies = list(values, 'depends-on')
   if (dependencies) body['dependencies'] = dependencies
   return body
+}
+
+/** Prints every change after the cursor as it appears, until the signal aborts. */
+async function follow(ctx: RunContext, since: number | undefined, intervalMs: number): Promise<void> {
+  let cursor = since ?? (await ctx.api.changes(null)).cursor
+  while (!ctx.signal.aborted) {
+    const page = await ctx.api.changes(cursor)
+    if (page.reset) ctx.emit({ kind: 'reset', value: { cursor: page.cursor } })
+    for (const change of page.changes) ctx.emit({ kind: 'change', value: change })
+    cursor = page.cursor
+    await ctx.sleep(intervalMs)
+  }
 }
 
 const COMMANDS: Record<string, Command> = {
@@ -303,11 +323,19 @@ const COMMANDS: Record<string, Command> = {
   changes: {
     args: '',
     summary: 'What changed since a cursor; without one, only the current cursor',
-    flags: { since: { type: 'string', value: '<cursor>', help: 'The cursor from an earlier call' } },
-    run: async ({ api }, _positionals, values) => ({
-      kind: 'changes',
-      value: await api.changes(number(values, 'since') ?? null)
-    })
+    flags: {
+      since: { type: 'string', value: '<cursor>', help: 'The cursor from an earlier call' },
+      follow: { type: 'boolean', help: 'Keep polling and print each change as one line until interrupted' },
+      interval: { type: 'string', value: '<seconds>', help: 'How often to poll when following, default 2' }
+    },
+    run: async (ctx, _positionals, values) => {
+      const since = number(values, 'since')
+      if (values['follow'] !== true) return { kind: 'changes', value: await ctx.api.changes(since ?? null) }
+      const interval = number(values, 'interval') ?? 2
+      if (interval <= 0) throw new UsageError('--interval must be a positive number of seconds')
+      await follow(ctx, since, interval * 1000)
+      return undefined
+    }
   },
   status: {
     args: '',
@@ -389,7 +417,17 @@ function connect(values: Values, deps: CliDeps): Connection {
   })
 }
 
-async function dispatch(argv: string[], deps: CliDeps): Promise<{ output?: Output; text?: string }> {
+/** A change on its own line while following, so a reader can act on each as it comes. */
+function format(output: Output, json: boolean): string {
+  if (!json) return render(output)
+  return output.kind === 'change' ? JSON.stringify(output.value) : JSON.stringify(output.value, null, 2)
+}
+
+async function dispatch(
+  argv: string[],
+  deps: CliDeps,
+  emit: (output: Output) => void
+): Promise<{ output?: Output; text?: string }> {
   const first = parse(argv, GLOBAL, false)
   if (first.values['version']) return { text: deps.version }
   const name = first.positionals[0]
@@ -408,7 +446,8 @@ async function dispatch(argv: string[], deps: CliDeps): Promise<{ output?: Outpu
   }
   const api = new HttpApi({ ...connection, fetch: deps.fetch })
   const args = positionals.slice(positionals.indexOf(name) + 1)
-  return { output: await command.run({ api, connection, readStdin: deps.readStdin }, args, values) }
+  const ctx: RunContext = { api, connection, readStdin: deps.readStdin, emit, sleep: deps.sleep, signal: deps.signal }
+  return { output: await command.run(ctx, args, values) }
 }
 
 function errorCode(err: unknown): ApiErrorCode | null {
@@ -421,9 +460,10 @@ function errorCode(err: unknown): ApiErrorCode | null {
 export async function runCli(argv: string[], deps: CliDeps): Promise<number> {
   const json = argv.includes('--json') || !deps.tty
   try {
-    const { output, text: plain } = await dispatch(argv, deps)
+    const emit = (output: Output): void => deps.stdout(format(output, json))
+    const { output, text: plain } = await dispatch(argv, deps, emit)
     if (plain !== undefined) deps.stdout(plain)
-    if (output) deps.stdout(json ? JSON.stringify(output.value, null, 2) : render(output))
+    if (output) emit(output)
     return 0
   } catch (err: unknown) {
     const code = errorCode(err)

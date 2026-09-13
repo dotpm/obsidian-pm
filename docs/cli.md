@@ -44,7 +44,7 @@ dotpm --url http://127.0.0.1:27140 --token <token> status
 | `dotpm move <taskId> [--parent <id>] [--top] [--project <id>] [--before <id>] [--after <id>]` | Re-parent, move to another project, or reorder among siblings |
 | `dotpm archive <taskId> [--restore]` | Archive a task and its subtasks, or bring them back |
 | `dotpm delete <taskId> --yes` | Delete a task and its subtasks; cannot be undone |
-| `dotpm changes [--since <cursor>]` | What changed after a cursor; without one, only the current cursor |
+| `dotpm changes [--since <cursor>] [--follow] [--interval <seconds>]` | What changed after a cursor; without one, only the current cursor. `--follow` keeps polling and prints each change as it appears |
 | `dotpm status` | Check the connection |
 | `dotpm mcp` | Serve MCP over stdio, see below |
 
@@ -59,6 +59,16 @@ dotpm update k2j9d0sa --status done
 dotpm search "release" --status todo
 ```
 
+
+## Following changes
+
+`dotpm changes --follow` polls the change feed every two seconds (`--interval` sets the period) and prints each change on its own line as it appears, until interrupted with Ctrl-C. Without `--since` it starts from now; with a cursor it first prints everything after that cursor. In JSON mode each line is one change object, so a script can read the stream line by line:
+
+```sh
+dotpm changes --follow | while read -r change; do echo "$change"; done
+```
+
+A `reset` line means the cursor was older than what the server keeps; list what you need again, then keep reading.
 ## Output and exit codes
 
 When stdout is a terminal the command prints tables; when it is a pipe, or `--json` is passed, it prints JSON, the same resources the API returns. Errors go to stderr, as `{ "error": { "code", "message" } }` in JSON mode.
