@@ -73,6 +73,10 @@ export class HttpApi implements DomainApi {
     return this.request('GET', `/v1/projects/${id(projectId)}`)
   }
 
+  createProject(input: unknown): Promise<ProjectResource> {
+    return this.request('POST', '/v1/projects', input)
+  }
+
   listTasks(projectId: string, includeArchived = false): Promise<TaskResource[]> {
     const query = includeArchived ? '?includeArchived=true' : ''
     return this.request('GET', `/v1/projects/${id(projectId)}/tasks${query}`)

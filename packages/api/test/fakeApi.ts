@@ -10,6 +10,7 @@ import type {
 } from '../src/contract'
 import { ApiRequestError } from '../src/contract'
 import {
+  parseProjectCreate,
   parseTaskCreate,
   parseTaskMove,
   parseTaskWrite,
@@ -37,6 +38,7 @@ const CONFIG = {
 export class FakeApi implements DomainApi {
   project: Project = makeProject('Demo', 'Projects/Demo/Demo.md')
   calls: string[] = []
+  projectCount = 1
   changeLog: Change[] = []
 
   constructor() {
@@ -87,6 +89,36 @@ export class FakeApi implements DomainApi {
       priorities: CONFIG.priorities,
       createdAt: this.project.createdAt,
       updatedAt: this.project.updatedAt
+    }
+  }
+
+  async createProject(input: unknown): Promise<ProjectResource> {
+    const create = parseProjectCreate(input)
+    this.calls.push(`createProject ${create.title}`)
+    const project = makeProject(create.title, `Projects/${create.title}/${create.title}.md`)
+    project.id = `p${++this.projectCount}`
+    Object.assign(project, {
+      description: create.description ?? '',
+      icon: create.icon ?? project.icon,
+      color: create.color ?? project.color,
+      teamMembers: create.teamMembers ?? []
+    })
+    return {
+      id: project.id,
+      path: project.filePath,
+      title: project.title,
+      icon: project.icon,
+      color: project.color,
+      parentId: create.parentId ?? null,
+      taskCount: 0,
+      doneCount: 0,
+      description: project.description,
+      teamMembers: project.teamMembers,
+      customFields: [],
+      statuses: CONFIG.statuses,
+      priorities: CONFIG.priorities,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt
     }
   }
 

@@ -97,6 +97,35 @@ describe('LocalApi over the vault', () => {
     expect(refreshes()).toBeGreaterThanOrEqual(2)
   })
 
+  it('creates projects at the root and under a parent, serving them before the index reads them', async () => {
+    const root = await api.createProject({ title: 'Launch', icon: '🚀', color: '#112233', teamMembers: ['Ann'] })
+    expect(root).toMatchObject({
+      title: 'Launch',
+      icon: '🚀',
+      color: '#112233',
+      teamMembers: ['Ann'],
+      parentId: null,
+      taskCount: 0,
+      path: 'Projects/Launch/Launch.md'
+    })
+    expect(await api.getProject(root.id)).toMatchObject({ title: 'Launch', description: '' })
+
+    const child = await api.createProject({ title: 'Phase 1', parentId: root.id, description: 'Body' })
+    expect(child).toMatchObject({ parentId: root.id, description: 'Body' })
+    expect(child.path.startsWith('Projects/Launch/')).toBe(true)
+    const task = await api.createTask(child.id, { title: 'First' })
+    expect(await api.getTask(task.id)).toMatchObject({ projectId: child.id })
+
+    index.build()
+    expect((await api.listProjects()).map((p) => p.title).sort()).toEqual(['Launch', 'Phase 1', 'Roadmap'])
+    expect(await api.getProject(child.id)).toMatchObject({ parentId: root.id, taskCount: 1 })
+
+    await rejectsWith(api.createProject({ title: 'Roadmap' }), 'invalid')
+    await rejectsWith(api.createProject({ title: 'Other', parentId: 'nope' }), 'not_found')
+    await rejectsWith(api.createProject({ title: 'Other', color: 'red' }), 'invalid')
+    await rejectsWith(api.createProject({ title: '  ' }), 'invalid')
+  })
+
   it('moves between parents, reorders among siblings, and refuses cycles', async () => {
     expect(await api.moveTask('b', { parentId: 'a' })).toMatchObject({ parentId: 'a', position: 1 })
     expect(await api.moveTask('b', { before: 'a1' })).toMatchObject({ parentId: 'a', position: 0 })

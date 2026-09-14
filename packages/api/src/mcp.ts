@@ -9,7 +9,14 @@ import {
 } from 'mcp-lite'
 import * as v from 'valibot'
 import { ApiRequestError, type DomainApi } from './contract'
-import { CREATE_FIELDS, MOVE_FIELDS, parseTaskSearch, SEARCH_FIELDS, TASK_FIELDS } from './resources'
+import {
+  CREATE_FIELDS,
+  MOVE_FIELDS,
+  parseTaskSearch,
+  PROJECT_CREATE_FIELDS,
+  SEARCH_FIELDS,
+  TASK_FIELDS
+} from './resources'
 
 export interface ServerInfo {
   name: string
@@ -90,6 +97,13 @@ function registerTools(server: McpServer, api: DomainApi): void {
     description: 'One project with its description, team, custom fields and the status and priority ids its tasks use.',
     inputSchema: v.object({ projectId }),
     run: (args) => api.getProject(args.projectId)
+  })
+
+  tool(server, 'create_project', {
+    description:
+      'Create a project, at the root or under parentId. It starts with the global statuses and priorities; read it back with get_project before adding tasks.',
+    inputSchema: v.object(PROJECT_CREATE_FIELDS),
+    run: (args) => api.createProject(args)
   })
 
   tool(server, 'list_tasks', {

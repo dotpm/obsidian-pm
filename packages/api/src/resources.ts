@@ -3,6 +3,7 @@ import { makeTask, parsePlainDate } from '@dotpm/core'
 import * as v from 'valibot'
 import {
   ApiRequestError,
+  type ProjectCreate,
   type ProjectResource,
   type ProjectSummary,
   type TaskCreate,
@@ -193,6 +194,39 @@ export const SEARCH_FIELDS = {
   limit: v.optional(integerField('limit', 1, 500))
 }
 
+/** The fields a client may give a new project. Palettes and custom fields stay with the host. */
+export const PROJECT_CREATE_FIELDS = {
+  title: v.pipe(
+    v.string('title must be a string'),
+    v.check((title) => title.trim() !== '', 'title must not be empty')
+  ),
+  description: v.optional(stringField('description', 'Markdown body of the project note')),
+  icon: v.optional(
+    v.pipe(
+      v.string('icon must be a string'),
+      v.check((icon) => icon.trim() !== '', 'icon must not be empty'),
+      v.description('An emoji')
+    )
+  ),
+  color: v.optional(
+    v.pipe(
+      v.string('color must be a hex color like #8b72be'),
+      v.regex(/^#[0-9a-fA-F]{6}$/, 'color must be a hex color like #8b72be')
+    )
+  ),
+  teamMembers: v.optional(listField('teamMembers', 'Names or wikilinks of the people on the project')),
+  parentId: v.optional(
+    v.nullable(
+      v.pipe(
+        v.string('parentId must be a string or null'),
+        v.description('Id of the parent project, from list_projects')
+      )
+    )
+  )
+}
+
+const PROJECT_CREATE = v.object(PROJECT_CREATE_FIELDS, missingKey('expected an object'))
+
 const TASK_WRITE = v.object(TASK_FIELDS, missingKey('expected an object'))
 const TASK_CREATE = v.object(CREATE_FIELDS, missingKey('expected an object'))
 
@@ -227,6 +261,10 @@ export function parseTaskCreate(input: unknown, config: ResolvedProjectConfig): 
   const create = parse(TASK_CREATE, input)
   checkAgainstConfig(create, config)
   return create
+}
+
+export function parseProjectCreate(input: unknown): ProjectCreate {
+  return parse(PROJECT_CREATE, input)
 }
 
 export function parseTaskMove(input: unknown): TaskMove {

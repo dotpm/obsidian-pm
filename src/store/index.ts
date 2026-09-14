@@ -22,6 +22,7 @@ export type { PersonCandidate, PersonLinkState, PersonMatch, PersonRef } from '.
 export {
   findIgnoringCase,
   folderOf,
+  newProjectFolder,
   projectFilePath,
   projectFolderOf,
   projectPathForTaskPath,

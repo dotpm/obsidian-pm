@@ -8,6 +8,12 @@ export function projectFilePath(projectTitle: string, folder: string): string {
   return normalizePath(`${folder}/${name}/${name}.md`)
 }
 
+/** Where a new project goes: inside its parent's folder, or the projects folder for a root. */
+export function newProjectFolder(app: App, projectsFolder: string, parentPath: string | undefined): string {
+  if (!parentPath) return projectsFolder || app.vault.getName()
+  return projectFolderOf(app, parentPath) ?? folderOf(parentPath)
+}
+
 /** The task storage folder inside a project's own folder. */
 export const TASK_FOLDER_NAME = '_tasks'
 

@@ -100,6 +100,15 @@ describe('createRouter', () => {
     expect((await json('GET', '/v1/tasks/t3')).status).toBe(404)
   })
 
+  it('creates projects', async () => {
+    const created = await json('POST', '/v1/projects', { body: { title: 'New', parentId: 'p1' } })
+    expect(created.status).toBe(201)
+    expect(created.body).toMatchObject({ id: 'p2', title: 'New', parentId: 'p1', taskCount: 0 })
+    const bad = await json('POST', '/v1/projects', { body: { title: 'New', color: 'blue' } })
+    expect(bad.status).toBe(400)
+    expect(bad.body).toEqual({ error: { code: 'invalid', message: 'color must be a hex color like #8b72be' } })
+  })
+
   it('searches with the q parameter and pages changes by cursor', async () => {
     const found = await json('GET', '/v1/search?q=sec&limit=5')
     expect((found.body as Array<{ id: string }>).map((task) => task.id)).toEqual(['t2'])

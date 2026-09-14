@@ -2,6 +2,7 @@ import type { Project, Task } from '@dotpm/core'
 import { displayName, findParentId, findTaskById, flattenTasks, makeTask } from '@dotpm/core'
 import {
   ApiRequestError,
+  parseProjectCreate,
   parseTaskCreate,
   parseTaskMove,
   parseTaskWrite,
@@ -18,13 +19,30 @@ import {
   type TaskWrite
 } from '@dotpm/api'
 import type PMPlugin from '#main'
-import type { ProjectRef } from '#store'
+import { findIgnoringCase, newProjectFolder, projectFilePath, type ProjectRef } from '#store'
 import { ChangeLog } from './ChangeLog'
 
 const SCHEDULE_FIELDS: Array<keyof TaskWrite> = ['start', 'due', 'dependencies', 'status', 'type']
 
 function notFound(what: string, id: string): never {
   throw new ApiRequestError('not_found', `${what} ${id} not found`)
+}
+
+/** A ref for a project the index has not read yet, built from the project itself. */
+function refOf(project: Project): ProjectRef {
+  return {
+    path: project.filePath,
+    id: project.id,
+    title: project.title,
+    icon: project.icon,
+    color: project.color,
+    teamMembers: project.teamMembers,
+    customFields: project.customFields,
+    parentPath: project.parentPath,
+    ownStatusIds: project.config?.statuses?.map((status) => status.id) ?? null,
+    completeStatusIds: project.config?.statuses?.filter((status) => status.complete).map((status) => status.id) ?? null,
+    autoArchiveDays: project.config?.autoArchiveDays ?? null
+  }
 }
 
 /** The contract over this vault: ids resolve through the index, data through the store. */
@@ -34,6 +52,8 @@ export class LocalApi implements DomainApi {
    * file only once the metadata cache has parsed it, and a client that just created a
    * task reads it back before then. */
   private readonly known = new Map<string, string>()
+  /** Projects created here, by id, until the index has read their notes. */
+  private readonly created = new Map<string, ProjectRef>()
 
   constructor(private readonly plugin: PMPlugin) {}
 
@@ -63,6 +83,26 @@ export class LocalApi implements DomainApi {
   async getProject(projectId: string): Promise<ProjectResource> {
     const ref = this.refById(projectId)
     const project = await this.load(ref)
+    return toProjectResource(project, this.plugin.store.configFor(project), this.summary(ref))
+  }
+
+  async createProject(input: unknown): Promise<ProjectResource> {
+    const create = parseProjectCreate(input)
+    const parent = create.parentId ? this.refById(create.parentId) : null
+    const folder = newProjectFolder(this.plugin.app, this.plugin.settings.projectsFolder, parent?.path)
+    if (findIgnoringCase(this.plugin.app, projectFilePath(create.title, folder))) {
+      throw new ApiRequestError('invalid', `a project named "${create.title}" already exists in ${folder}`)
+    }
+    const project = await this.plugin.store.createProject(create.title, folder, {
+      description: create.description ?? '',
+      teamMembers: create.teamMembers ?? [],
+      ...(create.icon === undefined ? {} : { icon: create.icon }),
+      ...(create.color === undefined ? {} : { color: create.color }),
+      ...(parent ? { parentPath: parent.path } : {})
+    })
+    const ref = refOf(project)
+    this.created.set(project.id, ref)
+    this.plugin.refreshViews()
     return toProjectResource(project, this.plugin.store.configFor(project), this.summary(ref))
   }
 
@@ -184,7 +224,12 @@ export class LocalApi implements DomainApi {
   }
 
   private refById(projectId: string): ProjectRef {
-    return this.plugin.index.projectRefs().find((ref) => ref.id === projectId) ?? notFound('project', projectId)
+    const indexed = this.plugin.index.projectRefs().find((ref) => ref.id === projectId)
+    if (indexed) {
+      this.created.delete(projectId)
+      return indexed
+    }
+    return this.created.get(projectId) ?? notFound('project', projectId)
   }
 
   private summary(ref: ProjectRef): ProjectSummary {
@@ -195,10 +240,20 @@ export class LocalApi implements DomainApi {
       title: ref.title,
       icon: ref.icon,
       color: ref.color,
-      parentId: this.plugin.index.parentOf(ref.path)?.id ?? null,
+      parentId: this.parentIdOf(ref),
       taskCount: counts.total,
       doneCount: counts.done
     }
+  }
+
+  private createdAt(path: string): ProjectRef | undefined {
+    return [...this.created.values()].find((ref) => ref.path === path)
+  }
+
+  private parentIdOf(ref: ProjectRef): string | null {
+    if (this.plugin.index.projectRef(ref.path)) return this.plugin.index.parentOf(ref.path)?.id ?? null
+    if (!ref.parentPath) return null
+    return (this.plugin.index.projectRef(ref.parentPath) ?? this.createdAt(ref.parentPath))?.id ?? null
   }
 
   private async load(ref: ProjectRef): Promise<Project> {
@@ -210,7 +265,7 @@ export class LocalApi implements DomainApi {
 
   private async locate(taskId: string): Promise<{ project: Project; ref: ProjectRef; task: Task }> {
     const path = this.plugin.index.task(taskId)?.projectPath ?? this.known.get(taskId) ?? notFound('task', taskId)
-    const ref = this.plugin.index.projectRef(path) ?? notFound('task', taskId)
+    const ref = this.plugin.index.projectRef(path) ?? this.createdAt(path) ?? notFound('task', taskId)
     const project = await this.load(ref)
     return { project, ref, task: this.taskOf(project, taskId) }
   }

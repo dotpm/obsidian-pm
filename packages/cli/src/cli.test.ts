@@ -106,6 +106,36 @@ describe('runCli', () => {
     expect(host.calls.at(-1)).toBe('searchTasks {"query":"sec","projectId":"p1","includeArchived":true,"limit":5}')
   })
 
+  it('creates projects from flags and JSON', async () => {
+    const created = await run([
+      'create-project',
+      '--title',
+      'New',
+      '--member',
+      'Ann',
+      '--member',
+      'Bob',
+      '--parent',
+      'p1',
+      '--data',
+      '{"color":"#112233","icon":"x"}',
+      '--icon',
+      '🚀'
+    ])
+    expect(created.code).toBe(0)
+    expect(created.json).toMatchObject({
+      id: 'p2',
+      title: 'New',
+      teamMembers: ['Ann', 'Bob'],
+      parentId: 'p1',
+      color: '#112233',
+      icon: '🚀'
+    })
+    const untitled = await run(['create-project'])
+    expect(untitled.code).toBe(2)
+    expect(untitled.err).toContain('title is required')
+  })
+
   it('creates and updates tasks from flags, JSON and stdin', async () => {
     const created = await run([
       'create',

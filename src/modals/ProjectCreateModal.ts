@@ -1,7 +1,7 @@
 import { App, ButtonComponent, ExtraButtonComponent, Keymap, Modal, setIcon } from 'obsidian'
 import type PMPlugin from '#main'
 import { DEFAULT_PROJECT_COLOR, DEFAULT_PROJECT_ICON } from '@dotpm/core'
-import { findIgnoringCase, folderOf, projectFilePath, projectFolderOf } from '#store'
+import { findIgnoringCase, newProjectFolder, projectFilePath } from '#store'
 import { safeAsync, renderPropRow, renderIconControl, renderSelectControl } from '@dotpm/ui'
 import { saveShortcutLabel } from '../utils'
 import { renderPersonPicker } from '#ui/PersonPicker'
@@ -271,11 +271,8 @@ export class ProjectCreateModal extends Modal {
     this.submit.setDisabled(!title || taken)
   }
 
-  /** A sub-project goes inside its parent's folder; a root project in the projects folder. */
   private targetFolder(): string {
-    const parentPath = this.draft.parentPath
-    if (!parentPath) return this.plugin.settings.projectsFolder || this.app.vault.getName()
-    return projectFolderOf(this.app, parentPath) ?? folderOf(parentPath)
+    return newProjectFolder(this.app, this.plugin.settings.projectsFolder, this.draft.parentPath || undefined)
   }
 
   private targetPath(title: string): string {

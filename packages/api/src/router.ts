@@ -90,6 +90,8 @@ export function createRouter(host: HttpHost): (request: Request) => Response | P
 
   app.get('/v1/projects', async (c) => c.json(await api.listProjects()))
 
+  app.post('/v1/projects', async (c) => c.json(await api.createProject(await body(c)), 201))
+
   app.get('/v1/projects/:id', async (c) => c.json(await api.getProject(c.req.param('id'))))
 
   app.get('/v1/projects/:id/tasks', async (c) =>

@@ -207,6 +207,40 @@ const COMMANDS: Record<string, Command> = {
       return { kind: 'project', value: { ...project, tasks } }
     }
   },
+  'create-project': {
+    args: '--title <text>',
+    summary: 'Create a project, at the root or under a parent project',
+    flags: {
+      title: { type: 'string', value: '<text>', help: 'Title' },
+      description: { type: 'string', value: '<markdown>', help: 'Body of the project note' },
+      icon: { type: 'string', value: '<emoji>', help: 'Icon shown next to the title' },
+      color: { type: 'string', value: '<hex>', help: 'Accent color, such as #8b72be' },
+      member: {
+        type: 'string',
+        multiple: true,
+        value: '<person>',
+        help: 'A person on the project team; repeatable'
+      },
+      parent: { type: 'string', value: '<projectId>', help: 'The parent project' },
+      data: {
+        type: 'string',
+        value: '<json>',
+        help: 'Any project fields as a JSON object, or - to read it from stdin; flags override it'
+      }
+    },
+    run: async ({ api, readStdin }, _positionals, values) => {
+      const body = await jsonData(values, readStdin)
+      for (const name of ['title', 'description', 'icon', 'color']) {
+        const value = text(values, name)
+        if (value !== undefined) body[name] = value
+      }
+      const members = list(values, 'member')
+      if (members) body['teamMembers'] = members
+      const parent = text(values, 'parent')
+      if (parent !== undefined) body['parentId'] = parent
+      return { kind: 'project', value: await api.createProject(body) }
+    }
+  },
   tasks: {
     args: '<projectId>',
     summary: "List a project's tasks in tree order",

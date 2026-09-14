@@ -80,6 +80,16 @@ export interface TaskMove {
   after?: string
 }
 
+/** What a client sends to create a project; the host picks the folder from `parentId` or its settings. */
+export interface ProjectCreate {
+  title: string
+  description?: string
+  icon?: string
+  color?: string
+  teamMembers?: string[]
+  parentId?: string | null
+}
+
 export interface TaskSearch {
   query?: string
   projectId?: string
@@ -135,6 +145,7 @@ export const ERROR_STATUS: Record<ApiErrorCode, number> = {
 export interface DomainApi {
   listProjects(): Promise<ProjectSummary[]>
   getProject(projectId: string): Promise<ProjectResource>
+  createProject(input: unknown): Promise<ProjectResource>
   listTasks(projectId: string, includeArchived?: boolean): Promise<TaskResource[]>
   getTask(taskId: string): Promise<TaskResource>
   searchTasks(search: TaskSearch): Promise<TaskResource[]>

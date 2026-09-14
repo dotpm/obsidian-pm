@@ -40,6 +40,7 @@ dotpm --url http://127.0.0.1:27140 --token <token> status
 | --- | --- |
 | `dotpm projects` | Every project with its id, title and task counts |
 | `dotpm project <projectId> [--tasks] [--archived]` | One project: team, custom fields, and the status and priority ids its tasks may use |
+| `dotpm create-project --title <text> [--description <markdown>] [--icon <emoji>] [--color <hex>] [--member <person>]... [--parent <projectId>]` | A new project in the projects folder, or inside its parent |
 | `dotpm tasks <projectId> [--archived]` | A project's tasks in tree order |
 | `dotpm task <taskId>` | One task with its description |
 | `dotpm search [text] [--project <id>] [--status <id>] [--assignee <person>] [--archived] [--limit <n>]` | Tasks across every project |
@@ -61,6 +62,7 @@ Anything else, such as `recurrence` or `customFields`, goes in `--data` as a JSO
 `--status` and `--priority` must be ids the project lists. Read the project first; a write with any other value is refused with the list of allowed ones.
 
 ```sh
+dotpm create-project --title "Website relaunch" --icon 🚀 --member "[[Ann]]"
 dotpm project 8f3k2a1x --tasks
 dotpm create 8f3k2a1x --title "Write the release notes" --due 2026-09-20 --tag docs
 dotpm update k2j9d0sa --status done

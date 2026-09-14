@@ -59,6 +59,7 @@ describe('createMcpHandler', () => {
     expect(listed.map((tool) => tool.name)).toEqual([
       'list_projects',
       'get_project',
+      'create_project',
       'list_tasks',
       'get_task',
       'search_tasks',
@@ -70,6 +71,7 @@ describe('createMcpHandler', () => {
       'list_changes'
     ])
     expect(listed[1].inputSchema).toMatchObject({ required: ['projectId'] })
+    expect(listed[2].inputSchema).toMatchObject({ required: ['title'], properties: { color: { type: 'string' } } })
     expect((await rpc('nope/method')).error?.code).toBe(-32601)
   })
 
@@ -98,6 +100,10 @@ describe('createMcpHandler', () => {
   })
 
   it('calls tools and returns JSON text content', async () => {
+    const project = await call('create_project', { title: 'Via MCP', teamMembers: ['Ann'] })
+    expect(parsed(project)).toMatchObject({ id: 'p2', title: 'Via MCP', teamMembers: ['Ann'] })
+    expect(api.calls).toContain('createProject Via MCP')
+
     expect(parsed(await rpc('tools/call', { name: 'list_projects' }))).toEqual([
       expect.objectContaining({ id: 'p1', title: 'Demo' })
     ])

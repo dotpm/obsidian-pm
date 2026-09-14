@@ -67,6 +67,14 @@ describe('HttpApi', () => {
     expect(seen[1].url).toBe('http://127.0.0.1:27140/v1/changes?since=0')
   })
 
+  it('creates projects', async () => {
+    const created = await api.createProject({ title: 'New', icon: '🚀' })
+    expect(created).toMatchObject({ id: 'p2', title: 'New', icon: '🚀' })
+    expect(seen.at(-1)?.method).toBe('POST')
+    expect(seen.at(-1)?.url).toBe('http://127.0.0.1:27140/v1/projects')
+    await expect(api.createProject({ title: '' })).rejects.toMatchObject({ code: 'invalid' })
+  })
+
   it('rethrows what the host refused with the same code', async () => {
     await expect(api.getTask('nope')).rejects.toMatchObject({ code: 'not_found', message: 'task nope not found' })
     await expect(api.createTask('p1', { title: '' })).rejects.toMatchObject({ code: 'invalid' })
