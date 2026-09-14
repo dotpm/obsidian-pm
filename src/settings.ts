@@ -41,7 +41,7 @@ export class PMSettingTab extends PluginSettingTab {
         items: [
           {
             name: 'New project folder',
-            desc: 'Leave it empty to create them in the vault root.',
+            desc: 'Create new projects in this folder. Leave it empty to use the vault root.',
             aliases: ['projects folder', 'location'],
             control: {
               type: 'folder',
@@ -53,7 +53,7 @@ export class PMSettingTab extends PluginSettingTab {
           this.excludedFoldersPage(),
           {
             name: 'Open projects in',
-            desc: 'Tasks skips the overview page and goes straight to the table, timeline, or board.',
+            desc: 'Choose where a project opens. Select "Tasks" to skip the overview page and open the table, timeline, or board.',
             aliases: ['click', 'project list', 'overview'],
             control: {
               type: 'dropdown',
@@ -63,7 +63,7 @@ export class PMSettingTab extends PluginSettingTab {
           },
           {
             name: 'Default tasks view',
-            desc: "View a project's tasks open in.",
+            desc: "Choose the view a project's tasks open in.",
             aliases: ['default view'],
             control: {
               type: 'dropdown',
@@ -73,7 +73,7 @@ export class PMSettingTab extends PluginSettingTab {
           },
           {
             name: 'Open tasks in',
-            desc: "Tab also opens task notes in the task editor instead of Obsidian's.",
+            desc: 'Choose where tasks open. Select "Tab" to also open task notes in the task editor instead of Obsidian\'s editor.',
             control: {
               type: 'dropdown',
               key: 'taskEditorSurface',
@@ -87,7 +87,7 @@ export class PMSettingTab extends PluginSettingTab {
           },
           {
             name: 'Save shortcut',
-            desc: 'Key shortcut to create or save tasks and projects.',
+            desc: 'Choose the shortcut that creates or saves tasks and projects.',
             aliases: ['hotkey', 'keyboard'],
             control: {
               type: 'dropdown',
@@ -97,7 +97,7 @@ export class PMSettingTab extends PluginSettingTab {
           },
           {
             name: 'Show release notes after updates',
-            desc: 'Open a tab listing what changed when the plugin updates.',
+            desc: 'Open a tab with the release notes after the plugin updates.',
             aliases: ['changelog', "what's new", 'update'],
             control: { type: 'toggle', key: 'showReleaseNotes' }
           }
@@ -115,7 +115,7 @@ export class PMSettingTab extends PluginSettingTab {
           },
           {
             name: 'Priority icons',
-            desc: 'Icon set for priorities that have no icon of their own.',
+            desc: 'Choose the icons for priorities that have no icon of their own.',
             aliases: ['appearance', 'chevrons', 'signal'],
             control: {
               type: 'dropdown',
@@ -137,7 +137,7 @@ export class PMSettingTab extends PluginSettingTab {
           },
           {
             name: 'Line borders',
-            desc: 'Rules drawn between rows, between columns, or both.',
+            desc: 'Draw rules between rows, between columns, or both.',
             aliases: ['grid', 'lines'],
             control: {
               type: 'dropdown',
@@ -153,7 +153,7 @@ export class PMSettingTab extends PluginSettingTab {
         items: [
           {
             name: 'Default granularity',
-            desc: 'Time unit for each column in the timeline.',
+            desc: 'Choose the time unit for each column in the timeline.',
             aliases: ['timeline', 'zoom'],
             control: {
               type: 'dropdown',
@@ -163,7 +163,7 @@ export class PMSettingTab extends PluginSettingTab {
           },
           {
             name: 'Week label',
-            desc: 'Text shown in weekly header cells.',
+            desc: 'Choose the text shown in weekly header cells.',
             aliases: ['timeline'],
             control: {
               type: 'dropdown',
@@ -183,13 +183,13 @@ export class PMSettingTab extends PluginSettingTab {
         items: [
           {
             name: 'Show subtasks',
-            desc: 'Display subtasks as individual cards.',
+            desc: 'Show subtasks as individual cards.',
             aliases: ['kanban'],
             control: { type: 'toggle', key: 'kanbanShowSubtasks' }
           },
           {
             name: 'Show description preview',
-            desc: 'Display the first few lines of each task description.',
+            desc: 'Show the first few lines of each task description.',
             aliases: ['kanban'],
             control: { type: 'toggle', key: 'kanbanShowDescriptionPreview' }
           }
@@ -247,7 +247,7 @@ export class PMSettingTab extends PluginSettingTab {
           },
           {
             name: 'Days in advance',
-            desc: 'How many days before the due date to notify.',
+            desc: 'Notify this many days before a task is due.',
             aliases: ['notifications', 'reminders', 'lead time'],
             control: {
               type: 'slider',
@@ -302,13 +302,13 @@ export class PMSettingTab extends PluginSettingTab {
       items: [
         {
           name: 'Serve projects to other apps',
-          desc: `Lets tools on this computer read and edit tasks over HTTP and MCP at http://127.0.0.1:${this.plugin.settings.localApiPort}. Only this computer can connect, and every request needs the token. The MCP endpoint is /mcp.`,
+          desc: `Allow tools on this computer to read and edit tasks over HTTP and MCP at http://127.0.0.1:${this.plugin.settings.localApiPort}. Only this computer can connect, and every request needs the token. The MCP endpoint is /mcp.`,
           aliases: ['api', 'mcp', 'server', 'agent', 'local'],
           control: { type: 'toggle', key: 'localApiEnabled' }
         },
         {
           name: 'Port',
-          desc: 'Starts out derived from the vault name, so two open vaults do not want the same one.',
+          desc: 'Set the port the server listens on. The default comes from the vault name, so two open vaults use different ports.',
           aliases: ['api', 'mcp'],
           control: {
             type: 'number',
@@ -323,7 +323,7 @@ export class PMSettingTab extends PluginSettingTab {
         },
         {
           name: 'Token',
-          desc: 'Clients send it as a bearer token.',
+          desc: 'Set the bearer token clients send with every request.',
           aliases: ['api', 'mcp', 'secret'],
           control: {
             type: 'text',
@@ -334,7 +334,7 @@ export class PMSettingTab extends PluginSettingTab {
         },
         {
           name: 'Regenerate token',
-          desc: 'Every connected client will need the new one.',
+          desc: 'Replace the token with a new random one. Every connected client will need the new one.',
           aliases: ['api', 'mcp', 'secret'],
           action: () => {
             void this.regenerateLocalApiToken()
@@ -350,7 +350,7 @@ export class PMSettingTab extends PluginSettingTab {
     return {
       type: 'page',
       name: 'Statuses',
-      desc: 'Labels, colors, and icons for the status field.',
+      desc: 'Manage the labels, colors, and icons of task statuses.',
       displayValue: () => plural(this.plugin.settings.statuses.length, 'status', 'statuses'),
       items: [
         {
@@ -391,7 +391,7 @@ export class PMSettingTab extends PluginSettingTab {
     return {
       type: 'page',
       name: 'Custom fields',
-      desc: 'Extra task properties available across all projects.',
+      desc: 'Manage the extra task properties available across all projects.',
       displayValue: () => plural(this.plugin.settings.customFields.length, 'field', 'fields'),
       items: [
         {
@@ -436,7 +436,7 @@ export class PMSettingTab extends PluginSettingTab {
     return {
       type: 'page',
       name: 'Priorities',
-      desc: 'Labels, colors, and icons for the priority field.',
+      desc: 'Manage the labels, colors, and icons of task priorities.',
       displayValue: () => plural(this.plugin.settings.priorities.length, 'priority', 'priorities'),
       items: [
         {
@@ -492,7 +492,7 @@ export class PMSettingTab extends PluginSettingTab {
           items: [
             {
               name: 'Statuses and priorities',
-              desc: 'Copies labels, colors, and completion from TaskNotes 4.10 or newer.',
+              desc: 'Copy labels, colors, and completion from TaskNotes 4.10 or newer.',
               render: (setting: Setting) => {
                 setting.controlEl.createDiv({ cls: 'setting-item-value', text: this.taskNotesStatus() })
               }
@@ -517,7 +517,7 @@ export class PMSettingTab extends PluginSettingTab {
     return {
       type: 'page',
       name: 'Excluded folders',
-      desc: 'Folders to skip when looking for projects and tasks, such as templates.',
+      desc: 'Manage the folders to skip when looking for projects and tasks, such as templates.',
       displayValue: () => plural(this.plugin.settings.excludedFolders.length, 'folder', 'folders'),
       items: [
         {
@@ -564,12 +564,12 @@ export class PMSettingTab extends PluginSettingTab {
     return {
       type: 'page',
       name: 'Team members',
-      desc: 'People available as assignees across all projects.',
+      desc: 'Manage the people available as assignees across all projects.',
       displayValue: () => plural(this.plugin.settings.globalTeamMembers.length, 'person', 'people'),
       items: [
         {
           name: 'People folder',
-          desc: 'Where person notes are looked for and created. Leave it empty to search the whole vault.',
+          desc: 'Find and create person notes in this folder. Leave it empty to search the whole vault.',
           aliases: ['people', 'person notes'],
           control: {
             type: 'folder',
@@ -580,7 +580,7 @@ export class PMSettingTab extends PluginSettingTab {
         },
         {
           name: 'Team members',
-          desc: 'Offered as assignees and members in every project.',
+          desc: 'Offer these people as assignees and members in every project.',
           render: (setting: Setting) => {
             renderPersonPicker({
               container: setting.controlEl,
