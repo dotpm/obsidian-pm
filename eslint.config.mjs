@@ -20,7 +20,7 @@ export default defineConfig([
     languageOptions: {
       parser: tsparser,
       parserOptions: { project: './tsconfig.json' },
-      globals: { __STYLEGUIDE__: 'readonly', __VIEWER_TEMPLATE__: 'readonly' }
+      globals: { __STYLEGUIDE__: 'readonly', __VIEWER_TEMPLATE__: 'readonly', __CHANGELOG__: 'readonly' }
     }
   },
   {

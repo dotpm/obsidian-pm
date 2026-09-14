@@ -22,7 +22,8 @@ export default defineConfig({
   outExtensions: () => ({ js: '.js' }),
   define: {
     __STYLEGUIDE__: JSON.stringify(!prod || Boolean(process.env['STYLEGUIDE'])),
-    __VIEWER_TEMPLATE__: JSON.stringify(existsSync(viewerTemplate) ? readFileSync(viewerTemplate, 'utf8') : '')
+    __VIEWER_TEMPLATE__: JSON.stringify(existsSync(viewerTemplate) ? readFileSync(viewerTemplate, 'utf8') : ''),
+    __CHANGELOG__: JSON.stringify(readFileSync('CHANGELOG.md', 'utf8'))
   },
   deps: {
     neverBundle: [

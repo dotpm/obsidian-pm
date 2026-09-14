@@ -1,0 +1,44 @@
+.pm-release-notes {
+  padding: 24px 28px 48px;
+  overflow: auto;
+}
+
+.pm-release-notes-page {
+  max-width: var(--file-line-width);
+  margin-inline: auto;
+}
+
+.pm-release-notes-release {
+  padding-block: 20px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+
+.pm-release-notes-release h2 {
+  margin: 0;
+  line-height: var(--line-height-tight);
+}
+
+.pm-release-notes-date {
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+
+.pm-release-notes-release .markdown-rendered {
+  margin-top: 16px;
+}
+
+.pm-release-notes-release .markdown-rendered h3 {
+  margin: 20px 0 8px;
+  font-size: var(--font-ui-medium);
+  color: var(--text-muted);
+}
+
+.pm-release-notes-release .markdown-rendered > :first-child {
+  margin-top: 0;
+}
+
+.pm-release-notes-link {
+  display: inline-block;
+  margin-top: 16px;
+}

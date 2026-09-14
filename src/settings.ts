@@ -94,6 +94,12 @@ export class PMSettingTab extends PluginSettingTab {
               key: 'editorSaveModifier',
               options: { Shift: saveShortcutLabel('Shift'), Mod: saveShortcutLabel('Mod') }
             }
+          },
+          {
+            name: 'Show release notes after updates',
+            desc: 'Open a tab listing what changed when the plugin updates.',
+            aliases: ['changelog', "what's new", 'update'],
+            control: { type: 'toggle', key: 'showReleaseNotes' }
           }
         ]
       },

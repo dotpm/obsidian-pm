@@ -237,6 +237,10 @@ export interface PMSettings {
   localApiEnabled: boolean
   localApiPort: number
   localApiToken: string
+  /** Open the release notes in a tab after the plugin updates. */
+  showReleaseNotes: boolean
+  /** The plugin version that last ran, so an update can be told apart from a restart. */
+  lastSeenVersion: string
 }
 
 export const DEFAULT_STATUSES: StatusConfig[] = [
@@ -296,7 +300,9 @@ export const DEFAULT_SETTINGS: PMSettings = {
   collapsedProjects: [],
   localApiEnabled: false,
   localApiPort: LOCAL_API_PORT_BASE,
-  localApiToken: ''
+  localApiToken: '',
+  showReleaseNotes: true,
+  lastSeenVersion: ''
 }
 
 export function makeId(): string {

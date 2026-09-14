@@ -1,6 +1,7 @@
 export * from './types'
 export * from './dates'
 export * from './utils'
+export * from './releaseNotes'
 export * from './yaml'
 export * from './store/TaskTreeOps'
 export * from './store/TaskIndex'

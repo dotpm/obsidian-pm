@@ -5,6 +5,7 @@ import { PM_DASHBOARD_VIEW_TYPE } from './DashboardView'
 import { PM_PROJECT_EDIT_VIEW_TYPE } from './ProjectEditView'
 import { PM_PROJECT_OVERVIEW_VIEW_TYPE } from './ProjectOverviewView'
 import { PM_PROJECT_VIEW_TYPE } from './ProjectView'
+import { PM_RELEASE_NOTES_VIEW_TYPE } from './ReleaseNotesView'
 import { PM_TASK_VIEW_TYPE, type TaskViewState } from './TaskView'
 
 export class PMViewRouter {
@@ -46,6 +47,11 @@ export class PMViewRouter {
 
   async openTask(state: TaskViewState): Promise<void> {
     await this.open(PM_TASK_VIEW_TYPE, state)
+  }
+
+  /** Pass the version an update came from to show every release since it. */
+  async openReleaseNotes(since?: string): Promise<void> {
+    await this.open(PM_RELEASE_NOTES_VIEW_TYPE, since ? { since } : {})
   }
 
   async openProjectByPath(path: string): Promise<void> {

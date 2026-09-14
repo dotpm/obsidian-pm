@@ -5,7 +5,8 @@ export default defineConfig({
   define: {
     __STYLEGUIDE__: 'false',
     __VIEWER_TEMPLATE__: JSON.stringify(''),
-    __CLI_VERSION__: JSON.stringify('0.0.0-test')
+    __CLI_VERSION__: JSON.stringify('0.0.0-test'),
+    __CHANGELOG__: JSON.stringify('')
   },
   resolve: {
     alias: {
