@@ -45,6 +45,8 @@ Resources: `dotpm://projects/{id}` (the project with its tasks) and `dotpm://tas
 
 Read a project before writing tasks into it. Its `statuses` and `priorities` list the ids a task may carry, and a write with any other value is refused.
 
+[`skills/dotpm`](../skills/dotpm/SKILL.md) is a skill for agents that use these tools. Copy the folder into the agent's skills directory, `~/.claude/skills/` for Claude Code.
+
 Protocol details:
 
 - Stateless. Every request stands alone, there is no session, and the server pushes nothing.

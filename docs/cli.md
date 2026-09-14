@@ -117,3 +117,7 @@ claude mcp add dotpm -- npx -y @dotpm/cli mcp --vault /path/to/vault
 ```
 
 The same tools and resources are served either way.
+
+## Agent skill
+
+[`skills/dotpm`](../skills/dotpm/SKILL.md) is a skill for agents that use these commands or the MCP tools. Copy the folder into the agent's skills directory, `~/.claude/skills/` for Claude Code.
