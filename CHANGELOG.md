@@ -10,8 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added exporting a view as a standalone HTML page with the table, timeline, and board
-- Added a local HTTP and MCP server that lets other apps on the same computer read and edit tasks, off by default
-- Added the `dotpm` command line tool for listing, searching, and editing tasks, installed from npm as `@dotpm/cli`
+- Added a local HTTP and MCP server that lets other apps on the same computer read and edit tasks and create projects, off by default
+- Added the `dotpm` command line tool for listing, searching, and editing tasks and creating projects, installed from npm as `@dotpm/cli`
 - Added a release notes tab that opens after an update, and the "Show release notes" command
 - Added the "Show release notes after updates" setting
 
