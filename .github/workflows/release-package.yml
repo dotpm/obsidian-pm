@@ -39,13 +39,25 @@ jobs:
             exit 1
           fi
           echo "name=$name" >> "$GITHUB_OUTPUT"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
 
       - run: pnpm install --frozen-lockfile
       - run: pnpm check
       - run: pnpm test
       - run: pnpm build:packages
 
+      - name: Check whether the version is already on npm
+        id: npm
+        env:
+          NAME: ${{ steps.tag.outputs.name }}
+          VERSION: ${{ steps.tag.outputs.version }}
+        run: |
+          if npm view "@dotpm/$NAME@$VERSION" version >/dev/null 2>&1; then
+            echo "published=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Publish to npm
+        if: steps.npm.outputs.published != 'true'
         env:
           NAME: ${{ steps.tag.outputs.name }}
         run: pnpm --filter "@dotpm/$NAME" publish --access public --provenance --no-git-checks
