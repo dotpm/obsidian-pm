@@ -1,7 +1,7 @@
 {
   "name": "project-manager",
   "version": "2.4.0",
-  "description": "dotpm — project management for Obsidian",
+  "description": "Project management inside Obsidian. Table, Gantt and Kanban over plain Markdown notes, with a local API for agents and scripts.",
   "repository": "github:dotpm/obsidian-pm",
   "main": "main.js",
   "type": "module",

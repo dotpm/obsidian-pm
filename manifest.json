@@ -3,7 +3,7 @@
   "name": "dotpm",
   "version": "2.4.0",
   "minAppVersion": "1.13.0",
-  "description": "Full-featured project management: stunning Gantt charts, Kanban boards, Table views, customizable fields, due date notifications.",
+  "description": "Project management over plain Markdown notes. Table, Gantt and Kanban views with scheduling, dependencies and custom fields, plus a local API for agents and scripts.",
   "author": "dotpm",
   "authorUrl": "https://dotpm.pm",
   "fundingUrl": "https://buymeacoffee.com/kropachev",
