@@ -56,13 +56,34 @@ describe('dom shim', () => {
     expect(cell.matchParent('.root', row)).toBeNull()
   })
 
-  it('shows and hides through the display property', () => {
+  it('shows and hides through a class', () => {
     const el = document.body.createDiv()
     el.hide()
+    expect(el.classList.contains('pm-hidden')).toBe(true)
     expect(el.isShown()).toBe(false)
     el.show()
+    expect(el.classList.contains('pm-hidden')).toBe(false)
     expect(el.isShown()).toBe(true)
+    el.toggle(false)
+    expect(el.isShown()).toBe(false)
     el.detach()
     expect(el.isConnected).toBe(false)
+  })
+
+  it('treats a child of a hidden element as not shown', () => {
+    const parent = document.body.createDiv()
+    const child = parent.createDiv()
+    parent.hide()
+    expect(child.isShown()).toBe(false)
+    parent.show()
+    expect(child.isShown()).toBe(true)
+  })
+
+  it('toggles visibility through a class', () => {
+    const el = document.body.createDiv()
+    el.toggleVisibility(false)
+    expect(el.classList.contains('pm-invisible')).toBe(true)
+    el.toggleVisibility(true)
+    expect(el.classList.contains('pm-invisible')).toBe(false)
   })
 })

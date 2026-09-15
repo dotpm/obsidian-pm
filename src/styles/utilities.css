@@ -1,6 +1,9 @@
 .pm-hidden {
   display: none !important;
 }
+.pm-invisible {
+  visibility: hidden;
+}
 .pm-dragging {
   opacity: 0.5;
 }

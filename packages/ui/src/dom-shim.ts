@@ -185,25 +185,31 @@ const elementMethods = {
   }
 }
 
+/** Both classes come from the plugin stylesheet, which every host of the shim bundles. */
+const HIDDEN_CLASS = 'pm-hidden'
+const INVISIBLE_CLASS = 'pm-invisible'
+
+function isHidden(el: HTMLElement): boolean {
+  return el.classList.contains(HIDDEN_CLASS) || el.style.display === 'none'
+}
+
 const htmlElementMethods = {
   show(this: HTMLElement) {
-    this.style.removeProperty('display')
+    this.classList.remove(HIDDEN_CLASS)
   },
   hide(this: HTMLElement) {
-    this.style.setProperty('display', 'none')
+    this.classList.add(HIDDEN_CLASS)
   },
   toggle(this: HTMLElement, show: boolean) {
-    if (show) this.style.removeProperty('display')
-    else this.style.setProperty('display', 'none')
+    this.classList.toggle(HIDDEN_CLASS, !show)
   },
   toggleVisibility(this: HTMLElement, visible: boolean) {
-    if (visible) this.style.removeProperty('visibility')
-    else this.style.setProperty('visibility', 'hidden')
+    this.classList.toggle(INVISIBLE_CLASS, !visible)
   },
   isShown(this: HTMLElement) {
-    if (!this.isConnected || this.style.display === 'none') return false
+    if (!this.isConnected || isHidden(this)) return false
     for (let node = this.parentElement; node; node = node.parentElement) {
-      if (node.style.display === 'none') return false
+      if (isHidden(node)) return false
     }
     return true
   },
