@@ -244,7 +244,7 @@ export function installDomShim(): void {
   installGetter(Node.prototype, 'win', function (this: Node) {
     return documentOf(this).defaultView ?? window
   })
-  install(globalThis, {
+  install(window, {
     createEl: (tag: string, info?: ElementInfo | string, callback?: (el: HTMLElement) => void) =>
       createElIn(undefined, tag, info, callback),
     createDiv: (info?: ElementInfo | string, callback?: (el: HTMLElement) => void) =>
@@ -259,8 +259,8 @@ export function installDomShim(): void {
       return fragment
     }
   })
-  installGetter(globalThis, 'activeDocument', () => document)
-  installGetter(globalThis, 'activeWindow', () => window)
+  installGetter(window, 'activeDocument', () => document)
+  installGetter(window, 'activeWindow', () => window)
 }
 
 installDomShim()

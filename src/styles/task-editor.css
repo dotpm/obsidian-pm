@@ -587,8 +587,7 @@ button.pm-icon-trigger {
 .pm-prop-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  column-gap: 22px;
-  row-gap: 2px;
+  gap: 2px 22px;
   align-items: start;
 }
 .pm-prop-grid .pm-prop-row {
