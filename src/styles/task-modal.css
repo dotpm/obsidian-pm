@@ -174,9 +174,6 @@ a.pm-subtask-title--done {
   color: var(--text-muted);
   text-decoration: line-through;
 }
-a.pm-subtask-title--done:hover {
-  text-decoration-line: line-through underline;
-}
 
 .pm-modal-footer {
   display: flex;
