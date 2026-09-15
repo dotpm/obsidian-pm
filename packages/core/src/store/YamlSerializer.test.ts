@@ -93,4 +93,31 @@ describe('serializer determinism', () => {
     const project = hydrateProjectFromFrontmatter(parsed.frontmatter, parsed.body, 'Projects/Test/Test.md', 'Test')
     expect(serializeProject(project, [], refs)).toBe(first)
   })
+
+  it('always writes the tags key, even when empty', () => {
+    expect(serializeProject(fixtureProject(), [], refs)).toContain('tags: []')
+  })
+
+  it('round-trips palette and custom tags together', () => {
+    const project = fixtureProject()
+    project.tags = ['dotpm/orange', 'dotpm/my-custom-tag']
+    const first = serializeProject(project, [], refs)
+    const parsed = parseFrontmatter(first)
+    if (parsed.kind !== 'frontmatter') throw new Error('frontmatter missing')
+    const hydrated = hydrateProjectFromFrontmatter(parsed.frontmatter, parsed.body, 'Projects/Test/Test.md', 'Test')
+    expect(hydrated.tags).toEqual(['dotpm/orange', 'dotpm/my-custom-tag'])
+    expect(serializeProject(hydrated, [], refs)).toBe(first)
+  })
+
+  it('ignores a leftover hidden key from an earlier version as foreign frontmatter', () => {
+    const parsed = parseFrontmatter(serializeProject(fixtureProject(), [], refs))
+    if (parsed.kind !== 'frontmatter') throw new Error('frontmatter missing')
+    const hydrated = hydrateProjectFromFrontmatter(
+      { ...parsed.frontmatter, hidden: true },
+      parsed.body,
+      'Projects/Test/Test.md',
+      'Test'
+    )
+    expect((hydrated as unknown as { hidden?: unknown }).hidden).toBeUndefined()
+  })
 })

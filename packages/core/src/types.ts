@@ -84,6 +84,8 @@ export interface Project {
   parentPath?: string
   /** Per-project overrides for the global settings. Absent fields inherit. */
   config?: ProjectConfig
+  /** Extra Dashboard views this project also shows up in, alongside the always-shown Active view. */
+  tags?: string[]
   /** Not serialized. Rebuilt on load, maintained by the store's mutators. */
   taskIndex: TaskIndex
 }
@@ -92,7 +94,16 @@ export interface Project {
 export type ProjectPatch = Partial<
   Pick<
     Project,
-    'title' | 'description' | 'color' | 'icon' | 'customFields' | 'teamMembers' | 'savedViews' | 'config' | 'parentPath'
+    | 'title'
+    | 'description'
+    | 'color'
+    | 'icon'
+    | 'customFields'
+    | 'teamMembers'
+    | 'savedViews'
+    | 'config'
+    | 'parentPath'
+    | 'tags'
   >
 >
 
@@ -351,6 +362,7 @@ export function makeProject(title: string, filePath: string): Project {
     updatedAt: now,
     filePath,
     savedViews: [],
+    tags: [],
     taskIndex: new Map()
   }
 }

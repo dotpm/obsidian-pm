@@ -33,6 +33,8 @@ export interface ProjectRef {
   completeStatusIds: string[] | null
   /** Days before a completed task is archived. Null inherits the global setting. */
   autoArchiveDays: number | null
+  /** Extra Dashboard views this project also shows up in, alongside the always-shown Active view. */
+  tags: string[]
 }
 
 export interface TaskRef {
@@ -437,7 +439,8 @@ export class VaultIndex {
       parentPath: resolveVaultLink(this.app, frontmatter.parent, path),
       ownStatusIds: own ? own.map((entry) => entry.id as string) : null,
       completeStatusIds: own ? own.filter((entry) => entry.complete === true).map((entry) => entry.id as string) : null,
-      autoArchiveDays: ownAutoArchiveDays(frontmatter)
+      autoArchiveDays: ownAutoArchiveDays(frontmatter),
+      tags: stringList(frontmatter.tags)
     }
     this.projects.set(path, ref)
     this.projectPathById.set(ref.id, path)

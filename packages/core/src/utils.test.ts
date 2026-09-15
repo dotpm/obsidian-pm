@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest'
-import { dedupePeople, displayName, dueUrgency, localApiPortFor, priorityIcon } from './utils'
+import {
+  dedupePeople,
+  displayName,
+  dueUrgency,
+  localApiPortFor,
+  priorityIcon,
+  projectTagColor,
+  sanitizeTagSegment,
+  PROJECT_TAG_PALETTE
+} from './utils'
 import {
   makeTask,
   DEFAULT_PRIORITIES,
@@ -177,6 +186,54 @@ describe('dedupePeople with a key function', () => {
 
   it('collapses two spellings the key function calls the same', () => {
     expect(dedupePeople(['[[People/Jane]]', 'Jane'], keyOf)).toEqual(['[[People/Jane]]'])
+  })
+})
+
+describe('sanitizeTagSegment', () => {
+  it('lowercases and hyphenates spaces', () => {
+    expect(sanitizeTagSegment('My Cool Tag')).toBe('my-cool-tag')
+  })
+
+  it('strips punctuation', () => {
+    expect(sanitizeTagSegment('Cool Tag!')).toBe('cool-tag')
+  })
+
+  it('drops a slash rather than nesting deeper', () => {
+    expect(sanitizeTagSegment('foo/bar')).toBe('foo-bar')
+  })
+
+  it('collapses repeated separators', () => {
+    expect(sanitizeTagSegment('too   many---spaces')).toBe('too-many-spaces')
+  })
+
+  it('trims leading and trailing hyphens', () => {
+    expect(sanitizeTagSegment('  -edges- ')).toBe('edges')
+  })
+
+  it('passes an already-valid segment through unchanged', () => {
+    expect(sanitizeTagSegment('already-valid_123')).toBe('already-valid_123')
+  })
+
+  it('rejects an all-numeric result', () => {
+    expect(sanitizeTagSegment('123')).toBe('')
+  })
+
+  it('rejects empty input', () => {
+    expect(sanitizeTagSegment('   ')).toBe('')
+  })
+})
+
+describe('projectTagColor', () => {
+  it('uses the curated color for a palette tag', () => {
+    const orange = PROJECT_TAG_PALETTE.find((entry) => entry.id === 'dotpm/orange')
+    expect(orange).toBeDefined()
+    expect(projectTagColor('dotpm/orange')).toBe(orange?.color)
+  })
+
+  it('falls back to a deterministic hash color for a custom tag', () => {
+    expect(projectTagColor('dotpm/my-custom-tag')).toBe(projectTagColor('dotpm/my-custom-tag'))
+    expect(projectTagColor('dotpm/my-custom-tag')).not.toBe('dotpm/my-custom-tag')
+    expect(PROJECT_TAG_PALETTE.some((entry) => entry.color === projectTagColor('dotpm/my-custom-tag'))).toBe(false)
   })
 })
 

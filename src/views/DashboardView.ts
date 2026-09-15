@@ -1,7 +1,7 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
 import { renderProjectListToolbar, renderProjectListContent } from './ProjectListRenderer'
-import type { ProjectListContext } from './ProjectListRenderer'
+import type { ProjectListContext, ProjectListTab } from './ProjectListRenderer'
 
 export const PM_DASHBOARD_VIEW_TYPE = 'pm-dashboard'
 
@@ -10,6 +10,7 @@ export class DashboardView extends ItemView {
   private toolbarEl!: HTMLElement
   private bodyEl!: HTMLElement
   private reloadDebounceTimer: number | null = null
+  private tab: ProjectListTab = 'active'
 
   constructor(leaf: WorkspaceLeaf, plugin: PMPlugin) {
     super(leaf)
@@ -73,7 +74,12 @@ export class DashboardView extends ItemView {
       plugin: this.plugin,
       toolbarEl: this.toolbarEl,
       contentEl: this.bodyEl,
-      openProject: (path: string) => this.plugin.router.openProjectLink(path)
+      tab: this.tab,
+      openProject: (path: string) => this.plugin.router.openProjectLink(path),
+      onTabChange: (tab) => {
+        this.tab = tab
+        this.render()
+      }
     }
   }
 }

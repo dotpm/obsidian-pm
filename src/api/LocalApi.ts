@@ -41,7 +41,8 @@ function refOf(project: Project): ProjectRef {
     parentPath: project.parentPath,
     ownStatusIds: project.config?.statuses?.map((status) => status.id) ?? null,
     completeStatusIds: project.config?.statuses?.filter((status) => status.complete).map((status) => status.id) ?? null,
-    autoArchiveDays: project.config?.autoArchiveDays ?? null
+    autoArchiveDays: project.config?.autoArchiveDays ?? null,
+    tags: project.tags ?? []
   }
 }
 

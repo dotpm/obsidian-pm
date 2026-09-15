@@ -178,6 +178,14 @@
   color: var(--text-muted);
 }
 
+.pm-chip-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: 4px;
+}
+
 .pm-project-th-title {
   width: 100%;
 }

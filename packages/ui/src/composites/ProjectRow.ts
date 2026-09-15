@@ -35,6 +35,8 @@ const ROW_IGNORE_SELECTOR = 'button, .pm-chip--interactive, .pm-icon-btn, .pm-co
 
 export class ProjectRow {
   el: HTMLTableRowElement
+  /** Where the caller wires up a tag picker (e.g. `renderMultiSelect`) after construction. */
+  tagsEl: HTMLElement
 
   constructor(tbody: HTMLElement, props: ProjectRowProps) {
     this.el = tbody.createEl('tr', { cls: 'pm-table-row pm-project-row' })
@@ -54,6 +56,7 @@ export class ProjectRow {
     const inner = title.createDiv('pm-table-title-inner')
     renderGlyph(inner.createSpan({ cls: 'pm-project-row-icon' }), { icon: props.icon, color: props.color })
     inner.createSpan({ text: props.title, cls: 'pm-task-title-text' })
+    this.tagsEl = inner.createDiv('pm-table-tags')
 
     const progress = this.el.createEl('td', { cls: 'pm-table-cell pm-table-cell-progress' })
     new ProgressBar(progress)

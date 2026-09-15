@@ -150,6 +150,15 @@ describe('VaultIndex', () => {
     expect(index.dueSummary(ref)).toEqual({ overdue: 1, latestDue: '2020-01-01' })
   })
 
+  it('reads a project tags from frontmatter', async () => {
+    await vault.create('Projects/Roadmap.md', projectNote('p1', 'Roadmap'))
+    await vault.create('Projects/Tagged.md', projectNote('p2', 'Tagged', 'tags: [dotpm/orange, dotpm/blue]\n'))
+    index.build()
+
+    expect(expectDefined(index.projectRef('Projects/Roadmap.md')).tags).toEqual([])
+    expect(expectDefined(index.projectRef('Projects/Tagged.md')).tags).toEqual(['dotpm/orange', 'dotpm/blue'])
+  })
+
   it('reads only the usable names from a hand-edited team member list', async () => {
     const members = 'teamMembers:\n  - id: m1\n    name: John Doe\n  - Alice\n'
     await vault.create('Projects/Roadmap.md', projectNote('p1', 'Roadmap', members))

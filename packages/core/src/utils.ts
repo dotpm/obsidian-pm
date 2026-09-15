@@ -42,6 +42,38 @@ export function stringToColor(s: string): string {
   return `hsl(${Math.abs(hash) % 360}, 55%, 45%)`
 }
 
+/** Starter palette for project tags, macOS-Finder style. `id` is the full tag, `dotpm/` included. */
+export const PROJECT_TAG_PALETTE: { id: string; label: string; color: string }[] = [
+  { id: 'dotpm/orange', label: 'Orange', color: '#d98a3d' },
+  { id: 'dotpm/blue', label: 'Blue', color: '#4a90d9' },
+  { id: 'dotpm/red', label: 'Red', color: '#d64545' },
+  { id: 'dotpm/green', label: 'Green', color: '#4caf6e' },
+  { id: 'dotpm/brown', label: 'Brown', color: '#8a6d4b' }
+]
+
+/** A palette tag gets its curated color; anything else falls back to the string hash. */
+export function projectTagColor(tag: string): string {
+  return PROJECT_TAG_PALETTE.find((entry) => entry.id === tag)?.color ?? stringToColor(tag)
+}
+
+/**
+ * Free text into a tag segment Obsidian will accept: lowercase, `[a-z0-9_-]` only, no
+ * leading/trailing/repeated hyphens. Deliberately strips `/` too — the caller always
+ * supplies the `dotpm/` prefix itself, so a slash typed here is just another character
+ * to drop, not a request for deeper nesting. Returns '' (caller should no-op) when
+ * nothing usable is left, including an all-numeric result, since Obsidian tags need at
+ * least one non-numeric character.
+ */
+export function sanitizeTagSegment(raw: string): string {
+  const slug = raw
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+  return /^[0-9]*$/.test(slug) ? '' : slug
+}
+
 /**
  * The port a vault's local API listens on until the user picks another. Two vaults open at
  * once would otherwise want the same one, and deriving it from the name gives each the same

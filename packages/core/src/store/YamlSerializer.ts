@@ -28,6 +28,7 @@ export const PROJECT_FRONTMATTER_KEYS: ReadonlySet<string> = new Set([
   'createdAt',
   'updatedAt',
   'config',
+  'tags',
   'tasks'
 ])
 
@@ -122,6 +123,7 @@ export function serializeProject(
     customFields: project.customFields,
     teamMembers: project.teamMembers,
     savedViews: project.savedViews.length ? project.savedViews : [],
+    tags: project.tags ?? [],
     createdAt: project.createdAt,
     updatedAt: project.updatedAt
   }
