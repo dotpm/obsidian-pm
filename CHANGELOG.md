@@ -7,11 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Highlights
+
+- **Local API:** Other apps and scripts on your computer can now read and edit your projects, and every change shows in Obsidian as it happens. Off by default.
+- **MCP server:** Connect a coding agent and it works your board. It picks up a task, updates it, closes it, or turns a rough plan into a project full of tasks while you do something else. Every write goes through the same checks the views use, so it cannot break your notes.
+- **Command line:** Your projects are one `dotpm` command away from any terminal or script. Search tasks, change a status, follow edits as they happen.
+- **Agent skill:** A ready-made skill that teaches an agent how dotpm works, so it gets things right on the first try. Drop it in and go.
+
 ### Added
 
 - Added exporting a view as a standalone HTML page with the table, timeline, and board
 - Added a local HTTP and MCP server that lets other apps on the same computer read and edit tasks and create projects, off by default
 - Added the `dotpm` command line tool for listing, searching, and editing tasks and creating projects, installed from npm as `@dotpm/cli`
+- Added the `dotpm` agent skill for coding agents that use the MCP tools or the command line
 - Added a release notes tab that opens after an update, and the "Show release notes" command
 - Added the "Show release notes after updates" setting
 
