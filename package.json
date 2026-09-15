@@ -3,8 +3,8 @@
   "version": "2.4.0",
   "description": "dotpm — project management for Obsidian",
   "repository": "github:dotpm/obsidian-pm",
-  "main": "main.js",
   "type": "module",
+  "main": "main.js",
   "imports": {
     "#main": "./src/main.ts",
     "#store": "./src/store/index.ts",
@@ -32,8 +32,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "build:viewer": "node scripts/build-viewer.mjs",
-    "build:packages": "pnpm --filter @dotpm/core --filter @dotpm/api build",
-    "validate:packages": "pnpm --filter @dotpm/core --filter @dotpm/api check:package"
+    "build:packages": "pnpm --filter @dotpm/core --filter @dotpm/api build"
   },
   "devDependencies": {
     "@2bad/axiom": "2.1.0",
@@ -59,12 +58,12 @@
     "vitest": "5.0.0",
     "yaml": "2.9.0"
   },
-  "packageManager": "pnpm@11.5.3",
   "engines": {
     "node": ">=24"
   },
   "volta": {
     "node": "24.15.0",
     "pnpm": "11.5.3"
-  }
+  },
+  "packageManager": "pnpm@11.5.3"
 }

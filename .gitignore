@@ -2,4 +2,3 @@ node_modules/
 main.js
 styles.css
 packages/*/dist/
-packages/*/pack.tgz

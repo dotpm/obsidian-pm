@@ -25,8 +25,7 @@
     "access": "public"
   },
   "scripts": {
-    "build": "tsdown",
-    "check:package": "publint --pack pnpm && pnpm pack --out pack.tgz && attw --profile esm-only pack.tgz && rm pack.tgz"
+    "build": "tsdown"
   },
   "dependencies": {
     "temporal-polyfill": "1.0.4"

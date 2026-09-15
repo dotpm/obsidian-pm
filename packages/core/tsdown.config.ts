@@ -8,5 +8,7 @@ export default defineConfig({
   outDir: 'dist',
   dts: true,
   clean: true,
-  hash: false
+  hash: false,
+  publint: true,
+  attw: { profile: 'esm-only' }
 })

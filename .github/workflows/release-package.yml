@@ -44,7 +44,6 @@ jobs:
       - run: pnpm check
       - run: pnpm test
       - run: pnpm build:packages
-      - run: pnpm validate:packages
 
       - name: Publish to npm
         env:
