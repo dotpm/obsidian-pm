@@ -39,13 +39,6 @@ export default defineConfig({
   },
   overrides: [
     {
-      files: ['packages/cli/**/*.ts'],
-      rules: {
-        'obsidianmd/hardcoded-config-path': 'off',
-        'obsidianmd/platform': 'off'
-      }
-    },
-    {
       files: [
         'packages/ui/src/dom-shim.ts',
         'packages/ui/src/dom-platform.ts',

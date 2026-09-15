@@ -97,15 +97,6 @@ importers:
         specifier: 1.4.2
         version: 1.4.2(typescript@6.0.3)
 
-  packages/cli:
-    devDependencies:
-      '@dotpm/api':
-        specifier: workspace:*
-        version: link:../api
-      '@dotpm/core':
-        specifier: workspace:*
-        version: link:../core
-
   packages/core:
     dependencies:
       temporal-polyfill:

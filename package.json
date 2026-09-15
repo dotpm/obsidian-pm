@@ -32,7 +32,6 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "build:viewer": "node scripts/build-viewer.mjs",
-    "build:cli": "pnpm --filter @dotpm/cli build",
     "build:packages": "pnpm --filter @dotpm/core --filter @dotpm/api build",
     "validate:packages": "pnpm --filter @dotpm/core --filter @dotpm/api check:package"
   },
