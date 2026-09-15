@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.1] - 2026-09-15
+
+### Changed
+
+- Done subtasks in the task editor no longer add an underline to their link on hover
+- Moved the command line to its own repository, [dotpm/cli](https://github.com/dotpm/cli)
+
 ## [2.4.0] - 2026-09-15
 
 ### Highlights
