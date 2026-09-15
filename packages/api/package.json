@@ -1,13 +1,47 @@
 {
   "name": "@dotpm/api",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "The dotpm API contract: the domain interface, wire resources, HTTP router, MCP handler and client",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dotpm/obsidian-pm.git",
+    "directory": "packages/api"
+  },
+  "files": [
+    "dist"
+  ],
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
     "./client": "./src/client.ts",
     "./contract": "./src/contract.ts",
     "./testing": "./test/fakeApi.ts"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "./client": {
+        "types": "./dist/client.d.ts",
+        "default": "./dist/client.js"
+      },
+      "./contract": {
+        "types": "./dist/contract.d.ts",
+        "default": "./dist/contract.js"
+      },
+      "./testing": {
+        "types": "./dist/testing.d.ts",
+        "default": "./dist/testing.js"
+      }
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsdown",
+    "check:package": "publint --pack pnpm && pnpm pack --out pack.tgz && attw --profile esm-only pack.tgz && rm pack.tgz"
   },
   "dependencies": {
     "@dotpm/core": "workspace:*",

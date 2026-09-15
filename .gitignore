@@ -1,5 +1,5 @@
 node_modules/
 main.js
 styles.css
-packages/viewer/dist/
-packages/cli/dist/
+packages/*/dist/
+packages/*/pack.tgz

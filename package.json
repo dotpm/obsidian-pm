@@ -32,11 +32,14 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "build:viewer": "node scripts/build-viewer.mjs",
-    "build:cli": "pnpm --filter @dotpm/cli build"
+    "build:cli": "pnpm --filter @dotpm/cli build",
+    "build:packages": "pnpm --filter @dotpm/core --filter @dotpm/api build",
+    "validate:packages": "pnpm --filter @dotpm/core --filter @dotpm/api check:package"
   },
   "devDependencies": {
     "@2bad/axiom": "2.1.0",
     "@2bad/tsconfig": "4.0.0",
+    "@arethetypeswrong/cli": "0.18.5",
     "@dotpm/api": "workspace:*",
     "@dotpm/core": "workspace:*",
     "@dotpm/ui": "workspace:*",
@@ -51,6 +54,7 @@
     "obsidian": "1.13.1",
     "oxfmt": "0.66.0",
     "oxlint": "1.81.0",
+    "publint": "0.3.24",
     "tsdown": "0.23.0",
     "typescript": "6.0.3",
     "vitest": "5.0.0",
