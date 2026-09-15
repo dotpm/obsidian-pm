@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.4.0] - 2026-09-15
+
 ### Highlights
 
 - **Local API:** Other apps and scripts on your computer can now read and edit your projects, and every change shows in Obsidian as it happens. Off by default.
