@@ -421,7 +421,10 @@ export default class PMPlugin extends Plugin {
   }
 
   /** A swap that throws would otherwise fail silently: it's a floating promise off an event. */
-  private async trySwap(leaf: WorkspaceLeaf, viewState: { type: string; state: Record<string, unknown> }): Promise<void> {
+  private async trySwap(
+    leaf: WorkspaceLeaf,
+    viewState: { type: string; state: Record<string, unknown> }
+  ): Promise<void> {
     try {
       await leaf.setViewState(viewState)
     } catch (err: unknown) {

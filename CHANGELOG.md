@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added the "Open project notes in" setting: opening a project note the regular way (file explorer, quick switcher, a wikilink) can now swap it into the project viewer automatically, the way task notes already can via "Open tasks in" -> Tab
+- Added an "Open as note" action to the project view and project overview, to drop back to Obsidian's own markdown editor
+
 ## [2.4.1] - 2026-09-15
 
 ### Changed
