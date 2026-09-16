@@ -1,8 +1,10 @@
 import { App, prepareFuzzySearch, TFile } from 'obsidian'
+import { t } from '@dotpm/core'
 
-const FILE_TYPE_LABELS: Record<string, string> = {
-  canvas: 'Canvas',
-  base: 'Database'
+function fileTypeLabel(extension: string): string | undefined {
+  if (extension === 'canvas') return t('fileType.canvas')
+  if (extension === 'base') return t('fileType.base')
+  return undefined
 }
 
 /** Triggers on `[[` in a textarea and lists matching vault files. */
@@ -229,7 +231,7 @@ export class NoteLinkSuggest {
       })
       const nameRow = row.createDiv({ cls: 'pm-note-suggest-name-row' })
       nameRow.createSpan({ cls: 'pm-note-suggest-name', text: file.basename })
-      const typeLabel = FILE_TYPE_LABELS[file.extension]
+      const typeLabel = fileTypeLabel(file.extension)
       if (typeLabel) {
         nameRow.createSpan({ cls: 'pm-note-suggest-type', text: typeLabel })
       }

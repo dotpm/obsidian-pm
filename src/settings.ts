@@ -595,7 +595,7 @@ export class PMSettingTab extends PluginSettingTab {
               container: setting.controlEl,
               plugin: this.plugin,
               sourcePath: '',
-              addLabel: t('settings.teamMembers.add'),
+              addLabel: t('people.addMember'),
               selected: () => this.plugin.settings.globalTeamMembers,
               add: (value) => {
                 members.push(value)

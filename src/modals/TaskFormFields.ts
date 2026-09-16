@@ -12,7 +12,8 @@ import {
   priorityIcon,
   stringToColor,
   completionOutcome,
-  relativeDue
+  relativeDue,
+  t
 } from '@dotpm/core'
 import {
   renderPropRow,
@@ -40,18 +41,18 @@ export interface TaskFormFieldsContext {
   openTask: (path: string) => void
 }
 
-const TYPE_OPTIONS: SelectItem[] = [
-  { id: 'task', label: 'Task', icon: 'square-check-big' },
-  { id: 'subtask', label: 'Subtask', icon: 'git-branch' },
-  { id: 'milestone', label: 'Milestone', icon: 'diamond' }
+const typeOptions = (): SelectItem[] => [
+  { id: 'task', label: t('taskForm.typeTask'), icon: 'square-check-big' },
+  { id: 'subtask', label: t('taskForm.typeSubtask'), icon: 'git-branch' },
+  { id: 'milestone', label: t('taskForm.typeMilestone'), icon: 'diamond' }
 ]
 
-const REPEAT_OPTIONS: SelectItem[] = [
-  { id: 'none', label: 'Does not repeat', icon: 'repeat' },
-  { id: 'daily', label: 'Daily', icon: 'repeat' },
-  { id: 'weekly', label: 'Weekly', icon: 'repeat' },
-  { id: 'monthly', label: 'Monthly', icon: 'repeat' },
-  { id: 'yearly', label: 'Yearly', icon: 'repeat' }
+const repeatOptions = (): SelectItem[] => [
+  { id: 'none', label: t('taskForm.repeatNone'), icon: 'repeat' },
+  { id: 'daily', label: t('taskForm.repeatDaily'), icon: 'repeat' },
+  { id: 'weekly', label: t('taskForm.repeatWeekly'), icon: 'repeat' },
+  { id: 'monthly', label: t('taskForm.repeatMonthly'), icon: 'repeat' },
+  { id: 'yearly', label: t('taskForm.repeatYearly'), icon: 'repeat' }
 ]
 
 /**
@@ -66,13 +67,13 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
 
   renderPropRow(
     grid,
-    'Type',
+    t('taskForm.type'),
     () => {
       const cell = createDiv('pm-prop-value')
       renderSelectControl({
         container: cell,
         value: task.type,
-        options: TYPE_OPTIONS,
+        options: typeOptions(),
         onChange: (id) => {
           task.type = id as TaskType
           if (id === 'milestone') {
@@ -93,19 +94,22 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
   if (task.type === 'subtask') {
     renderPropRow(
       grid,
-      'Parent task',
+      t('taskForm.parentTask'),
       () => {
         const cell = createDiv('pm-prop-value')
         const parents = flattenTasks(project.tasks)
           .map((f) => f.task)
-          .filter((t) => t.id !== task.id)
+          .filter((other) => other.id !== task.id)
         renderSelectControl({
           container: cell,
           value: ctx.parentId,
-          options: [{ id: '', label: 'No parent' }, ...parents.map((t) => ({ id: t.id, label: t.title }))],
-          placeholder: 'Select parent',
+          options: [
+            { id: '', label: t('common.noParent') },
+            ...parents.map((other) => ({ id: other.id, label: other.title }))
+          ],
+          placeholder: t('taskForm.selectParent'),
           search: true,
-          searchPlaceholder: 'Search tasks…',
+          searchPlaceholder: t('taskForm.searchTasks'),
           width: 230,
           onChange: (id) => {
             ctx.setParentId(id || null)
@@ -122,7 +126,7 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
 
   renderPropRow(
     grid,
-    'Status',
+    t('taskForm.status'),
     () => {
       const cell = createDiv('pm-prop-value')
       renderSelectControl({
@@ -141,7 +145,7 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
 
   renderPropRow(
     grid,
-    'Priority',
+    t('taskForm.priority'),
     () => {
       const cell = createDiv('pm-prop-value')
       renderSelectControl({
@@ -165,13 +169,13 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
 
   renderPropRow(
     grid,
-    task.type === 'milestone' ? 'Date' : 'Due',
+    task.type === 'milestone' ? t('taskForm.date') : t('taskForm.due'),
     () => {
       const cell = createDiv('pm-prop-value')
       renderDateControl({
         container: cell,
         value: task.due,
-        emptyLabel: 'Set due date',
+        emptyLabel: t('taskForm.setDueDate'),
         hint: isTerminalStatus(task.status, statuses) ? null : relativeDue(task.due),
         onChange: (v) => {
           task.due = v
@@ -188,13 +192,13 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
   if (task.type !== 'milestone') {
     renderPropRow(
       grid,
-      'Start',
+      t('taskForm.start'),
       () => {
         const cell = createDiv('pm-prop-value')
         renderDateControl({
           container: cell,
           value: task.start,
-          emptyLabel: 'Set start',
+          emptyLabel: t('taskForm.setStart'),
           onChange: (v) => {
             task.start = v
             rerender()
@@ -210,7 +214,7 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
 
   renderPropRow(
     grid,
-    'Assignees',
+    t('taskForm.assignees'),
     () => {
       const cell = createDiv('pm-prop-value')
       renderPersonPicker({
@@ -218,7 +222,7 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
         plugin,
         sourcePath: task.filePath ?? project.filePath,
         extra: () => [...project.teamMembers, ...collectAllAssignees(project.tasks)],
-        addLabel: 'Assign',
+        addLabel: t('taskForm.assign'),
         selected: () => task.assignees,
         add: (value) => {
           if (!task.assignees.includes(value)) task.assignees.push(value)
@@ -235,13 +239,13 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
   if (task.completed || isTerminalStatus(task.status, statuses)) {
     renderPropRow(
       grid,
-      'Completed',
+      t('taskForm.completed'),
       () => {
         const cell = createDiv('pm-prop-value')
         renderDateControl({
           container: cell,
           value: task.completed,
-          emptyLabel: 'Set date',
+          emptyLabel: t('taskForm.setDate'),
           hint: completionOutcome(task.due, task.completed),
           onChange: (v) => {
             task.completed = v
@@ -257,7 +261,7 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
   if (task.type !== 'milestone' && (task.progress > 0 || shownExtras.has('progress'))) {
     renderPropRow(
       grid,
-      'Progress',
+      t('taskForm.progress'),
       () => {
         const cell = createDiv('pm-prop-value')
         renderInputControl({
@@ -280,13 +284,13 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
   if (task.recurrence || shownExtras.has('repeat')) {
     renderPropRow(
       grid,
-      'Repeat',
+      t('taskForm.repeat'),
       () => {
         const cell = createDiv('pm-prop-value')
         renderSelectControl({
           container: cell,
           value: task.recurrence?.interval ?? 'none',
-          options: REPEAT_OPTIONS,
+          options: repeatOptions(),
           onChange: (id) => {
             if (id === 'none') {
               task.recurrence = undefined
@@ -308,24 +312,24 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
 
   const tagsRow = renderPropRow(
     grid,
-    'Tags',
+    t('taskForm.tags'),
     () => {
       const cell = createDiv('pm-prop-value')
       const projectTags = collectAllTags(project.tasks)
       renderMultiSelect({
         container: cell,
         search: true,
-        addLabel: 'Add tags',
-        placeholder: 'Find or create…',
+        addLabel: t('taskForm.addTags'),
+        placeholder: t('taskForm.findOrCreate'),
         tag: true,
-        colorFor: plugin.settings.showTagColors ? (t) => stringToColor(t) : undefined,
+        colorFor: plugin.settings.showTagColors ? (tag) => stringToColor(tag) : undefined,
         selected: () => task.tags,
-        options: () => projectTags.map((t) => ({ id: t, label: t })),
+        options: () => projectTags.map((tag) => ({ id: tag, label: tag })),
         add: (id) => {
           if (!task.tags.includes(id)) task.tags.push(id)
         },
         remove: (id) => {
-          task.tags = task.tags.filter((t) => t !== id)
+          task.tags = task.tags.filter((tag) => tag !== id)
         },
         create: (label) => {
           if (!task.tags.includes(label)) task.tags.push(label)
@@ -340,8 +344,8 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
   if (task.dependencies.length > 0 || shownExtras.has('depends')) {
     const ownTasks = flattenTasks(project.tasks)
       .map((f) => f.task)
-      .filter((t) => t.id !== task.id)
-    const ownIds = new Set(ownTasks.map((t) => t.id))
+      .filter((other) => other.id !== task.id)
+    const ownIds = new Set(ownTasks.map((other) => other.id))
     // Tasks in other projects can be depended on too, so the picker offers the whole
     // vault, this project first and everything else labelled with its project.
     const foreign = plugin.index
@@ -354,33 +358,35 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
           : ref.title
       }))
     const allTasks: { id: string; label: string }[] = [
-      ...ownTasks.map((t) => ({ id: t.id, label: t.title })),
+      ...ownTasks.map((other) => ({ id: other.id, label: other.title })),
       ...foreign
     ]
-    const titleOf = (id: string) => allTasks.find((t) => t.id === id)?.label ?? id
+    const titleOf = (id: string) => allTasks.find((entry) => entry.id === id)?.label ?? id
     const depRow = renderPropRow(
       grid,
-      'Depends on',
+      t('taskForm.dependsOn'),
       () => {
         const cell = createDiv('pm-prop-value')
         renderMultiSelect({
           container: cell,
           search: true,
-          addLabel: 'Add dependency',
-          addLabelMore: 'Add another',
-          placeholder: 'Search tasks…',
+          addLabel: t('taskForm.addDependency'),
+          addLabelMore: t('common.addAnother'),
+          placeholder: t('taskForm.searchTasks'),
           depsList: true,
           labelFor: titleOf,
           linkFor: (id) => {
             const path = plugin.index.task(id)?.path
             return path ? { path, open: () => ctx.openTask(path) } : null
           },
-          selected: () => task.dependencies.filter((id) => allTasks.some((t) => t.id === id)),
+          selected: () => task.dependencies.filter((id) => allTasks.some((entry) => entry.id === id)),
           options: () => {
             // Built once per open, not once per candidate. A predecessor chain can leave
             // this project and come back, so every candidate is checked against the vault.
             const edges = plugin.index.dependentsMap()
-            return allTasks.filter((t) => task.dependencies.includes(t.id) || !reaches(edges, task.id, t.id))
+            return allTasks.filter(
+              (entry) => task.dependencies.includes(entry.id) || !reaches(edges, task.id, entry.id)
+            )
           },
           add: (id) => {
             if (!task.dependencies.includes(id)) task.dependencies.push(id)
@@ -402,7 +408,7 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
   if (blocks.length) {
     const blocksRow = renderPropRow(
       grid,
-      'Blocks',
+      t('taskForm.blocks'),
       () => {
         const cell = createDiv('pm-prop-value')
         const list = cell.createDiv('pm-prop-deps')
@@ -411,7 +417,7 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
           renderDepRow(list, {
             id: ref.id,
             title: ref.title,
-            tooltip: owner ? `In ${owner.title}` : undefined,
+            tooltip: owner ? t('taskForm.inProject', { title: owner.title }) : undefined,
             link: { path: ref.path, open: () => ctx.openTask(ref.path) }
           })
         }
@@ -424,13 +430,13 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
 
   const hidden: HiddenProperty[] = []
   if (task.type !== 'milestone' && task.progress === 0 && !shownExtras.has('progress')) {
-    hidden.push({ id: 'progress', label: 'Progress', icon: 'percent' })
+    hidden.push({ id: 'progress', label: t('taskForm.progress'), icon: 'percent' })
   }
   if (!task.recurrence && !shownExtras.has('repeat')) {
-    hidden.push({ id: 'repeat', label: 'Repeat', icon: 'repeat' })
+    hidden.push({ id: 'repeat', label: t('taskForm.repeat'), icon: 'repeat' })
   }
   if (task.dependencies.length === 0 && !shownExtras.has('depends')) {
-    hidden.push({ id: 'depends', label: 'Depends on', icon: 'link-2' })
+    hidden.push({ id: 'depends', label: t('taskForm.dependsOn'), icon: 'link-2' })
   }
   if (hidden.length > 0) {
     const addCell = grid.createDiv('pm-prop-add-cell')

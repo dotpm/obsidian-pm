@@ -478,7 +478,7 @@ export default class PMPlugin extends Plugin {
     const title = await promptText(
       this.app,
       t('project.duplicatePrompt', { title: source.title }),
-      t('project.duplicatePlaceholder'),
+      t('project.namePlaceholder'),
       t('project.duplicateDefaultTitle', { title: source.title })
     )
     if (!title) return

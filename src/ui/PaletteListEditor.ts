@@ -1,5 +1,5 @@
 import { Notice } from 'obsidian'
-import type { PriorityConfig, StatusConfig } from '@dotpm/core'
+import { type PriorityConfig, type StatusConfig, t } from '@dotpm/core'
 import { IconButton, renderIconControl } from '@dotpm/ui'
 
 /** On drop, moves the dragged item to this row's index. */
@@ -99,7 +99,7 @@ function renderPaletteListEditor<T extends PaletteEntry>(container: HTMLElement,
 
     new IconButton(row)
       .setIcon('x')
-      .setTooltip('Remove')
+      .setTooltip(t('common.remove'))
       .onClick(() => {
         if (opts.items.length <= 1) {
           new Notice(opts.minOneMessage)
@@ -124,7 +124,7 @@ export function renderStatusListEditor(container: HTMLElement, opts: StatusListE
     items: opts.statuses,
     onChanged: opts.onChanged,
     onDeleted: opts.onDeleted,
-    minOneMessage: 'You must have at least one status.',
+    minOneMessage: t('settings.atLeastOneStatus'),
     renderExtra: (row, status) => renderStatusDoneToggle(row, status, opts.onChanged)
   })
 }
@@ -140,6 +140,6 @@ export function renderPriorityListEditor(container: HTMLElement, opts: PriorityL
     items: opts.priorities,
     onChanged: opts.onChanged,
     onDeleted: opts.onDeleted,
-    minOneMessage: 'You must have at least one priority.'
+    minOneMessage: t('settings.atLeastOnePriority')
   })
 }
