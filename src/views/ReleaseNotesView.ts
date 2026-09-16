@@ -1,6 +1,6 @@
 import { Component, ItemView, MarkdownRenderer, type ViewStateResult, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
-import { formatDateLong, parseChangelog, releaseNotesSince } from '@dotpm/core'
+import { formatDateLong, parseChangelog, releaseNotesSince, t } from '@dotpm/core'
 import { EmptyState } from '@dotpm/ui'
 
 export const PM_RELEASE_NOTES_VIEW_TYPE = 'pm-release-notes'
@@ -30,7 +30,7 @@ export class ReleaseNotesView extends ItemView {
     return PM_RELEASE_NOTES_VIEW_TYPE
   }
   getDisplayText(): string {
-    return 'Release notes'
+    return t('releaseNotes.title')
   }
   getIcon(): string {
     return 'gift'
@@ -65,9 +65,9 @@ export class ReleaseNotesView extends ItemView {
     this.contentEl.empty()
 
     const page = this.contentEl.createDiv('pm-release-notes-page')
-    page.createEl('h1', { text: `What's new in dotpm ${version}` })
+    page.createEl('h1', { text: t('releaseNotes.heading', { version }) })
     if (releases.length === 0) {
-      new EmptyState(page).setTitle('No release notes').setBody(`Version ${version} has no notes.`)
+      new EmptyState(page).setTitle(t('releaseNotes.empty')).setBody(t('releaseNotes.emptyBody', { version }))
     }
     const rendering = releases.map((release) => {
       const section = page.createDiv('pm-release-notes-release')

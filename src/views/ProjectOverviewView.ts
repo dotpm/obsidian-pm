@@ -14,7 +14,9 @@ import {
   dateUrgency,
   dedupePeople,
   isTerminalStatus,
-  truncateTitle
+  truncateTitle,
+  t,
+  tn
 } from '@dotpm/core'
 import { personKeyer, type ProjectRef } from '#store'
 import {
@@ -72,7 +74,7 @@ export class ProjectOverviewView extends ItemView {
     return PM_PROJECT_OVERVIEW_VIEW_TYPE
   }
   getDisplayText(): string {
-    return truncateTitle(this.project?.title ?? 'Project', 10)
+    return truncateTitle(this.project?.title ?? t('common.project'), 10)
   }
   getIcon(): string {
     return 'gauge'
@@ -126,10 +128,7 @@ export class ProjectOverviewView extends ItemView {
 
   private renderMissing(): void {
     this.container.empty()
-    new EmptyState(this.container)
-      .setIcon('📋')
-      .setTitle('No project here')
-      .setBody('It may have been deleted or renamed.')
+    new EmptyState(this.container).setIcon('📋').setTitle(t('project.missingTitle')).setBody(t('project.missingBody'))
   }
 
   render(): void {
@@ -179,12 +178,12 @@ export class ProjectOverviewView extends ItemView {
     banner.createSpan({
       text:
         project.archived || !ancestor
-          ? 'This project is archived. It stays out of the project list, pickers and reminders.'
-          : `This project is archived with "${ancestor.title}". Unarchive that project to bring it back.`
+          ? t('overview.archivedBanner')
+          : t('overview.archivedWithBanner', { title: ancestor.title })
     })
     if (project.archived) {
       new ButtonComponent(banner)
-        .setButtonText('Unarchive')
+        .setButtonText(t('common.unarchive'))
         .onClick(safeAsync(() => this.plugin.setProjectArchived(project.filePath, false)))
     }
   }
@@ -198,22 +197,22 @@ export class ProjectOverviewView extends ItemView {
     const identity = header.createDiv('pm-overview-identity')
     identity.createDiv({ cls: 'pm-overview-title', text: project.title })
     const children = this.children(project).length
-    const bits = [`${rollup.done} of ${rollup.total} tasks done`]
-    if (children) bits.push(children === 1 ? '1 sub-project' : `${children} sub-projects`)
-    if (project.teamMembers.length) bits.push(`${project.teamMembers.length} members`)
+    const bits = [tn('overview.tasksDone', rollup.total, { done: rollup.done })]
+    if (children) bits.push(tn('overview.subProjects', children))
+    if (project.teamMembers.length) bits.push(tn('overview.members', project.teamMembers.length))
     identity.createDiv({ cls: 'pm-overview-subline', text: bits.join(' · ') })
 
     if (!this.plugin.index.isArchived(project.filePath)) {
       new ButtonComponent(header)
-        .setButtonText('Archive')
-        .setTooltip('Archive this project and its sub-projects')
+        .setButtonText(t('common.archive'))
+        .setTooltip(t('overview.archiveTooltip'))
         .onClick(safeAsync(() => this.plugin.setProjectArchived(project.filePath, true)))
     }
     new ButtonComponent(header)
-      .setButtonText('Edit project')
+      .setButtonText(t('project.edit'))
       .onClick(safeAsync(() => this.plugin.router.openProjectEdit(project.filePath, this.leaf)))
     new ButtonComponent(header)
-      .setButtonText('Open tasks')
+      .setButtonText(t('project.openTasks'))
       .setCta()
       .onClick(safeAsync(() => this.plugin.router.openScope({ kind: 'project', path: project.filePath }, this.leaf)))
   }
@@ -248,19 +247,28 @@ export class ProjectOverviewView extends ItemView {
     const percent = rollup.total ? (rollup.done / rollup.total) * 100 : 0
     const stats: MetricStat[] = [
       {
-        label: 'Progress',
+        label: t('overview.progress'),
         value: `${Math.round(percent)}%`,
-        sub: `of ${rollup.total} ${rollup.total === 1 ? 'task' : 'tasks'}`,
+        sub: tn('overview.ofTasks', rollup.total),
         extra: (el) => {
           new ProgressBar(el).setSize('sm').setValue(percent).setColor(project.color)
         }
       },
-      { label: 'Tasks', value: `${rollup.done} of ${rollup.total}`, sub: 'done' },
-      { label: 'Overdue', value: String(rollup.overdue), sub: 'tasks past due', alert: rollup.overdue > 0 },
       {
-        label: 'Time',
+        label: t('overview.tasks'),
+        value: t('overview.doneOfTotal', { done: rollup.done, total: rollup.total }),
+        sub: t('overview.done')
+      },
+      {
+        label: t('overview.overdue'),
+        value: String(rollup.overdue),
+        sub: t('overview.pastDue'),
+        alert: rollup.overdue > 0
+      },
+      {
+        label: t('overview.time'),
         value: rollup.logged || rollup.estimate ? '' : '—',
-        sub: 'logged / estimate',
+        sub: t('overview.loggedEstimate'),
         extra: (el) => {
           renderTimeChip(el, rollup.logged, rollup.estimate)
         }
@@ -270,7 +278,7 @@ export class ProjectOverviewView extends ItemView {
   }
 
   private renderDescription(parent: HTMLElement, project: Project): void {
-    const section = this.section(parent, 'Description')
+    const section = this.section(parent, t('common.description'))
     const body = section.createDiv('pm-overview-description')
     void this.hydrateDescription(project, body)
   }
@@ -299,10 +307,10 @@ export class ProjectOverviewView extends ItemView {
     dated.sort((a, b) => Temporal.PlainDate.compare(a.date, b.date))
 
     const done = dated.filter((entry) => isTerminalStatus(entry.task.status, config.statuses)).length
-    const note = dated.length ? `${done} of ${dated.length} done` : ''
-    const section = this.section(parent, 'Milestones', note)
+    const note = dated.length ? t('overview.milestonesDone', { done, total: dated.length }) : ''
+    const section = this.section(parent, t('overview.milestones'), note)
     if (dated.length === 0) {
-      section.createDiv({ cls: 'pm-overview-muted', text: 'No milestones.' })
+      section.createDiv({ cls: 'pm-overview-muted', text: t('overview.noMilestones') })
       return
     }
 
@@ -335,14 +343,14 @@ export class ProjectOverviewView extends ItemView {
   private renderSubProjects(parent: HTMLElement, project: Project): void {
     const children = this.children(project)
     if (children.length === 0) return
-    const section = this.section(parent, 'Sub-projects')
+    const section = this.section(parent, t('overview.subProjectsHeading'))
     for (const child of children) {
       const { total, done } = this.plugin.index.rollupCounts(child)
       const row = section.createDiv('pm-overview-child')
       renderGlyph(row.createSpan({ cls: 'pm-overview-child-icon' }), { icon: child.icon, color: child.color })
       row.createSpan({ cls: 'pm-overview-child-title', text: child.title })
       if (this.plugin.index.isArchived(child.path)) {
-        new Chip(row).setLabel('Archived').setVariant('outline').setSize('sm')
+        new Chip(row).setLabel(t('common.archived')).setVariant('outline').setSize('sm')
       }
       new ProgressBar(row)
         .setSize('sm')
@@ -358,7 +366,7 @@ export class ProjectOverviewView extends ItemView {
   }
 
   private renderProperties(parent: HTMLElement, project: Project, tasks: Task[], rollup: Rollup): void {
-    const section = this.section(parent, 'Properties')
+    const section = this.section(parent, t('overview.properties'))
     const list = section.createDiv('pm-overview-props')
     const prop = (label: string, empty: boolean, emptyText: string, fill: (value: HTMLElement) => void): void => {
       renderPropRow(list, label, () => {
@@ -379,28 +387,28 @@ export class ProjectOverviewView extends ItemView {
       }
     }
 
-    prop('Members', project.teamMembers.length === 0, 'No members', (value) => {
+    prop(t('project.members'), project.teamMembers.length === 0, t('overview.noMembers'), (value) => {
       people(value, project.teamMembers)
     })
 
     const tags = collectAllTags(project.tasks)
-    prop('Tags', tags.length === 0, 'No tags', (value) => {
+    prop(t('taskForm.tags'), tags.length === 0, t('overview.noTags'), (value) => {
       for (const tag of tags.slice(0, MAX_TAGS)) renderTagChip(value, tag, this.plugin.settings.showTagColors)
       if (tags.length > MAX_TAGS) {
         value.createSpan({ cls: 'pm-overview-muted', text: `+${tags.length - MAX_TAGS}` })
       }
     })
 
-    prop('Latest due', !rollup.latestDue, 'No dates', (value) => {
+    prop(t('overview.latestDue'), !rollup.latestDue, t('overview.noDates'), (value) => {
       renderDueChip(value, formatDateLong(rollup.latestDue), dateUrgency(rollup.latestDue, rollup.overdue > 0))
     })
 
-    prop('Time', !rollup.logged && !rollup.estimate, 'No estimate', (value) => {
+    prop(t('overview.time'), !rollup.logged && !rollup.estimate, t('overview.noEstimate'), (value) => {
       renderTimeChip(value, rollup.logged, rollup.estimate)
     })
 
     const parentRef = this.plugin.index.parentOf(project.filePath)
-    prop('Parent', !parentRef, 'No parent', (value) => {
+    prop(t('project.parent'), !parentRef, t('common.noParent'), (value) => {
       if (!parentRef) return
       const link = value.createSpan({ cls: 'pm-overview-crumb', text: parentRef.title })
       link.addEventListener(
@@ -410,13 +418,13 @@ export class ProjectOverviewView extends ItemView {
     })
 
     const assignees = dedupePeople(tasks.flatMap((task) => task.assignees).filter(Boolean), personKeyer(this.app))
-    prop('Assignees', assignees.length === 0, 'Nobody assigned', (value) => {
+    prop(t('taskForm.assignees'), assignees.length === 0, t('overview.nobodyAssigned'), (value) => {
       people(value, assignees)
     })
 
     const customFields = this.plugin.store.configFor(project).customFields
     if (customFields.length === 0) return
-    const fields = this.section(parent, 'Custom fields')
+    const fields = this.section(parent, t('settings.customFields.name'))
     const fieldList = fields.createDiv('pm-overview-props')
     for (const field of customFields) {
       renderPropRow(fieldList, field.name, () => {

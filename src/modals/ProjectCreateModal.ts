@@ -121,7 +121,7 @@ export class ProjectCreateModal extends Modal {
   private renderIcon(parent: HTMLElement): void {
     renderPropRow(
       parent,
-      t('projectCreate.icon'),
+      t('project.icon'),
       () => {
         this.iconHost = createDiv('pm-prop-value')
         this.drawIcon()
@@ -146,7 +146,7 @@ export class ProjectCreateModal extends Modal {
   private renderColor(parent: HTMLElement): void {
     renderPropRow(
       parent,
-      t('projectCreate.color'),
+      t('project.color'),
       () => {
         const cell = createDiv('pm-prop-value pm-prop-color')
         const picker = cell.createEl('input', { type: 'color', cls: 'pm-color-custom' })
@@ -165,7 +165,7 @@ export class ProjectCreateModal extends Modal {
   private renderParent(parent: HTMLElement): void {
     renderPropRow(
       parent,
-      t('projectCreate.parent'),
+      t('project.parent'),
       () => {
         const cell = createDiv('pm-prop-value')
         const draw = (): void => {
@@ -196,7 +196,7 @@ export class ProjectCreateModal extends Modal {
   private renderMembers(parent: HTMLElement): void {
     renderPropRow(
       parent,
-      t('projectCreate.members'),
+      t('project.members'),
       () => {
         const cell = createDiv('pm-prop-value')
         renderPersonPicker({

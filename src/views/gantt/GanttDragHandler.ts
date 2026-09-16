@@ -1,7 +1,7 @@
 import { Notice } from 'obsidian'
 import { safeAsync, type TimelineCfg, xToDate, getSnapPoints, snapX } from '@dotpm/ui'
 import type PMPlugin from '#main'
-import type { Project, Task } from '@dotpm/core'
+import { type Project, type Task, t } from '@dotpm/core'
 
 export interface DragState {
   isDragging: boolean
@@ -128,7 +128,7 @@ export function attachBarDrag(opts: BarDragOpts): () => void {
         await plugin.store.updateTask(project, taskId, patch)
       } catch (err) {
         restore()
-        new Notice('Failed to save date change. Please try again.')
+        new Notice(t('gantt.saveDateFailed'))
         console.error('GanttDragHandler: save failed', err)
         return
       }
@@ -137,7 +137,7 @@ export function attachBarDrag(opts: BarDragOpts): () => void {
         undo: async () => {
           await plugin.store.updateTask(project, taskId, { start: oldStart, due: oldDue })
           if (plugin.store.configFor(project).autoSchedule) {
-            new Notice('Dates reverted. Dependent task dates may need adjustment.')
+            new Notice(t('gantt.datesReverted'))
           }
           await onRefresh()
         },

@@ -1,5 +1,6 @@
 import { ItemView, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
+import { t } from '@dotpm/core'
 import { renderProjectListToolbar, renderProjectListContent } from './ProjectListRenderer'
 import type { ProjectListContext } from './ProjectListRenderer'
 
@@ -21,7 +22,7 @@ export class DashboardView extends ItemView {
     return PM_DASHBOARD_VIEW_TYPE
   }
   getDisplayText(): string {
-    return 'Projects'
+    return t('dashboard.title')
   }
   getIcon(): string {
     return 'chart-gantt'

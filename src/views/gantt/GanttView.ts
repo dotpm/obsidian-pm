@@ -8,7 +8,8 @@ import {
   flattenTasks,
   applyTaskFilterPromote,
   Temporal,
-  today
+  today,
+  t
 } from '@dotpm/core'
 import { personKeyer, type ProjectScope } from '#store'
 import {
@@ -111,11 +112,11 @@ export class GanttView implements SubView {
     const bar = this.container.createDiv('pm-gantt-controls')
     const levels: GanttGranularity[] = ['day', 'week', 'month', 'quarter', 'year']
     const labels: Record<GanttGranularity, string> = {
-      day: 'Day',
-      week: 'Week',
-      month: 'Month',
-      quarter: 'Quarter',
-      year: 'Year'
+      day: t('granularity.day'),
+      week: t('granularity.week'),
+      month: t('granularity.month'),
+      quarter: t('granularity.quarter'),
+      year: t('granularity.year')
     }
 
     new SegmentedControl<GanttGranularity>(bar, {
@@ -129,10 +130,10 @@ export class GanttView implements SubView {
     })
 
     bar.createSpan({ cls: 'pm-gantt-sep' })
-    new ButtonComponent(bar).setButtonText('Today').onClick(() => this.scrollToToday())
+    new ButtonComponent(bar).setButtonText(t('gantt.today')).onClick(() => this.scrollToToday())
 
-    new ButtonComponent(bar).setButtonText('Expand all').onClick(() => this.setAllCollapsed(false))
-    new ButtonComponent(bar).setButtonText('Collapse all').onClick(() => this.setAllCollapsed(true))
+    new ButtonComponent(bar).setButtonText(t('gantt.expandAll')).onClick(() => this.setAllCollapsed(false))
+    new ButtonComponent(bar).setButtonText(t('gantt.collapseAll')).onClick(() => this.setAllCollapsed(true))
   }
 
   private renderGantt(): void {
@@ -247,7 +248,7 @@ export class GanttView implements SubView {
 
     const addRow = leftBody.createDiv('pm-gantt-label-row pm-gantt-add-row')
     addRow.style.height = `${ROW_HEIGHT}px`
-    renderAddButton(addRow, 'Add task', (e) => {
+    renderAddButton(addRow, t('task.add'), (e) => {
       openAddTask(this.plugin, this.scope, { event: e, onSave: () => this.onRefresh() })
     })
 

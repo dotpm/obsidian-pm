@@ -1,18 +1,18 @@
 import { Menu, ButtonComponent } from 'obsidian'
 import type PMPlugin from '#main'
 import type { ProjectRef } from '#store'
-import { formatDateShort, dateUrgency } from '@dotpm/core'
+import { formatDateShort, dateUrgency, t, tn } from '@dotpm/core'
 import { safeAsync, ChipButton, EmptyState, ProjectRow, childTreeGuides } from '@dotpm/ui'
 import { openProjectCreate } from '#ui/ModalFactory'
 import { linkedRefs } from './linkedRefs'
 
-const COLUMNS: { label: string; cls?: string }[] = [
+const columns = (): { label: string; cls?: string }[] => [
   { label: '' },
-  { label: 'Project', cls: 'pm-project-th-title' },
-  { label: 'Progress' },
-  { label: 'Tasks' },
-  { label: 'Members' },
-  { label: 'Due' },
+  { label: t('columns.project'), cls: 'pm-project-th-title' },
+  { label: t('columns.progress') },
+  { label: t('columns.tasks') },
+  { label: t('columns.members') },
+  { label: t('columns.due') },
   { label: '' }
 ]
 
@@ -36,7 +36,7 @@ export function renderProjectListToolbar(ctx: ProjectListContext): void {
     ctx.plugin.index.projectRefs(true).length > ctx.plugin.index.projectRefs().length
   ) {
     new ChipButton(ctx.toolbarEl)
-      .setLabel('Archived')
+      .setLabel(t('common.archived'))
       .setActive(settings.showArchivedProjects)
       .onClick(
         safeAsync(async () => {
@@ -49,7 +49,7 @@ export function renderProjectListToolbar(ctx: ProjectListContext): void {
   }
 
   new ButtonComponent(ctx.toolbarEl)
-    .setButtonText('+ new project')
+    .setButtonText(t('list.newProject'))
     .setCta()
     .onClick(() => openProjectCreate(ctx.plugin))
 }
@@ -59,9 +59,9 @@ function countLine(ctx: ProjectListContext): string {
   const archived = ctx.plugin.index.projectRefs(true).length - refs.length
   if (refs.length === 0 && archived === 0) return ''
   const behind = refs.filter((ref) => ctx.plugin.index.dueSummary(ref).overdue > 0).length
-  const bits = [refs.length === 1 ? '1 project' : `${refs.length} projects`]
-  if (behind) bits.push(`${behind} with tasks past due`)
-  if (archived) bits.push(`${archived} archived`)
+  const bits = [tn('count.projects', refs.length)]
+  if (behind) bits.push(tn('list.behind', behind))
+  if (archived) bits.push(tn('list.archivedCount', archived))
   return bits.join(' · ')
 }
 
@@ -72,21 +72,18 @@ export function renderProjectListContent(ctx: ProjectListContext): void {
 
   if (roots.length === 0) {
     if (!ctx.plugin.index.ready) {
-      new EmptyState(ctx.contentEl).setIcon('📋').setTitle('Looking for projects')
+      new EmptyState(ctx.contentEl).setIcon('📋').setTitle(t('list.looking'))
       return
     }
     if (ctx.plugin.index.projectRefs(true).length) {
-      new EmptyState(ctx.contentEl)
-        .setIcon('📋')
-        .setTitle('Every project is archived')
-        .setBody('Turn on "Archived" above to see them.')
+      new EmptyState(ctx.contentEl).setIcon('📋').setTitle(t('list.allArchived')).setBody(t('list.allArchivedBody'))
       return
     }
     new EmptyState(ctx.contentEl)
       .setIcon('📋')
-      .setTitle('No projects yet')
-      .setBody('Create your first project to get started.')
-      .setAction('+ new project', () => openProjectCreate(ctx.plugin))
+      .setTitle(t('list.empty'))
+      .setBody(t('list.emptyBody'))
+      .setAction(t('list.newProject'), () => openProjectCreate(ctx.plugin))
     return
   }
 
@@ -94,7 +91,7 @@ export function renderProjectListContent(ctx: ProjectListContext): void {
   wrapper.setAttr('data-borders', ctx.plugin.settings.lineBorders)
   const table = wrapper.createEl('table', { cls: 'pm-table pm-project-table' })
   const headRow = table.createEl('thead').createEl('tr')
-  for (const column of COLUMNS) headRow.createEl('th', { text: column.label, cls: column.cls })
+  for (const column of columns()) headRow.createEl('th', { text: column.label, cls: column.cls })
   renderRows(ctx, table.createEl('tbody'), roots, [])
 }
 
@@ -141,27 +138,27 @@ function openProjectContextMenu(ctx: ProjectListContext, ref: ProjectRef, e: Mou
   const menu = new Menu()
   menu.addItem((item) =>
     item
-      .setTitle('Open overview')
+      .setTitle(t('project.openOverview'))
       .setIcon('file-text')
       .onClick(safeAsync(() => ctx.plugin.router.openProjectOverview(ref.path)))
   )
   menu.addItem((item) =>
     item
-      .setTitle('Open tasks')
+      .setTitle(t('project.openTasks'))
       .setIcon('table')
       .onClick(safeAsync(() => ctx.plugin.router.openScope({ kind: 'project', path: ref.path })))
   )
   if (ctx.plugin.index.childRefs(ref.path).length) {
     menu.addItem((item) =>
       item
-        .setTitle('Open with sub-projects')
+        .setTitle(t('project.openWithSubProjects'))
         .setIcon('layers')
         .onClick(safeAsync(() => ctx.plugin.router.openScope({ kind: 'subtree', path: ref.path })))
     )
   }
   menu.addItem((item) =>
     item
-      .setTitle('Duplicate project')
+      .setTitle(t('commands.duplicateProject'))
       .setIcon('copy')
       .onClick(
         safeAsync(async () => {
@@ -173,28 +170,28 @@ function openProjectContextMenu(ctx: ProjectListContext, ref: ProjectRef, e: Mou
   )
   menu.addItem((item) =>
     item
-      .setTitle('Edit project')
+      .setTitle(t('project.edit'))
       .setIcon('settings')
       .onClick(safeAsync(() => ctx.plugin.router.openProjectEdit(ref.path)))
   )
   if (!ctx.plugin.index.isArchived(ref.path)) {
     menu.addItem((item) =>
       item
-        .setTitle('Archive project')
+        .setTitle(t('project.archive'))
         .setIcon('archive')
         .onClick(safeAsync(() => ctx.plugin.setProjectArchived(ref.path, true)))
     )
   } else if (ref.archived) {
     menu.addItem((item) =>
       item
-        .setTitle('Unarchive project')
+        .setTitle(t('project.unarchive'))
         .setIcon('archive-restore')
         .onClick(safeAsync(() => ctx.plugin.setProjectArchived(ref.path, false)))
     )
   }
   menu.addItem((item) =>
     item
-      .setTitle('Delete project')
+      .setTitle(t('project.delete'))
       .setIcon('trash')
       .onClick(
         safeAsync(async () => {

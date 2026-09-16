@@ -7,7 +7,8 @@ import {
   type SavedView,
   makeDefaultFilter,
   makeId,
-  truncateTitle
+  truncateTitle,
+  t
 } from '@dotpm/core'
 import {
   folderOf,
@@ -80,7 +81,7 @@ export class ProjectView extends ItemView {
     return PM_PROJECT_VIEW_TYPE
   }
   getDisplayText(): string {
-    return truncateTitle(this.projectScope?.label() ?? 'Project', 10)
+    return truncateTitle(this.projectScope?.label() ?? t('common.project'), 10)
   }
 
   /** The mode, filter and sort a reader of an export starts from. */
@@ -265,8 +266,8 @@ export class ProjectView extends ItemView {
     this.header = null
     this.bodyEl.empty()
     const msg = this.bodyEl.createDiv('pm-empty-state')
-    msg.createEl('h3', { text: 'Nothing to show' })
-    msg.createEl('p', { text: 'No project here. It may have been deleted or renamed.' })
+    msg.createEl('h3', { text: t('projectView.nothingToShow') })
+    msg.createEl('p', { text: t('projectView.missing') })
   }
 
   private renderProjectHeader(): void {
@@ -388,7 +389,7 @@ export class ProjectView extends ItemView {
     if (!scope.isMulti) {
       const iconEl = left.createSpan({
         cls: 'pm-toolbar-icon',
-        attr: { 'aria-label': 'Open project page' }
+        attr: { 'aria-label': t('projectView.openProjectPage') }
       })
       renderGlyph(iconEl, { icon: primary.icon, color: primary.color })
       makeActivatable(iconEl, openOverview)
@@ -397,16 +398,16 @@ export class ProjectView extends ItemView {
     const titleEl = left.createEl('h2', { text: scope.label(), cls: 'pm-toolbar-title' })
     if (!scope.isMulti) {
       titleEl.addClass('pm-toolbar-title--link')
-      titleEl.setAttrs({ 'aria-label': 'Open project page' })
+      titleEl.setAttrs({ 'aria-label': t('projectView.openProjectPage') })
       makeActivatable(titleEl, openOverview)
     }
     this.renderScopeSwitcher(left)
 
     new ViewSwitcher<ViewMode>(this.toolbarEl, {
       options: [
-        { id: 'table', icon: 'table', label: 'Table' },
-        { id: 'gantt', icon: 'git-fork', label: 'Gantt' },
-        { id: 'kanban', icon: 'layout-dashboard', label: 'Board' }
+        { id: 'table', icon: 'table', label: t('views.table') },
+        { id: 'gantt', icon: 'git-fork', label: t('views.gantt') },
+        { id: 'kanban', icon: 'layout-dashboard', label: t('views.kanban') }
       ],
       active: this.currentView,
       onChange: (mode) => {
@@ -417,18 +418,20 @@ export class ProjectView extends ItemView {
 
     const right = this.toolbarEl.createDiv('pm-toolbar-right')
     new ButtonComponent(right)
-      .setButtonText('+ add task')
+      .setButtonText(t('projectView.addTask'))
       .setCta()
       .onClick((e) => this.addTask(e))
 
     if (this.currentView === 'gantt') {
-      new ButtonComponent(right).setButtonText('+ milestone').onClick((e) => this.addTask(e, { type: 'milestone' }))
+      new ButtonComponent(right)
+        .setButtonText(t('projectView.addMilestone'))
+        .onClick((e) => this.addTask(e, { type: 'milestone' }))
     }
 
     if (!scope.isMulti) {
       new ExtraButtonComponent(right)
         .setIcon('settings')
-        .setTooltip('Project settings')
+        .setTooltip(t('project.settings'))
         .onClick(safeAsync(() => this.plugin.router.openProjectEdit(primary.filePath)))
     }
   }
@@ -472,17 +475,20 @@ export class ProjectView extends ItemView {
     const folder = folderOf(own ?? projectPath)
 
     const options: { label: string; spec: ScopeSpec }[] = [
-      { label: 'This project', spec: { kind: 'project', path: projectPath } },
-      { label: 'With sub-projects', spec: { kind: 'subtree', path: projectPath } },
-      { label: folder ? `Folder: ${folder}` : 'Vault folder', spec: { kind: 'folder', path: folder } },
-      { label: 'All projects', spec: { kind: 'vault' } }
+      { label: t('scope.thisProject'), spec: { kind: 'project', path: projectPath } },
+      { label: t('scope.subtree'), spec: { kind: 'subtree', path: projectPath } },
+      {
+        label: folder ? t('scope.folder', { folder }) : t('scope.vaultFolder'),
+        spec: { kind: 'folder', path: folder }
+      },
+      { label: t('scope.all'), spec: { kind: 'vault' } }
     ]
     const current = options.find((option) => scope.key === scopeKey(option.spec))
 
     new ChipButton(parent)
-      .setLabel(current?.label ?? 'This project')
+      .setLabel(current?.label ?? t('scope.thisProject'))
       .setShape('pill')
-      .setAriaLabel('Change which projects this view shows')
+      .setAriaLabel(t('scope.change'))
       .onClick((e) => {
         const menu = new Menu()
         for (const option of options) {

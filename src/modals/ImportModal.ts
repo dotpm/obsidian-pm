@@ -292,7 +292,7 @@ export class ImportModal extends Modal {
     if (!this.counterLabel) return
     const count = this.files.filter((f) => f.selected).length
     this.selectedCount = count
-    this.counterLabel.setText(t('import.selectedCount', { count }))
+    this.counterLabel.setText(t('common.selectedCount', { count }))
   }
 
   private updateSelectAllCheckbox(): void {
