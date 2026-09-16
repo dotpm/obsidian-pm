@@ -10,7 +10,8 @@ import {
   collectAllTags,
   countActiveFilters,
   displayName,
-  priorityIcon
+  priorityIcon,
+  t
 } from '@dotpm/core'
 import { renderFilterDropdown } from '../../FilterDropdown'
 import { ChipButton } from '#primitives/ChipButton'
@@ -26,13 +27,13 @@ export interface FilterRowProps {
   onClear: () => void
 }
 
-const DUE_LABELS: Record<DueDateFilter, string> = {
-  any: 'Due date',
-  overdue: 'Overdue',
-  'this-week': 'This week',
-  'this-month': 'This month',
-  'no-date': 'No date'
-}
+const dueLabels = (): Record<DueDateFilter, string> => ({
+  any: t('filter.dueDate'),
+  overdue: t('filter.overdue'),
+  'this-week': t('filter.thisWeek'),
+  'this-month': t('filter.thisMonth'),
+  'no-date': t('filter.noDate')
+})
 
 export class FilterRow {
   el: HTMLElement
@@ -57,7 +58,7 @@ export class FilterRow {
 
     renderFilterDropdown(
       this.el,
-      'Status',
+      t('taskForm.status'),
       filter.statuses,
       statuses.map((s) => ({ id: s.id, label: s.label, icon: s.icon })),
       (selected) => {
@@ -68,7 +69,7 @@ export class FilterRow {
 
     renderFilterDropdown(
       this.el,
-      'Priority',
+      t('taskForm.priority'),
       filter.priorities,
       priorities.map((p) => ({
         id: p.id,
@@ -86,7 +87,7 @@ export class FilterRow {
     if (allAssignees.length) {
       renderFilterDropdown(
         this.el,
-        'Assignee',
+        t('filter.assignee'),
         filter.assignees,
         allAssignees.map((a) => ({ id: a, label: displayName(a) })),
         (selected) => {
@@ -100,9 +101,9 @@ export class FilterRow {
     if (allTags.length) {
       renderFilterDropdown(
         this.el,
-        'Tag',
+        t('filter.tag'),
         filter.tags,
-        allTags.map((t) => ({ id: t, label: t })),
+        allTags.map((tag) => ({ id: tag, label: tag })),
         (selected) => {
           filter.tags = selected
           notify()
@@ -118,9 +119,11 @@ export class FilterRow {
   private renderDueDateButton(notify: () => void): void {
     const { filter } = this.props
     const btn = new ChipButton(this.el)
+    const labels = dueLabels()
     const updateLabel = () => {
       const current = filter.dueDateFilter
-      btn.setLabel(current !== 'any' ? `Due: ${DUE_LABELS[current]}` : DUE_LABELS.any).setActive(current !== 'any')
+      const label = current !== 'any' ? t('filter.dueWith', { label: labels[current] }) : labels.any
+      btn.setLabel(label).setActive(current !== 'any')
     }
     updateLabel()
     btn.onClick((e) => {
@@ -129,7 +132,7 @@ export class FilterRow {
       for (const opt of opts) {
         menu.addItem((item) =>
           item
-            .setTitle(DUE_LABELS[opt])
+            .setTitle(labels[opt])
             .setChecked(filter.dueDateFilter === opt)
             .onClick(() => {
               filter.dueDateFilter = opt
@@ -144,7 +147,7 @@ export class FilterRow {
 
   private renderArchivedButton(notify: () => void): void {
     const { filter } = this.props
-    const btn = new ChipButton(this.el).setLabel('Archived').setActive(filter.showArchived)
+    const btn = new ChipButton(this.el).setLabel(t('common.archived')).setActive(filter.showArchived)
     btn.onClick(() => {
       filter.showArchived = !filter.showArchived
       btn.setActive(filter.showArchived)
@@ -158,7 +161,7 @@ export class FilterRow {
       this.clearBtn = null
       return
     }
-    this.clearBtn = new ChipButton(this.el).setLabel(`Clear (${count})`).onClick(() => {
+    this.clearBtn = new ChipButton(this.el).setLabel(t('filter.clear', { count })).onClick(() => {
       this.props.onClear()
     })
   }

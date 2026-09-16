@@ -25,7 +25,7 @@ import {
   renderIconControl,
   renderInputControl,
   renderSelectControl,
-  CUSTOM_FIELD_TYPE_LABELS,
+  customFieldTypeLabels,
   renderCustomFieldListEditor,
   EmptyState,
   IconButton
@@ -500,7 +500,7 @@ export class ProjectEditView extends ItemView {
     row.toggleClass('pm-cf-row--hidden', isHidden)
 
     row.createSpan({ cls: 'pm-cf-name', text: field.name })
-    row.createSpan({ cls: 'pm-cf-type', text: CUSTOM_FIELD_TYPE_LABELS[field.type] })
+    row.createSpan({ cls: 'pm-cf-type', text: customFieldTypeLabels()[field.type] })
     row.createSpan({ cls: 'pm-cf-source', text: t('projectEdit.from', { source }) })
 
     new IconButton(row)

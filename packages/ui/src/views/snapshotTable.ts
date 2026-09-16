@@ -9,7 +9,8 @@ import {
   isFilterActive,
   isTerminalStatus,
   stringifyCustomValue,
-  totalLoggedHours
+  totalLoggedHours,
+  t
 } from '@dotpm/core'
 import { TaskRow } from '../composites/TaskRow'
 import { AssigneesCell } from '../composites/cells/AssigneesCell'
@@ -95,14 +96,14 @@ export function renderSnapshotTable(container: HTMLElement, model: ViewModel): H
 
   const cols: { key: SortKey | null; label: string; width: string }[] = [
     { key: null, label: '', width: '32px' },
-    { key: 'title', label: 'Task', width: 'auto' },
-    ...(multi ? [{ key: null, label: 'Project', width: '130px' }] : []),
-    { key: 'status', label: 'Status', width: '130px' },
-    { key: 'priority', label: 'Priority', width: '110px' },
-    { key: 'assignees', label: 'Assignees', width: '140px' },
-    { key: 'due', label: 'Due', width: '110px' },
-    { key: 'progress', label: 'Progress', width: '120px' },
-    { key: null, label: 'Time', width: '90px' }
+    { key: 'title', label: t('columns.task'), width: 'auto' },
+    ...(multi ? [{ key: null, label: t('columns.project'), width: '130px' }] : []),
+    { key: 'status', label: t('columns.status'), width: '130px' },
+    { key: 'priority', label: t('columns.priority'), width: '110px' },
+    { key: 'assignees', label: t('columns.assignees'), width: '140px' },
+    { key: 'due', label: t('columns.due'), width: '110px' },
+    { key: 'progress', label: t('columns.progress'), width: '120px' },
+    { key: null, label: t('columns.time'), width: '90px' }
   ]
   for (const col of cols) {
     const th = hrow.createEl('th', { text: col.label })

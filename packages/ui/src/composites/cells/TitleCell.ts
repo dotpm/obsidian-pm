@@ -1,4 +1,4 @@
-import type { Task } from '@dotpm/core'
+import { type Task, t } from '@dotpm/core'
 import { Chip } from '#primitives/Chip'
 import { IconButton } from '#primitives/IconButton'
 import { renderTagChip } from '../tagChip'
@@ -40,7 +40,7 @@ export class TitleCell {
 
     new IconButton(inner)
       .setIcon('plus')
-      .setTooltip('Add subtask')
+      .setTooltip(t('taskMenu.addSubtask'))
       .setRevealOnHover(true)
       .onClick((e) => {
         e.stopPropagation()
@@ -49,35 +49,35 @@ export class TitleCell {
 
     if (task.type === 'milestone') {
       new Chip(inner)
-        .setLabel('M')
+        .setLabel(t('chip.milestone'))
         .setVariant('solid')
         .setSize('sm')
         .setColor('var(--color-purple)')
-        .setTooltip('Milestone')
+        .setTooltip(t('taskForm.typeMilestone'))
     }
     if (task.type === 'subtask') {
       new Chip(inner)
-        .setLabel('Sub')
+        .setLabel(t('chip.subtask'))
         .setVariant('solid')
         .setSize('sm')
         .setColor('var(--color-green)')
-        .setTooltip('Subtask')
+        .setTooltip(t('taskForm.typeSubtask'))
     }
     if (task.recurrence) {
       new Chip(inner)
-        .setLabel('R')
+        .setLabel(t('chip.recurring'))
         .setVariant('solid')
         .setSize('sm')
         .setColor('var(--color-blue)')
-        .setTooltip('Recurring')
+        .setTooltip(t('chip.recurringTooltip'))
     }
     if (task.archived) {
       new Chip(inner)
-        .setLabel('Archived')
+        .setLabel(t('common.archived'))
         .setVariant('solid')
         .setSize('sm')
         .setColor('var(--text-muted)')
-        .setTooltip('Archived')
+        .setTooltip(t('common.archived'))
     }
 
     if (task.tags.length) {

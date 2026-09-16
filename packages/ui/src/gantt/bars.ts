@@ -1,4 +1,4 @@
-import { type StatusConfig, type Task, displayName, getStatusConfig, parsePlainDate } from '@dotpm/core'
+import { type StatusConfig, type Task, displayName, getStatusConfig, parsePlainDate, t } from '@dotpm/core'
 import { svgEl } from '#dom'
 import type { GanttCanvas } from './canvas'
 import { BAR_BORDER_RADIUS, BAR_PADDING, HEADER_HEIGHT, ROW_HEIGHT, dateToX } from './TimelineConfig'
@@ -107,8 +107,16 @@ export function drawTaskBar(
 
   const statusConfig = getStatusConfig(statuses, task.status)
   const tooltip = svgEl('title', {})
-  const assigneesStr = task.assignees.length ? `\nAssignees: ${task.assignees.map(displayName).join(', ')}` : ''
-  tooltip.textContent = `${task.title}\n${statusConfig?.label ?? task.status} · ${task.priority}\nStart: ${task.start || '—'}  Due: ${task.due || '—'}\nProgress: ${task.progress}%${assigneesStr}`
+  const lines = [
+    task.title,
+    `${statusConfig?.label ?? task.status} · ${task.priority}`,
+    `${t('gantt.tooltipStart', { date: task.start || '—' })}  ${t('gantt.tooltipDue', { date: task.due || '—' })}`,
+    t('gantt.tooltipProgress', { percent: task.progress })
+  ]
+  if (task.assignees.length) {
+    lines.push(t('gantt.tooltipAssignees', { names: task.assignees.map(displayName).join(', ') }))
+  }
+  tooltip.textContent = lines.join('\n')
   rect.appendChild(tooltip)
 
   return { barGroup, rect, x, y, width, height }
@@ -135,7 +143,7 @@ export function drawMilestoneDiamond(
   })
   g.appendChild(diamond)
   const tooltip = svgEl('title', {})
-  tooltip.textContent = `${task.title} (milestone)\nDate: ${task.due || task.start || '—'}`
+  tooltip.textContent = `${t('gantt.milestoneTitle', { title: task.title })}\n${t('gantt.tooltipDate', { date: task.due || task.start || '—' })}`
   diamond.appendChild(tooltip)
   return diamond
 }

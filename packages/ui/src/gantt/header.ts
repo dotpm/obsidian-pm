@@ -1,7 +1,7 @@
 import type { GanttCanvas } from './canvas'
 import { HEADER_HEIGHT, dateToX, getWeekNumber } from './TimelineConfig'
 import { svgEl } from '#dom'
-import { Temporal, type GanttWeekLabel } from '@dotpm/core'
+import { Temporal, type GanttWeekLabel, t } from '@dotpm/core'
 
 function formatDateRange(weekStart: Temporal.PlainDate, days: number): string {
   const end = weekStart.add({ days: days - 1 })
@@ -14,10 +14,10 @@ function formatDateRange(weekStart: Temporal.PlainDate, days: number): string {
 }
 
 function formatWeekLabel(weekStart: Temporal.PlainDate, days: number, weekNum: number, mode: GanttWeekLabel): string {
-  if (mode === 'weekNumber') return `W${weekNum}`
+  if (mode === 'weekNumber') return t('gantt.weekShort', { week: weekNum })
   const range = formatDateRange(weekStart, days)
   if (mode === 'dateRange') return range
-  return `W${weekNum}: ${range}`
+  return t('gantt.weekWithRange', { week: weekNum, range })
 }
 
 export function renderTimelineHeader(ctx: GanttCanvas): void {
@@ -167,7 +167,7 @@ function renderQuarterHeader(g: SVGGElement, ctx: GanttCanvas): void {
       y: 44,
       class: 'pm-gantt-header-quarter'
     })
-    text.textContent = `Q${q} ${date.year}`
+    text.textContent = t('gantt.quarterYear', { quarter: q, year: String(date.year) })
     g.appendChild(text)
     date = nextQStart
   }
@@ -191,7 +191,7 @@ function renderYearHeader(g: SVGGElement, ctx: GanttCanvas): void {
       y: 44,
       class: 'pm-gantt-header-quarter'
     })
-    text.textContent = `Q${q}`
+    text.textContent = t('gantt.quarterShort', { quarter: q })
     g.appendChild(text)
     g.appendChild(
       svgEl('line', {

@@ -645,7 +645,7 @@ export class TaskEditor {
           return
         }
         console.error('[PM]', err)
-        new Notice(t('taskEditor.saveFailed'))
+        new Notice(t('common.somethingWentWrong'))
       } finally {
         saving = false
       }

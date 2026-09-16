@@ -37,7 +37,7 @@ import {
   ProjectRow,
   TaskRow,
   renderAddButton,
-  CUSTOM_FIELD_TYPE_LABELS,
+  customFieldTypeLabels,
   renderCustomFieldListEditor,
   renderAddProperty,
   renderDepRow,
@@ -323,7 +323,7 @@ export class StyleguideView extends ItemView {
     const inherited = this.row(sec, 'an inherited row, as the project edit page draws it')
     const inheritedRow = inherited.createDiv('pm-cf-row pm-cf-row--inherited')
     inheritedRow.createSpan({ cls: 'pm-cf-name', text: 'Client' })
-    inheritedRow.createSpan({ cls: 'pm-cf-type', text: CUSTOM_FIELD_TYPE_LABELS.text })
+    inheritedRow.createSpan({ cls: 'pm-cf-type', text: customFieldTypeLabels().text })
     inheritedRow.createSpan({ cls: 'pm-cf-source', text: 'from Platform' })
     new IconButton(inheritedRow).setIcon('eye').setTooltip('Hide on this project').onClick(noop)
     new IconButton(inheritedRow).setIcon('pencil').setTooltip('Override on this project').onClick(noop)

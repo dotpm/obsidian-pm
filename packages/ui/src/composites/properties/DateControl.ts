@@ -1,6 +1,6 @@
 import { setIcon } from '#platform'
 import { Popover } from '#primitives/Popover'
-import { formatDate, today, type DueTone } from '@dotpm/core'
+import { formatDate, today, type DueTone, t } from '@dotpm/core'
 
 export interface DateControlOpts {
   container: HTMLElement
@@ -19,7 +19,7 @@ export function renderDateControl(opts: DateControlOpts): void {
   setIcon(icon, 'calendar')
   trigger.createSpan({
     cls: 'pm-prop-inline-label',
-    text: has ? formatDate(opts.value) : (opts.emptyLabel ?? 'Set date')
+    text: has ? formatDate(opts.value) : (opts.emptyLabel ?? t('taskForm.setDate'))
   })
   if (opts.hint) trigger.createSpan({ cls: `pm-due pm-due--${opts.hint.tone}`, text: opts.hint.text })
 
@@ -59,7 +59,7 @@ export function renderDateControl(opts: DateControlOpts): void {
     if (has) {
       const clearBtn = actions.createEl('button', {
         cls: 'pm-pop-item pm-pop-item--center pm-pop-item--danger',
-        text: 'Clear'
+        text: t('common.clear')
       })
       clearBtn.addEventListener('click', () => {
         next = ''

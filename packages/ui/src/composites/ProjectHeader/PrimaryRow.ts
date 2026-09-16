@@ -1,5 +1,5 @@
 import { createButton, createMenu, type PlatformButton } from '#platform'
-import { type FilterState, type SavedView, isFilterActive } from '@dotpm/core'
+import { type FilterState, type SavedView, isFilterActive, t } from '@dotpm/core'
 import { safeAsync } from '#dom'
 import { ChipButton } from '#primitives/ChipButton'
 
@@ -50,7 +50,7 @@ export class PrimaryRow {
   private renderSearchInput(): void {
     const input = this.el.createEl('input', {
       type: 'text',
-      placeholder: 'Search tasks…',
+      placeholder: t('taskForm.searchTasks'),
       cls: 'pm-project-header-search'
     })
     input.value = this.props.filter.text
@@ -64,7 +64,7 @@ export class PrimaryRow {
     const wrap = parent.createDiv('pm-project-header-saved-views')
 
     new ChipButton(wrap)
-      .setLabel('All')
+      .setLabel(t('header.all'))
       .setShape('pill')
       .setActive(!this.props.activeSavedViewId)
       .onClick(() => {
@@ -89,13 +89,13 @@ export class PrimaryRow {
         const menu = createMenu()
         menu.addItem((item) =>
           item
-            .setTitle('Update with current filters')
+            .setTitle(t('header.updateView'))
             .setIcon('refresh-cw')
             .onClick(safeAsync(() => this.props.onSavedViewUpdate(sv.id)))
         )
         menu.addItem((item) =>
           item
-            .setTitle('Delete view')
+            .setTitle(t('header.deleteView'))
             .setIcon('trash')
             .onClick(safeAsync(() => this.props.onSavedViewDelete(sv.id)))
         )
@@ -106,7 +106,7 @@ export class PrimaryRow {
   private renderSaveViewAction(parent: HTMLElement): void {
     if (!isFilterActive(this.props.filter) && !this.props.filter.showArchived) return
 
-    const saveBtn = createButton(parent).setButtonText('+ save view')
+    const saveBtn = createButton(parent).setButtonText(t('header.saveView'))
     saveBtn.onClick(() => this.beginInlineSave(parent, saveBtn))
   }
 
@@ -115,7 +115,7 @@ export class PrimaryRow {
     const wrapper = parent.createDiv('pm-project-header-save-input')
     const input = wrapper.createEl('input', {
       type: 'text',
-      placeholder: 'View name…',
+      placeholder: t('header.viewName'),
       cls: 'pm-project-header-save-input-field'
     })
     input.focus()
@@ -154,10 +154,10 @@ export class PrimaryRow {
     const isFilterRowVisible =
       this.props.filterRowExpanded || isFilterActive(this.props.filter) || this.props.filter.showArchived
     const btn = new ChipButton(parent)
-      .setLabel('Filter')
+      .setLabel(t('header.filter'))
       .setShape('pill')
       .setActive(isFilterRowVisible)
-      .setAriaLabel('Toggle filter row')
+      .setAriaLabel(t('header.toggleFilterRow'))
       .onClick(() => {
         this.props.onToggleFilterRow()
       })

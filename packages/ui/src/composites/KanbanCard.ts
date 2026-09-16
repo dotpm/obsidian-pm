@@ -1,4 +1,4 @@
-import { type Task, formatDateShort } from '@dotpm/core'
+import { type Task, formatDateShort, t } from '@dotpm/core'
 import { AvatarStack, type AvatarPerson } from '#primitives/AvatarStack'
 import { Chip } from '#primitives/Chip'
 import { ProgressBar } from '#primitives/ProgressBar'
@@ -48,27 +48,27 @@ export class KanbanCard {
     titleRow.createSpan({ text: task.title, cls: 'pm-kanban-card-title' })
     if (task.type === 'milestone') {
       new Chip(titleRow)
-        .setLabel('M')
+        .setLabel(t('chip.milestone'))
         .setVariant('solid')
         .setSize('sm')
         .setColor('var(--color-purple)')
-        .setTooltip('Milestone')
+        .setTooltip(t('taskForm.typeMilestone'))
     }
     if (task.type === 'subtask') {
       new Chip(titleRow)
-        .setLabel('Sub')
+        .setLabel(t('chip.subtask'))
         .setVariant('solid')
         .setSize('sm')
         .setColor('var(--color-green)')
-        .setTooltip('Subtask')
+        .setTooltip(t('taskForm.typeSubtask'))
     }
     if (task.recurrence) {
       new Chip(titleRow)
-        .setLabel('R')
+        .setLabel(t('chip.recurring'))
         .setVariant('solid')
         .setSize('sm')
         .setColor('var(--color-blue)')
-        .setTooltip('Recurring')
+        .setTooltip(t('chip.recurringTooltip'))
     }
 
     if (props.descriptionPreview) {

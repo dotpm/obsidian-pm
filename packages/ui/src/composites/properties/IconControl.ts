@@ -1,3 +1,4 @@
+import { t } from '@dotpm/core'
 import { getIconIds, setIcon } from '#platform'
 import { Popover } from '#primitives/Popover'
 import { renderGlyph, renderOptionRow } from './optionList'
@@ -68,7 +69,7 @@ export function renderIconControl(opts: IconControlOpts): void {
 
       clearRow.empty()
       renderOptionRow(clearRow, {
-        label: 'No icon',
+        label: t('property.noIcon'),
         icon: 'ban',
         selected: !value,
         onPick: () => commit('')
@@ -77,7 +78,7 @@ export function renderIconControl(opts: IconControlOpts): void {
       if (isGlyphQuery(query)) {
         const cell = grid.createEl('button', { cls: 'pm-icon-cell pm-icon-cell--glyph', text: query })
         cell.toggleClass('pm-icon-cell--selected', query === value)
-        cell.setAttribute('aria-label', `Use ${query}`)
+        cell.setAttribute('aria-label', t('property.useGlyph', { glyph: query }))
         cell.addEventListener('click', () => commit(query))
       }
 
@@ -90,9 +91,9 @@ export function renderIconControl(opts: IconControlOpts): void {
       }
 
       if (found.length > GRID_LIMIT) {
-        hint.setText(`Showing ${GRID_LIMIT} of ${found.length}. Keep typing to narrow.`)
+        hint.setText(t('property.iconsShowing', { shown: GRID_LIMIT, total: found.length }))
       } else if (found.length === 0 && !isGlyphQuery(query)) {
-        hint.setText('No icon matches that.')
+        hint.setText(t('property.noIconMatch'))
       }
     }
 
