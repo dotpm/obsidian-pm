@@ -26,8 +26,11 @@ export function resolveScopePaths(spec: ScopeSpec, index: VaultIndex): string[] 
   switch (spec.kind) {
     case 'project':
       return index.projectRef(spec.path) ? [spec.path] : []
-    case 'subtree':
-      return index.projectRef(spec.path) ? [spec.path, ...index.descendantRefs(spec.path).map((ref) => ref.path)] : []
+    case 'subtree': {
+      if (!index.projectRef(spec.path)) return []
+      const archived = index.isArchived(spec.path)
+      return [spec.path, ...index.descendantRefs(spec.path, archived).map((ref) => ref.path)]
+    }
     case 'folder': {
       const prefix = spec.path === '' ? '' : `${spec.path}/`
       return index.projectPaths().filter((path) => path.startsWith(prefix))

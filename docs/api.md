@@ -39,7 +39,7 @@ Cursor, Claude Desktop and other clients that take a JSON config:
 
 A client that can only launch a command, or cannot send a header, can use `dotpm mcp` from the command line package instead. It bridges stdio to this endpoint and finds the token itself. See [cli.md](cli.md).
 
-Tools: `list_projects`, `get_project`, `list_tasks`, `get_task`, `search_tasks`, `create_task`, `update_task`, `move_task`, `archive_task`, `delete_task`, `list_changes`.
+Tools: `list_projects`, `get_project`, `archive_project`, `list_tasks`, `get_task`, `search_tasks`, `create_task`, `update_task`, `move_task`, `archive_task`, `delete_task`, `list_changes`.
 
 Resources: `dotpm://projects/{id}` (the project with its tasks) and `dotpm://tasks/{id}`.
 
@@ -61,9 +61,10 @@ Send `Authorization: Bearer <token>` with every request except `GET /v1/health`.
 | Method and path | What it does |
 | --- | --- |
 | `GET /v1/health` | `{ ok, name, version }`, no token needed |
-| `GET /v1/projects` | Every project: id, path, title, icon, color, parentId, taskCount, doneCount |
+| `GET /v1/projects` | Every project: id, path, title, icon, color, parentId, archived, taskCount, doneCount; `?includeArchived=true` adds archived ones |
 | `GET /v1/projects/{id}` | One project with description, team, custom fields, statuses and priorities |
 | `POST /v1/projects` | Create a project from `title`, `description`, `icon`, `color`, `teamMembers` and an optional `parentId`; answers `201` |
+| `POST /v1/projects/{id}/archive` | Body `{ "archived": true }` (the default) or `false`; sub-projects follow their parent |
 | `GET /v1/projects/{id}/tasks` | Its tasks in tree order; `?includeArchived=true` adds archived ones |
 | `POST /v1/projects/{id}/tasks` | Create a task from the fields below plus an optional `parentId`; answers `201` |
 | `GET /v1/tasks/{id}` | One task |

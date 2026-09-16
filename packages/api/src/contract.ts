@@ -8,6 +8,8 @@ export interface ProjectSummary {
   icon: string
   color: string
   parentId: string | null
+  /** Set on the project itself or inherited from an archived ancestor. */
+  archived: boolean
   taskCount: number
   doneCount: number
 }
@@ -143,9 +145,11 @@ export const ERROR_STATUS: Record<ApiErrorCode, number> = {
  * `ApiRequestError`.
  */
 export interface DomainApi {
-  listProjects(): Promise<ProjectSummary[]>
+  listProjects(includeArchived?: boolean): Promise<ProjectSummary[]>
   getProject(projectId: string): Promise<ProjectResource>
   createProject(input: unknown): Promise<ProjectResource>
+  /** Archiving a project archives everything under it; only the project flagged itself can be brought back. */
+  archiveProject(projectId: string, archived: boolean): Promise<ProjectResource>
   listTasks(projectId: string, includeArchived?: boolean): Promise<TaskResource[]>
   getTask(taskId: string): Promise<TaskResource>
   searchTasks(search: TaskSearch): Promise<TaskResource[]>

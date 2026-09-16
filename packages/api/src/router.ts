@@ -88,11 +88,16 @@ export function createRouter(host: HttpHost): (request: Request) => Response | P
 
   app.all('/mcp', (c) => mcp(c.req.raw))
 
-  app.get('/v1/projects', async (c) => c.json(await api.listProjects()))
+  app.get('/v1/projects', async (c) => c.json(await api.listProjects(c.req.query('includeArchived') === 'true')))
 
   app.post('/v1/projects', async (c) => c.json(await api.createProject(await body(c)), 201))
 
   app.get('/v1/projects/:id', async (c) => c.json(await api.getProject(c.req.param('id'))))
+
+  app.post('/v1/projects/:id/archive', async (c) => {
+    const asked = ((await body(c)) ?? {}) as { archived?: unknown }
+    return c.json(await api.archiveProject(c.req.param('id'), asked.archived !== false))
+  })
 
   app.get('/v1/projects/:id/tasks', async (c) =>
     c.json(await api.listTasks(c.req.param('id'), c.req.query('includeArchived') === 'true'))

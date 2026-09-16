@@ -53,6 +53,7 @@ function summarize(plugin: PMPlugin, project: Project): ProjectSummary {
     icon: project.icon,
     color: project.color,
     parentId: plugin.index.parentOf(project.filePath)?.id ?? null,
+    archived: plugin.index.isArchived(project.filePath),
     taskCount: live.length,
     doneCount: live.filter((f) => complete.has(f.task.status)).length
   }

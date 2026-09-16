@@ -18,6 +18,7 @@ export interface ProjectRowProps {
   /** Sub-projects below this one. Above zero, the counts are the caller's subtree rollup. */
   childCount: number
   collapsed: boolean
+  archived: boolean
   tasksDone: number
   tasksTotal: number
   overdue: number
@@ -38,6 +39,7 @@ export class ProjectRow {
 
   constructor(tbody: HTMLElement, props: ProjectRowProps) {
     this.el = tbody.createEl('tr', { cls: 'pm-table-row pm-project-row' })
+    if (props.archived) this.el.addClass('pm-table-row--archived')
     this.el.style.setProperty('--depth', String(props.depth))
 
     const expand = this.el.createEl('td', { cls: 'pm-table-cell-expand' })
@@ -54,6 +56,7 @@ export class ProjectRow {
     const inner = title.createDiv('pm-table-title-inner')
     renderGlyph(inner.createSpan({ cls: 'pm-project-row-icon' }), { icon: props.icon, color: props.color })
     inner.createSpan({ text: props.title, cls: 'pm-task-title-text' })
+    if (props.archived) new Chip(inner).setLabel('Archived').setVariant('outline').setSize('sm')
 
     const progress = this.el.createEl('td', { cls: 'pm-table-cell pm-table-cell-progress' })
     new ProgressBar(progress)

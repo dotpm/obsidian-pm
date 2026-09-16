@@ -469,7 +469,7 @@ export class StyleguideView extends ItemView {
     const sec = this.section('ProjectRow', 'project-row')
     sec.createDiv({
       cls: 'pm-sg-caption',
-      text: 'The project list: a parent with its rolled-up counts, a child on a tree connector, and a collapsed one.'
+      text: 'The project list: a parent with its rolled-up counts, a child on a tree connector, a collapsed one, and an archived one.'
     })
     const table = sec.createEl('table', { cls: 'pm-table pm-project-table' })
     const head = table.createEl('thead').createEl('tr')
@@ -485,6 +485,7 @@ export class StyleguideView extends ItemView {
       treeGuides: [],
       isLastChild: false,
       childCount: 2,
+      archived: false,
       collapsed: false,
       tasksDone: 12,
       tasksTotal: 40,
@@ -505,6 +506,7 @@ export class StyleguideView extends ItemView {
       treeGuides: [true],
       isLastChild: true,
       childCount: 0,
+      archived: false,
       collapsed: false,
       tasksDone: 4,
       tasksTotal: 10,
@@ -525,9 +527,31 @@ export class StyleguideView extends ItemView {
       treeGuides: [],
       isLastChild: true,
       childCount: 1,
+      archived: false,
       collapsed: true,
       tasksDone: 31,
       tasksTotal: 38,
+      overdue: 0,
+      members: [],
+      dueLabel: '',
+      dueUrgency: 'normal',
+      onToggleCollapsed: noop,
+      onClick: noop,
+      onContextMenu: noop,
+      onActions: noop
+    })
+    new ProjectRow(tbody, {
+      title: 'Old campaign',
+      icon: '📣',
+      color: '#c47a7a',
+      depth: 0,
+      treeGuides: [],
+      isLastChild: true,
+      childCount: 0,
+      collapsed: false,
+      archived: true,
+      tasksDone: 8,
+      tasksTotal: 8,
       overdue: 0,
       members: [],
       dueLabel: '',

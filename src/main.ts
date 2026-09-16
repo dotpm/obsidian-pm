@@ -215,7 +215,7 @@ export default class PMPlugin extends Plugin {
       name: 'Rebuild project index',
       callback: () => {
         this.index.build()
-        this.showNotice(`Found ${this.index.projectRefs().length} project(s).`)
+        this.showNotice(`Found ${this.index.projectRefs(true).length} project(s).`)
       }
     })
 
@@ -503,6 +503,14 @@ export default class PMPlugin extends Plugin {
     return path === '' || this.app.vault.getAbstractFileByPath(path) !== null
   }
 
+  /** Flags the note; sub-projects follow it without a write of their own. */
+  async setProjectArchived(path: string, archived: boolean): Promise<void> {
+    const project = await this.store.loadProjectByPath(path)
+    if (!project) return
+    await this.store.updateProject(project, { archived: archived || undefined })
+    this.showNotice(archived ? `Archived "${project.title}".` : `Unarchived "${project.title}".`)
+  }
+
   /** Prompts for a title, copies the project with fresh task ids, and opens the copy. */
   async duplicateProjectFlow(source: Project): Promise<void> {
     const title = await promptText(this.app, `Duplicate "${source.title}" as`, 'Project name', `${source.title} copy`)
@@ -671,7 +679,7 @@ export default class PMPlugin extends Plugin {
   private async linkPeopleToNotes(): Promise<void> {
     const plain: string[] = []
     for (const ref of this.index.allTaskRefs()) plain.push(...ref.assignees)
-    for (const ref of this.index.projectRefs()) plain.push(...ref.teamMembers)
+    for (const ref of this.index.projectRefs(true)) plain.push(...ref.teamMembers)
     const names = dedupePeople(plain.filter((value) => !value.trim().startsWith('[[')))
     if (names.length === 0) {
       this.showNotice('Every assignee already links to a note.')
@@ -722,7 +730,7 @@ export default class PMPlugin extends Plugin {
       tasksChanged += taskIds.length
     }
 
-    for (const ref of this.index.projectRefs()) {
+    for (const ref of this.index.projectRefs(true)) {
       if (!ref.teamMembers.some((value) => linkFor.has(value.trim().toLowerCase()))) continue
       const project = await this.store.loadProjectByPath(ref.path)
       if (!project) continue

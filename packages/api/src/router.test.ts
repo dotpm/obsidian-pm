@@ -57,6 +57,19 @@ describe('createRouter', () => {
     expect((await json('GET', '/v1/tasks/t2')).body).toMatchObject({ id: 't2', position: 1 })
   })
 
+  it('archives a project and lists it again only when asked', async () => {
+    expect((await json('POST', '/v1/projects/p1/archive')).body).toMatchObject({ id: 'p1', archived: true })
+    expect((await json('GET', '/v1/projects')).body).toEqual([])
+    expect((await json('GET', '/v1/projects?includeArchived=true')).body).toEqual([
+      expect.objectContaining({ id: 'p1', archived: true })
+    ])
+    expect((await json('POST', '/v1/projects/p1/archive', { body: { archived: false } })).body).toMatchObject({
+      archived: false
+    })
+    expect(api.calls).toContain('archiveProject p1 true')
+    expect(api.calls).toContain('listProjects archived')
+  })
+
   it('maps client mistakes to statuses', async () => {
     expect((await json('GET', '/v1/projects/nope')).status).toBe(404)
     const unknown = await json('GET', '/v1/nothing/here')

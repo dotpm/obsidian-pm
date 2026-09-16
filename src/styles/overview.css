@@ -60,6 +60,22 @@
   gap: 12px;
 }
 
+.pm-overview-banner {
+  max-width: 1160px;
+  margin: 0 auto 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: var(--radius-m);
+  background: var(--background-secondary);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+}
+.pm-overview-banner span {
+  flex: 1;
+}
+
 .pm-overview-icon {
   width: 40px;
   height: 40px;

@@ -39,6 +39,7 @@ function refOf(project: Project): ProjectRef {
     teamMembers: project.teamMembers,
     customFields: project.customFields,
     parentPath: project.parentPath,
+    archived: project.archived === true,
     ownStatusIds: project.config?.statuses?.map((status) => status.id) ?? null,
     completeStatusIds: project.config?.statuses?.filter((status) => status.complete).map((status) => status.id) ?? null,
     autoArchiveDays: project.config?.autoArchiveDays ?? null
@@ -76,8 +77,24 @@ export class LocalApi implements DomainApi {
     }
   }
 
-  async listProjects(): Promise<ProjectSummary[]> {
-    return this.plugin.index.projectRefs().map((ref) => this.summary(ref))
+  async listProjects(includeArchived = false): Promise<ProjectSummary[]> {
+    return this.plugin.index.projectRefs(includeArchived).map((ref) => this.summary(ref))
+  }
+
+  async archiveProject(projectId: string, archived: boolean): Promise<ProjectResource> {
+    const ref = this.refById(projectId)
+    const project = await this.load(ref)
+    if (Boolean(project.archived) !== archived) {
+      await this.plugin.store.updateProject(project, { archived: archived || undefined })
+      this.plugin.refreshViews()
+    }
+    // The index reads the note back later; the answer reflects the write just made.
+    const parent = this.plugin.index.parentOf(ref.path)
+    const summary = {
+      ...this.summary(ref),
+      archived: archived || (parent ? this.plugin.index.isArchived(parent.path) : false)
+    }
+    return toProjectResource(project, this.plugin.store.configFor(project), summary)
   }
 
   async getProject(projectId: string): Promise<ProjectResource> {
@@ -224,7 +241,7 @@ export class LocalApi implements DomainApi {
   }
 
   private refById(projectId: string): ProjectRef {
-    const indexed = this.plugin.index.projectRefs().find((ref) => ref.id === projectId)
+    const indexed = this.plugin.index.projectRefs(true).find((ref) => ref.id === projectId)
     if (indexed) {
       this.created.delete(projectId)
       return indexed
@@ -241,6 +258,7 @@ export class LocalApi implements DomainApi {
       icon: ref.icon,
       color: ref.color,
       parentId: this.parentIdOf(ref),
+      archived: this.plugin.index.isArchived(ref.path),
       taskCount: counts.total,
       doneCount: counts.done
     }

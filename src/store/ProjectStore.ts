@@ -1522,7 +1522,7 @@ export class ProjectStore implements TaskSource {
   }
 
   private projectPathsInside(folder: string): string[] {
-    return (this.index?.projectPaths() ?? []).filter((path) => path.startsWith(folder + '/'))
+    return (this.index?.projectPaths(true) ?? []).filter((path) => path.startsWith(folder + '/'))
   }
 
   private async deleteFolderRecursive(folder: TFolder): Promise<void> {

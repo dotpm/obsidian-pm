@@ -1,6 +1,6 @@
 {
   "name": "@dotpm/api",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The dotpm API contract: the domain interface, wire resources, HTTP router, MCP handler and client",
   "license": "MIT",
   "repository": {

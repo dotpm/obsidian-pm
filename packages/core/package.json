@@ -1,6 +1,6 @@
 {
   "name": "@dotpm/core",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The dotpm domain: project and task types, dates, filtering, scheduling and the YAML pipeline",
   "license": "MIT",
   "repository": {

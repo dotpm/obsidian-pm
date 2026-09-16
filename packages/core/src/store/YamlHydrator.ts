@@ -164,6 +164,7 @@ export function hydrateProjectFromFrontmatter(
     filePath,
     savedViews: hydrateSavedViews((frontmatter.savedViews as unknown[]) ?? []),
     config: hydrateProjectConfig(frontmatter.config),
+    ...(frontmatter.archived === true ? { archived: true } : {}),
     taskIndex: new Map()
   }
 }

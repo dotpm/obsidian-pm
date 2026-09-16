@@ -93,4 +93,16 @@ describe('serializer determinism', () => {
     const project = hydrateProjectFromFrontmatter(parsed.frontmatter, parsed.body, 'Projects/Test/Test.md', 'Test')
     expect(serializeProject(project, [], refs)).toBe(first)
   })
+
+  it('writes the archive flag only when set and reads it back', () => {
+    expect(serializeProject(fixtureProject(), [], refs)).not.toContain('archived')
+    const archived = { ...fixtureProject(), archived: true }
+    const text = serializeProject(archived, [], refs)
+    expect(text).toContain('archived: true')
+    const parsed = parseFrontmatter(text)
+    if (parsed.kind !== 'frontmatter') throw new Error('frontmatter missing')
+    const project = hydrateProjectFromFrontmatter(parsed.frontmatter, parsed.body, 'Projects/Test/Test.md', 'Test')
+    expect(project.archived).toBe(true)
+    expect(serializeProject(project, [], refs)).toBe(text)
+  })
 })

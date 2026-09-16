@@ -20,6 +20,7 @@ import { personKeyer, type ProjectRef } from '#store'
 import {
   safeAsync,
   Avatar,
+  Chip,
   EmptyState,
   ProgressBar,
   renderPropRow,
@@ -144,6 +145,7 @@ export class ProjectOverviewView extends ItemView {
     const rollup = summarize(tasks, config)
 
     this.renderBreadcrumbs(project)
+    this.renderArchivedBanner(project)
     this.renderHeader(project, rollup)
     const grid = this.container.createDiv('pm-overview-grid')
     const main = grid.createDiv('pm-overview-main')
@@ -158,10 +160,33 @@ export class ProjectOverviewView extends ItemView {
 
   private signTree(project: Project): string {
     const parent = this.plugin.index.parentOf(project.filePath)?.path ?? ''
-    return `${parent}|${this.plugin.index
-      .childRefs(project.filePath)
+    const archived = this.plugin.index.isArchived(project.filePath) ? 'archived' : ''
+    return `${parent}|${archived}|${this.children(project)
       .map((child) => child.path)
       .join(',')}`
+  }
+
+  /** An archived project shows its sub-projects, which are archived with it; a live one shows the live ones. */
+  private children(project: Project): ProjectRef[] {
+    const archived = this.plugin.index.isArchived(project.filePath)
+    return this.plugin.index.childRefs(project.filePath, archived || this.plugin.settings.showArchivedProjects)
+  }
+
+  private renderArchivedBanner(project: Project): void {
+    if (!this.plugin.index.isArchived(project.filePath)) return
+    const banner = this.container.createDiv('pm-overview-banner')
+    const ancestor = this.plugin.index.ancestorRefs(project.filePath).find((ref) => ref.archived)
+    banner.createSpan({
+      text:
+        project.archived || !ancestor
+          ? 'This project is archived. It stays out of the project list, pickers and reminders.'
+          : `This project is archived with "${ancestor.title}". Unarchive that project to bring it back.`
+    })
+    if (project.archived) {
+      new ButtonComponent(banner)
+        .setButtonText('Unarchive')
+        .onClick(safeAsync(() => this.plugin.setProjectArchived(project.filePath, false)))
+    }
   }
 
   private renderHeader(project: Project, rollup: Rollup): void {
@@ -172,12 +197,18 @@ export class ProjectOverviewView extends ItemView {
 
     const identity = header.createDiv('pm-overview-identity')
     identity.createDiv({ cls: 'pm-overview-title', text: project.title })
-    const children = this.plugin.index.childRefs(project.filePath).length
+    const children = this.children(project).length
     const bits = [`${rollup.done} of ${rollup.total} tasks done`]
     if (children) bits.push(children === 1 ? '1 sub-project' : `${children} sub-projects`)
     if (project.teamMembers.length) bits.push(`${project.teamMembers.length} members`)
     identity.createDiv({ cls: 'pm-overview-subline', text: bits.join(' · ') })
 
+    if (!this.plugin.index.isArchived(project.filePath)) {
+      new ButtonComponent(header)
+        .setButtonText('Archive')
+        .setTooltip('Archive this project and its sub-projects')
+        .onClick(safeAsync(() => this.plugin.setProjectArchived(project.filePath, true)))
+    }
     new ButtonComponent(header)
       .setButtonText('Edit project')
       .onClick(safeAsync(() => this.plugin.router.openProjectEdit(project.filePath, this.leaf)))
@@ -305,7 +336,7 @@ export class ProjectOverviewView extends ItemView {
   }
 
   private renderSubProjects(parent: HTMLElement, project: Project): void {
-    const children = this.plugin.index.childRefs(project.filePath)
+    const children = this.children(project)
     if (children.length === 0) return
     const section = this.section(parent, 'Sub-projects')
     for (const child of children) {
@@ -313,6 +344,9 @@ export class ProjectOverviewView extends ItemView {
       const row = section.createDiv('pm-overview-child')
       renderGlyph(row.createSpan({ cls: 'pm-overview-child-icon' }), { icon: child.icon, color: child.color })
       row.createSpan({ cls: 'pm-overview-child-title', text: child.title })
+      if (this.plugin.index.isArchived(child.path)) {
+        new Chip(row).setLabel('Archived').setVariant('outline').setSize('sm')
+      }
       new ProgressBar(row)
         .setSize('sm')
         .setValue(total ? (done / total) * 100 : 0)

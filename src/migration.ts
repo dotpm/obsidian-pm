@@ -8,7 +8,7 @@ import { parseFrontmatter, isOldFormat } from '@dotpm/core'
 export async function migrateProjects(plugin: PMPlugin): Promise<void> {
   let migrated = 0
 
-  for (const path of plugin.index.projectPaths()) {
+  for (const path of plugin.index.projectPaths(true)) {
     const file = plugin.app.vault.getAbstractFileByPath(path)
     if (!(file instanceof TFile)) continue
     try {
@@ -61,7 +61,7 @@ function frontmatterOf(plugin: PMPlugin, path: string): Record<string, unknown> 
 export async function migrateTaskRefs(plugin: PMPlugin): Promise<void> {
   let rewritten = 0
 
-  for (const path of plugin.index.projectPaths()) {
+  for (const path of plugin.index.projectPaths(true)) {
     const stale = plugin.index
       .taskRefs(path)
       .filter((ref) => holdsBareId(frontmatterOf(plugin, ref.path)))
@@ -102,12 +102,12 @@ export async function migrateProjectLayout(plugin: PMPlugin): Promise<void> {
   // Read before the first move: a sub-project's parent link stops resolving once the
   // parent note moves, so the index can no longer answer who belongs to whom.
   const childrenOf = new Map<string, string[]>()
-  for (const path of plugin.index.projectPaths()) {
-    const children = plugin.index.childRefs(path).map((ref) => ref.path)
+  for (const path of plugin.index.projectPaths(true)) {
+    const children = plugin.index.childRefs(path, true).map((ref) => ref.path)
     if (children.length) childrenOf.set(path, children)
   }
 
-  for (const path of plugin.index.projectPaths()) {
+  for (const path of plugin.index.projectPaths(true)) {
     try {
       const to = await plugin.store.moveProjectIntoOwnFolder(path)
       if (!to) continue
