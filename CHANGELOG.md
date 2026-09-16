@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Projects can now be archived from the project list, the overview page and the project settings
+- Added an "Archived" toggle to the project list; archived projects stay hidden until it is on
+- The local API and MCP server can now archive a project and list archived ones on request
+
 ## [2.4.1] - 2026-09-15
 
 ### Changed

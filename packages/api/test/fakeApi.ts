@@ -57,6 +57,7 @@ export class FakeApi implements DomainApi {
       icon: this.project.icon,
       color: this.project.color,
       parentId: null,
+      archived: this.project.archived === true,
       taskCount: this.project.tasks.length,
       doneCount: this.project.tasks.filter((t) => t.status === 'done').length
     }
@@ -72,14 +73,25 @@ export class FakeApi implements DomainApi {
     if (projectId !== this.project.id) throw new ApiRequestError('not_found', `project ${projectId} not found`)
   }
 
-  async listProjects(): Promise<ProjectSummary[]> {
-    this.calls.push('listProjects')
-    return [this.summary()]
+  async listProjects(includeArchived = false): Promise<ProjectSummary[]> {
+    this.calls.push(`listProjects${includeArchived ? ' archived' : ''}`)
+    return includeArchived || !this.project.archived ? [this.summary()] : []
+  }
+
+  async archiveProject(projectId: string, archived: boolean): Promise<ProjectResource> {
+    this.calls.push(`archiveProject ${projectId} ${archived}`)
+    this.checkProject(projectId)
+    this.project.archived = archived
+    return this.resource()
   }
 
   async getProject(projectId: string): Promise<ProjectResource> {
     this.calls.push(`getProject ${projectId}`)
     this.checkProject(projectId)
+    return this.resource()
+  }
+
+  private resource(): ProjectResource {
     return {
       ...this.summary(),
       description: this.project.description,
@@ -110,6 +122,7 @@ export class FakeApi implements DomainApi {
       icon: project.icon,
       color: project.color,
       parentId: create.parentId ?? null,
+      archived: false,
       taskCount: 0,
       doneCount: 0,
       description: project.description,

@@ -40,6 +40,15 @@ describe('HttpApi', () => {
     expect(seen[0].url).toBe('http://127.0.0.1:27140/v1/projects/p1/tasks?includeArchived=true')
   })
 
+  it('archives a project and asks for archived projects only when told to', async () => {
+    expect((await api.archiveProject('p1', true)).archived).toBe(true)
+    expect(host.calls.at(-1)).toBe('archiveProject p1 true')
+    expect(await api.listProjects()).toEqual([])
+    expect((await api.listProjects(true)).map((p) => p.id)).toEqual(['p1'])
+    expect(seen.at(-1)?.url).toBe('http://127.0.0.1:27140/v1/projects?includeArchived=true')
+    expect((await api.archiveProject('p1', false)).archived).toBe(false)
+  })
+
   it('puts a search on the query string', async () => {
     const found = await api.searchTasks({ query: 'sec', projectId: 'p1', includeArchived: true, limit: 5 })
     expect(found.map((t) => t.id)).toEqual(['t2'])

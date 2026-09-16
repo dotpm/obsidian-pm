@@ -2,7 +2,7 @@ import { Menu, ButtonComponent } from 'obsidian'
 import type PMPlugin from '#main'
 import type { ProjectRef } from '#store'
 import { formatDateShort, dateUrgency } from '@dotpm/core'
-import { safeAsync, EmptyState, ProjectRow, childTreeGuides } from '@dotpm/ui'
+import { safeAsync, ChipButton, EmptyState, ProjectRow, childTreeGuides } from '@dotpm/ui'
 import { openProjectCreate } from '#ui/ModalFactory'
 import { linkedRefs } from './linkedRefs'
 
@@ -30,6 +30,24 @@ export function renderProjectListToolbar(ctx: ProjectListContext): void {
   const line = countLine(ctx)
   if (line) left.createSpan({ cls: 'pm-project-list-count', text: line })
 
+  const { settings } = ctx.plugin
+  if (
+    settings.showArchivedProjects ||
+    ctx.plugin.index.projectRefs(true).length > ctx.plugin.index.projectRefs().length
+  ) {
+    new ChipButton(ctx.toolbarEl)
+      .setLabel('Archived')
+      .setActive(settings.showArchivedProjects)
+      .onClick(
+        safeAsync(async () => {
+          settings.showArchivedProjects = !settings.showArchivedProjects
+          await ctx.plugin.saveSettings()
+          renderProjectListToolbar(ctx)
+          renderProjectListContent(ctx)
+        })
+      )
+  }
+
   new ButtonComponent(ctx.toolbarEl)
     .setButtonText('+ new project')
     .setCta()
@@ -38,20 +56,30 @@ export function renderProjectListToolbar(ctx: ProjectListContext): void {
 
 function countLine(ctx: ProjectListContext): string {
   const refs = ctx.plugin.index.projectRefs()
-  if (refs.length === 0) return ''
+  const archived = ctx.plugin.index.projectRefs(true).length - refs.length
+  if (refs.length === 0 && archived === 0) return ''
   const behind = refs.filter((ref) => ctx.plugin.index.dueSummary(ref).overdue > 0).length
   const bits = [refs.length === 1 ? '1 project' : `${refs.length} projects`]
   if (behind) bits.push(`${behind} with tasks past due`)
+  if (archived) bits.push(`${archived} archived`)
   return bits.join(' · ')
 }
 
 export function renderProjectListContent(ctx: ProjectListContext): void {
-  const roots = ctx.plugin.index.rootRefs()
+  const showArchived = ctx.plugin.settings.showArchivedProjects
+  const roots = ctx.plugin.index.rootRefs(showArchived)
   ctx.contentEl.empty()
 
   if (roots.length === 0) {
     if (!ctx.plugin.index.ready) {
       new EmptyState(ctx.contentEl).setIcon('📋').setTitle('Looking for projects')
+      return
+    }
+    if (ctx.plugin.index.projectRefs(true).length) {
+      new EmptyState(ctx.contentEl)
+        .setIcon('📋')
+        .setTitle('Every project is archived')
+        .setBody('Turn on "Archived" above to see them.')
       return
     }
     new EmptyState(ctx.contentEl)
@@ -72,8 +100,9 @@ export function renderProjectListContent(ctx: ProjectListContext): void {
 
 function renderRows(ctx: ProjectListContext, tbody: HTMLElement, refs: ProjectRef[], trail: boolean[]): void {
   const index = ctx.plugin.index
+  const showArchived = ctx.plugin.settings.showArchivedProjects
   refs.forEach((ref, i) => {
-    const children = index.childRefs(ref.path)
+    const children = index.childRefs(ref.path, showArchived)
     const collapsed = ctx.plugin.isProjectCollapsed(ref.path)
     const { total, done } = children.length ? index.rollupCounts(ref) : index.counts(ref)
     const { overdue, latestDue } = children.length ? index.rollupDueSummary(ref) : index.dueSummary(ref)
@@ -88,6 +117,7 @@ function renderRows(ctx: ProjectListContext, tbody: HTMLElement, refs: ProjectRe
       isLastChild,
       childCount: children.length,
       collapsed,
+      archived: index.isArchived(ref.path),
       tasksDone: done,
       tasksTotal: total,
       overdue,
@@ -147,6 +177,21 @@ function openProjectContextMenu(ctx: ProjectListContext, ref: ProjectRef, e: Mou
       .setIcon('settings')
       .onClick(safeAsync(() => ctx.plugin.router.openProjectEdit(ref.path)))
   )
+  if (!ctx.plugin.index.isArchived(ref.path)) {
+    menu.addItem((item) =>
+      item
+        .setTitle('Archive project')
+        .setIcon('archive')
+        .onClick(safeAsync(() => ctx.plugin.setProjectArchived(ref.path, true)))
+    )
+  } else if (ref.archived) {
+    menu.addItem((item) =>
+      item
+        .setTitle('Unarchive project')
+        .setIcon('archive-restore')
+        .onClick(safeAsync(() => ctx.plugin.setProjectArchived(ref.path, false)))
+    )
+  }
   menu.addItem((item) =>
     item
       .setTitle('Delete project')

@@ -34,8 +34,19 @@ describe('resolveScopePaths', () => {
     await fake.vault.create('Work/Billing.md', note('p2', 'Billing', 'Platform'))
     await fake.vault.create('Work/Deep.md', note('p3', 'Deep', 'Billing'))
     await fake.vault.create('Personal/Garden.md', note('p4', 'Garden'))
+    await fake.vault.create('Personal/Old.md', note('p5', 'Old').replace(/---\n$/, 'archived: true\n---\n'))
+    await fake.vault.create('Personal/Older.md', note('p6', 'Older', 'Old'))
     index = new VaultIndex(fake.app as unknown as App, () => SETTINGS)
     index.build()
+  })
+
+  it('leaves archived projects out of a folder and the vault, but opens an archived subtree', () => {
+    expect(resolveScopePaths({ kind: 'folder', path: 'Personal' }, index)).toEqual(['Personal/Garden.md'])
+    expect(resolveScopePaths({ kind: 'vault' }, index)).toHaveLength(4)
+    expect(resolveScopePaths({ kind: 'subtree', path: 'Personal/Old.md' }, index)).toEqual([
+      'Personal/Old.md',
+      'Personal/Older.md'
+    ])
   })
 
   it('resolves one project', () => {

@@ -88,15 +88,22 @@ function tool<S extends v.GenericSchema>(
 
 function registerTools(server: McpServer, api: DomainApi): void {
   tool(server, 'list_projects', {
-    description: 'Every project in the vault with its id, title, parent and task counts.',
-    inputSchema: v.object({}),
-    run: () => api.listProjects()
+    description:
+      'Every project in the vault with its id, title, parent and task counts. Archived ones only when asked.',
+    inputSchema: v.object({ includeArchived: v.optional(v.boolean(), false) }),
+    run: (args) => api.listProjects(args.includeArchived)
   })
 
   tool(server, 'get_project', {
     description: 'One project with its description, team, custom fields and the status and priority ids its tasks use.',
     inputSchema: v.object({ projectId }),
     run: (args) => api.getProject(args.projectId)
+  })
+
+  tool(server, 'archive_project', {
+    description: 'Archive a project and its sub-projects, or bring it back with archived: false.',
+    inputSchema: v.object({ projectId, archived: v.optional(v.boolean('archived must be true or false'), true) }),
+    run: (args) => api.archiveProject(args.projectId, args.archived)
   })
 
   tool(server, 'create_project', {

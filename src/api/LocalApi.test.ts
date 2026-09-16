@@ -144,6 +144,28 @@ describe('LocalApi over the vault', () => {
     await rejectsWith(api.deleteTask('a'), 'not_found')
   })
 
+  it('archives a project with its sub-projects and brings it back', async () => {
+    const child = await store.createProject('Phase 1', 'Projects/Roadmap', {
+      parentPath: 'Projects/Roadmap/Roadmap.md'
+    })
+    index.build()
+
+    expect(await api.archiveProject(projectId, true)).toMatchObject({ id: projectId, archived: true })
+    index.build()
+    expect((await api.listProjects()).map((p) => p.title)).toEqual([])
+    expect((await api.listProjects(true)).map((p) => [p.title, p.archived])).toEqual([
+      ['Phase 1', true],
+      ['Roadmap', true]
+    ])
+    expect((await api.getProject(child.id)).archived).toBe(true)
+    expect(refreshes()).toBeGreaterThan(0)
+
+    expect(await api.archiveProject(projectId, false)).toMatchObject({ archived: false })
+    index.build()
+    expect((await api.listProjects()).map((p) => p.title).sort()).toEqual(['Phase 1', 'Roadmap'])
+    await rejectsWith(api.archiveProject('missing', true), 'not_found')
+  })
+
   it('records what changed for pollers', async () => {
     const off = api.attach()
     const start = await api.changes(null)

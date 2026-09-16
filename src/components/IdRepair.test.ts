@@ -40,6 +40,7 @@ function projectRef(id: string, path: string): ProjectRef {
     teamMembers: [],
     customFields: [],
     parentPath: undefined,
+    archived: false,
     ownStatusIds: null,
     completeStatusIds: null,
     autoArchiveDays: null

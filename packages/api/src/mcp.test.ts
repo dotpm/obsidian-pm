@@ -59,6 +59,7 @@ describe('createMcpHandler', () => {
     expect(listed.map((tool) => tool.name)).toEqual([
       'list_projects',
       'get_project',
+      'archive_project',
       'create_project',
       'list_tasks',
       'get_task',
@@ -71,7 +72,11 @@ describe('createMcpHandler', () => {
       'list_changes'
     ])
     expect(listed[1].inputSchema).toMatchObject({ required: ['projectId'] })
-    expect(listed[2].inputSchema).toMatchObject({ required: ['title'], properties: { color: { type: 'string' } } })
+    expect(listed[2].inputSchema).toMatchObject({
+      required: ['projectId'],
+      properties: { archived: { type: 'boolean' } }
+    })
+    expect(listed[3].inputSchema).toMatchObject({ required: ['title'], properties: { color: { type: 'string' } } })
     expect((await rpc('nope/method')).error?.code).toBe(-32601)
   })
 
@@ -114,6 +119,14 @@ describe('createMcpHandler', () => {
 
     await call('update_task', { taskId: 't3', status: 'done', expectedUpdatedAt: 'stale' })
     expect(api.calls.at(-1)).toBe('updateTask t3 if stale')
+
+    expect(parsed(await call('archive_project', { projectId: 'p1' }))).toMatchObject({ id: 'p1', archived: true })
+    expect(parsed(await rpc('tools/call', { name: 'list_projects' }))).toEqual([])
+    expect(parsed(await call('list_projects', { includeArchived: true }))).toEqual([
+      expect.objectContaining({ id: 'p1', archived: true })
+    ])
+    await call('archive_project', { projectId: 'p1', archived: false })
+    expect(api.calls.at(-1)).toBe('archiveProject p1 false')
   })
 
   it('reports a client mistake as a tool error instead of a protocol error', async () => {

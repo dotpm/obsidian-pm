@@ -240,6 +240,40 @@ describe('VaultIndex', () => {
       expect(index.rollupDueSummary(root)).toEqual({ overdue: 2, latestDue: '2020-03-01' })
     })
 
+    it('leaves an archived project and its children out unless asked', async () => {
+      await vault.create('A.md', projectNote('p1', 'A', 'archived: true\n'))
+      await vault.create('B.md', projectNote('p2', 'B', 'parent: "[[A]]"\n'))
+      await vault.create('C.md', projectNote('p3', 'C'))
+      await vault.create('D.md', projectNote('p4', 'D', 'parent: "[[C]]"\narchived: true\n'))
+      index.build()
+
+      expect(index.projectRefs().map((r) => r.title)).toEqual(['C'])
+      expect(index.projectRefs(true).map((r) => r.title)).toEqual(['A', 'B', 'C', 'D'])
+      expect(index.rootRefs().map((r) => r.title)).toEqual(['C'])
+      expect(index.rootRefs(true).map((r) => r.title)).toEqual(['A', 'C'])
+      expect(index.childRefs('A.md').map((r) => r.title)).toEqual([])
+      expect(index.childRefs('A.md', true).map((r) => r.title)).toEqual(['B'])
+      expect(index.childRefs('C.md').map((r) => r.title)).toEqual([])
+      expect(index.descendantRefs('A.md', true).map((r) => r.title)).toEqual(['B'])
+      expect(index.isArchived('A.md')).toBe(true)
+      expect(index.isArchived('B.md')).toBe(true)
+      expect(index.isArchived('C.md')).toBe(false)
+      expect(index.isArchived('D.md')).toBe(true)
+      expect(expectDefined(index.projectRef('B.md')).archived).toBe(false)
+      expect(index.parentOf('B.md')?.title).toBe('A')
+    })
+
+    it('follows an archive flag added after the build', async () => {
+      const note = await vault.create('A.md', projectNote('p1', 'A'))
+      await vault.create('B.md', projectNote('p2', 'B', 'parent: "[[A]]"\n'))
+      index.build()
+      index.register(fakePlugin())
+
+      await vault.process(note, (c) => c.replace('title: A', 'title: A\narchived: true'))
+      expect(index.projectRefs().map((r) => r.title)).toEqual([])
+      expect(index.isArchived('B.md')).toBe(true)
+    })
+
     it('follows a parent link added after the build', async () => {
       await vault.create('A.md', projectNote('p1', 'A'))
       const child = await vault.create('B.md', projectNote('p2', 'B'))

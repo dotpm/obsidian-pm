@@ -650,7 +650,7 @@ export class PMSettingTab extends PluginSettingTab {
     const fallback = configs[0]
     // Only projects the index says still use the deleted value are worth loading.
     const affected = this.plugin.index
-      .projectRefs()
+      .projectRefs(true)
       .filter((ref) => this.plugin.index.taskRefs(ref.path).some((task) => task[field] === deletedId))
       .map((ref) => ref.path)
     const projects = await this.plugin.store.loadProjects(affected)

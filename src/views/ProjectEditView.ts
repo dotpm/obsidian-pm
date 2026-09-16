@@ -199,7 +199,7 @@ export class ProjectEditView extends ItemView {
       const cell = createDiv('pm-prop-value')
       const excluded = new Set([
         project.filePath,
-        ...this.plugin.index.descendantRefs(project.filePath).map((ref) => ref.path)
+        ...this.plugin.index.descendantRefs(project.filePath, true).map((ref) => ref.path)
       ])
       renderSelectControl({
         container: cell,
@@ -209,12 +209,35 @@ export class ProjectEditView extends ItemView {
         options: [
           { id: '', label: 'No parent' },
           ...this.plugin.index
-            .projectRefs()
+            .projectRefs(true)
             .filter((ref) => !excluded.has(ref.path))
+            .filter((ref) => ref.path === project.parentPath || !this.plugin.index.isArchived(ref.path))
             .map((ref) => ({ id: ref.path, label: ref.title, color: ref.color }))
         ],
         onChange: (path) => {
           this.save({ parentPath: path || undefined })
+          this.render()
+        }
+      })
+      return cell
+    })
+
+    renderPropRow(props, 'Archived', () => {
+      const cell = createDiv('pm-prop-value')
+      const ancestor = this.plugin.index.ancestorRefs(project.filePath).find((ref) => ref.archived)
+      if (!project.archived && ancestor) {
+        cell.createSpan({ text: `Yes, with "${ancestor.title}"` })
+        return cell
+      }
+      renderSelectControl({
+        container: cell,
+        value: project.archived ? 'yes' : 'no',
+        options: [
+          { id: 'no', label: 'No' },
+          { id: 'yes', label: 'Yes' }
+        ],
+        onChange: (id) => {
+          this.save({ archived: id === 'yes' || undefined })
           this.render()
         }
       })

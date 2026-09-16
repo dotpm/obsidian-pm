@@ -31,6 +31,7 @@ function snapshot(): Snapshot {
         icon: 'rocket',
         color: '#8b72be',
         parentId: null,
+        archived: false,
         taskCount: 2,
         doneCount: 1,
         description: '',

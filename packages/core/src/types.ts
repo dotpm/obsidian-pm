@@ -82,6 +82,8 @@ export interface Project {
   savedViews: SavedView[]
   /** The project this one sits under, resolved from its `parent` link. */
   parentPath?: string
+  /** Kept out of lists, pickers and sweeps. Sub-projects follow their parent. */
+  archived?: boolean
   /** Per-project overrides for the global settings. Absent fields inherit. */
   config?: ProjectConfig
   /** Not serialized. Rebuilt on load, maintained by the store's mutators. */
@@ -92,7 +94,16 @@ export interface Project {
 export type ProjectPatch = Partial<
   Pick<
     Project,
-    'title' | 'description' | 'color' | 'icon' | 'customFields' | 'teamMembers' | 'savedViews' | 'config' | 'parentPath'
+    | 'title'
+    | 'description'
+    | 'color'
+    | 'icon'
+    | 'customFields'
+    | 'teamMembers'
+    | 'savedViews'
+    | 'config'
+    | 'parentPath'
+    | 'archived'
   >
 >
 
@@ -233,6 +244,8 @@ export interface PMSettings {
   collapsedTasks: Record<string, string[]>
   /** Paths of projects whose sub-projects are collapsed in the project list. */
   collapsedProjects: string[]
+  /** Whether the project list shows archived projects. */
+  showArchivedProjects: boolean
   /** A localhost HTTP and MCP server for other tools on this machine. Desktop only. */
   localApiEnabled: boolean
   localApiPort: number
@@ -298,6 +311,7 @@ export const DEFAULT_SETTINGS: PMSettings = {
   scopeViews: {},
   collapsedTasks: {},
   collapsedProjects: [],
+  showArchivedProjects: false,
   localApiEnabled: false,
   localApiPort: LOCAL_API_PORT_BASE,
   localApiToken: '',

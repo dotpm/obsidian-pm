@@ -27,6 +27,8 @@ export interface ProjectRef {
   customFields: CustomFieldDef[]
   /** Where its `parent` link points, before cycles are taken out. Use `parentOf`. */
   parentPath: string | undefined
+  /** The flag the note carries itself. A sub-project inherits its parent's; use `isArchived`. */
+  archived: boolean
   /** Status ids the project's own palette defines. Null inherits the global palette. */
   ownStatusIds: string[] | null
   /** Which of those its own palette marks complete. Null inherits the global palette. */
@@ -53,6 +55,13 @@ export interface TaskRef {
 
 function str(raw: unknown, fallback = ''): string {
   return typeof raw === 'string' ? raw : fallback
+}
+
+interface ProjectTree {
+  parents: Map<string, string | null>
+  children: Map<string, string[]>
+  /** Projects archived themselves or through an ancestor. */
+  archived: Set<string>
 }
 
 /** A project note dropped inside a project's task storage is task storage, not a project. */
@@ -94,10 +103,7 @@ export class VaultIndex {
   private taskById = new Map<string, TaskRef>()
   private tasksByProject = new Map<string, Set<string>>()
   private changeHandlers = new Set<() => void>()
-  private cachedTree: { parents: Map<string, string | null>; children: Map<string, string[]> } = {
-    parents: new Map(),
-    children: new Map()
-  }
+  private cachedTree: ProjectTree = { parents: new Map(), children: new Map(), archived: new Set() }
   private treeDirty = true
   private cachedDependents = new Map<string, string[]>()
   private dependentsDirty = true
@@ -173,23 +179,34 @@ export class VaultIndex {
     return () => this.changeHandlers.delete(handler)
   }
 
-  projectRefs(): ProjectRef[] {
-    return [...this.projects.values()].sort((a, b) => a.title.localeCompare(b.title))
+  /** Archived projects are left out unless asked for, so a list that forgets shows less, not more. */
+  projectRefs(includeArchived = false): ProjectRef[] {
+    const archived = this.tree().archived
+    return [...this.projects.values()]
+      .filter((ref) => includeArchived || !archived.has(ref.path))
+      .sort((a, b) => a.title.localeCompare(b.title))
   }
 
   /** Projects with no parent, plus any whose parent link is broken or circular. */
-  rootRefs(): ProjectRef[] {
+  rootRefs(includeArchived = false): ProjectRef[] {
     const parents = this.tree().parents
-    return this.projectRefs().filter((ref) => !parents.get(ref.path))
+    return this.projectRefs(includeArchived).filter((ref) => !parents.get(ref.path))
   }
 
-  childRefs(path: string): ProjectRef[] {
-    const paths = this.tree().children.get(normalizePath(path))
+  childRefs(path: string, includeArchived = false): ProjectRef[] {
+    const { children, archived } = this.tree()
+    const paths = children.get(normalizePath(path))
     if (!paths) return []
     return paths
+      .filter((child) => includeArchived || !archived.has(child))
       .map((child) => this.projects.get(child))
       .filter((ref): ref is ProjectRef => ref !== undefined)
       .sort((a, b) => a.title.localeCompare(b.title))
+  }
+
+  /** Archived on its own note or through any ancestor. */
+  isArchived(path: string): boolean {
+    return this.tree().archived.has(normalizePath(path))
   }
 
   /** The effective parent: a link that resolves to a live project without closing a cycle. */
@@ -206,10 +223,10 @@ export class VaultIndex {
   }
 
   /** Every descendant, depth first. */
-  descendantRefs(path: string): ProjectRef[] {
+  descendantRefs(path: string, includeArchived = false): ProjectRef[] {
     const out: ProjectRef[] = []
     const walk = (from: string): void => {
-      for (const child of this.childRefs(from)) {
+      for (const child of this.childRefs(from, includeArchived)) {
         out.push(child)
         walk(child.path)
       }
@@ -235,7 +252,7 @@ export class VaultIndex {
   /** The same across a project and everything under it. */
   rollupDueSummary(ref: ProjectRef): { overdue: number; latestDue: string } {
     const totals = this.dueSummary(ref)
-    for (const descendant of this.descendantRefs(ref.path)) {
+    for (const descendant of this.descendantRefs(ref.path, this.isArchived(ref.path))) {
       const summary = this.dueSummary(descendant)
       totals.overdue += summary.overdue
       if (summary.latestDue > totals.latestDue) totals.latestDue = summary.latestDue
@@ -243,10 +260,13 @@ export class VaultIndex {
     return totals
   }
 
-  /** Counts for a project and everything under it, for a program or portfolio card. */
+  /**
+   * Counts for a project and everything under it, for a program or portfolio card. A live
+   * project rolls up its live sub-projects; an archived one rolls up the whole subtree.
+   */
   rollupCounts(ref: ProjectRef): { total: number; done: number } {
     const totals = this.counts(ref)
-    for (const descendant of this.descendantRefs(ref.path)) {
+    for (const descendant of this.descendantRefs(ref.path, this.isArchived(ref.path))) {
       const counts = this.counts(descendant)
       totals.total += counts.total
       totals.done += counts.done
@@ -258,8 +278,8 @@ export class VaultIndex {
     return this.projects.get(normalizePath(path)) ?? null
   }
 
-  projectPaths(): string[] {
-    return this.projectRefs().map((ref) => ref.path)
+  projectPaths(includeArchived = false): string[] {
+    return this.projectRefs(includeArchived).map((ref) => ref.path)
   }
 
   taskRefs(projectPath: string): TaskRef[] {
@@ -435,6 +455,7 @@ export class VaultIndex {
       teamMembers: stringList(frontmatter.teamMembers),
       customFields: customFieldList(frontmatter.customFields),
       parentPath: resolveVaultLink(this.app, frontmatter.parent, path),
+      archived: frontmatter.archived === true,
       ownStatusIds: own ? own.map((entry) => entry.id as string) : null,
       completeStatusIds: own ? own.filter((entry) => entry.complete === true).map((entry) => entry.id as string) : null,
       autoArchiveDays: ownAutoArchiveDays(frontmatter)
@@ -599,7 +620,7 @@ export class VaultIndex {
    * Parent and child edges, with cycles taken out. A project whose ancestors lead back to
    * it is treated as a root, so a bad link costs the tree one edge rather than hanging it.
    */
-  private tree(): { parents: Map<string, string | null>; children: Map<string, string[]> } {
+  private tree(): ProjectTree {
     if (!this.treeDirty) return this.cachedTree
     const parents = new Map<string, string | null>()
     for (const [path, ref] of this.projects) {
@@ -624,7 +645,19 @@ export class VaultIndex {
       if (siblings) siblings.push(path)
       else children.set(parent, [path])
     }
-    this.cachedTree = { parents, children }
+    const archived = new Set<string>()
+    for (const [path, ref] of this.projects) {
+      if (ref.archived) archived.add(path)
+    }
+    for (const path of parents.keys()) {
+      for (let current = parents.get(path); current; current = parents.get(current)) {
+        if (archived.has(current)) {
+          archived.add(path)
+          break
+        }
+      }
+    }
+    this.cachedTree = { parents, children, archived }
     this.treeDirty = false
     return this.cachedTree
   }
