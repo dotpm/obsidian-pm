@@ -12,6 +12,7 @@ function snapshot(): Snapshot {
     version: 1,
     generator: { name: 'dotpm', version: '0' },
     exportedAt: '2030-01-01T10:00:00.000Z',
+    locale: 'en',
     title: 'Alpha',
     primaryProjectId: 'p1',
     view: { mode: 'kanban', filter: makeDefaultFilter(), sortKey: 'title', sortDir: 'asc', ganttGranularity: 'week' },

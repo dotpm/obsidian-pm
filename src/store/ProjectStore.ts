@@ -45,7 +45,8 @@ import {
   TASK_FRONTMATTER_KEYS,
   taskFilePath,
   TASK_SLUG_MAX_LENGTH,
-  type RefWriter
+  type RefWriter,
+  locale
 } from '@dotpm/core'
 import { archiveTask as doArchiveTask, unarchiveTask as doUnarchiveTask } from './ArchiveOps'
 import type { VaultIndex } from './VaultIndex'
@@ -387,7 +388,7 @@ export class ProjectStore implements TaskSource {
   async loadProjects(paths: string[]): Promise<Project[]> {
     const loaded = await Promise.all(paths.map((path) => this.loadProjectByPath(path)))
     const projects = loaded.filter((p): p is Project => p !== null)
-    return projects.sort((a, b) => a.title.localeCompare(b.title))
+    return projects.sort((a, b) => a.title.localeCompare(b.title, locale()))
   }
 
   async loadProjectByPath(path: string): Promise<Project | null> {

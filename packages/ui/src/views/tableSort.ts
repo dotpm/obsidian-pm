@@ -4,6 +4,7 @@ import {
   type StatusConfig,
   type PriorityConfig,
   displayName,
+  locale,
   statusSortOrder
 } from '@dotpm/core'
 
@@ -25,7 +26,7 @@ export function compareTask(
   const dir = order.sortDir === 'asc' ? 1 : -1
   switch (order.sortKey) {
     case 'title':
-      return dir * a.title.localeCompare(b.title)
+      return dir * a.title.localeCompare(b.title, locale())
     case 'status':
       return dir * (statusSortOrder(a.status, statuses) - statusSortOrder(b.status, statuses))
     case 'priority':
@@ -33,7 +34,7 @@ export function compareTask(
     case 'due':
       return dir * (a.due || 'zzz').localeCompare(b.due || 'zzz')
     case 'assignees':
-      return dir * displayName(a.assignees[0] ?? '').localeCompare(displayName(b.assignees[0] ?? ''))
+      return dir * displayName(a.assignees[0] ?? '').localeCompare(displayName(b.assignees[0] ?? ''), locale())
     case 'progress':
       return dir * (a.progress - b.progress)
     default:

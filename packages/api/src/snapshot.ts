@@ -35,6 +35,8 @@ export interface Snapshot {
   version: typeof SNAPSHOT_VERSION
   generator: { name: string; version: string }
   exportedAt: string
+  /** The language tag the page's own text is shown in. */
+  locale: string
   title: string
   /** The project the view was opened from; first in `projects`. */
   primaryProjectId: string

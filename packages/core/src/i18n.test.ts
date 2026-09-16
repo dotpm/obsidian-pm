@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import en from './locales/en.json'
 import { catalogs, locale, setLocale, t, tn, type Messages } from './i18n'
+import { DEFAULT_STATUSES, defaultPriorities, defaultStatuses } from './types'
 
 const placeholders = (template: string) =>
   [...template.matchAll(/\{(\w+)\}/g)]
@@ -128,5 +129,26 @@ describe('tn', () => {
     setLocale('zh')
     expect(tn('table.archivedTasks', 1)).toBe('已归档 1 个任务')
     expect(tn('table.archivedTasks', 12)).toBe('已归档 12 个任务')
+  })
+})
+
+describe('default palettes', () => {
+  afterEach(() => {
+    delete catalogs['xx']
+    setLocale('en')
+  })
+
+  it('carry the labels of the active language and keep their ids', () => {
+    catalogs['xx'] = { 'status.todo': 'xx todo', 'priority.low': 'xx low' }
+    setLocale('xx')
+    const statuses = defaultStatuses()
+    expect(statuses.map((status) => status.id)).toEqual(DEFAULT_STATUSES.map((status) => status.id))
+    expect(statuses[0].label).toBe('xx todo')
+    expect(statuses[1].label).toBe('In Progress')
+    expect(defaultPriorities().at(-1)?.label).toBe('xx low')
+  })
+
+  it('hand out copies, never the constants', () => {
+    expect(defaultStatuses()[0]).not.toBe(DEFAULT_STATUSES[0])
   })
 })

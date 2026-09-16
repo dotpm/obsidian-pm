@@ -1,7 +1,7 @@
 import '@dotpm/ui/dom-shim'
 import { domPlatform } from '@dotpm/ui/dom-platform'
 import { isSnapshot, tasksFromResources, type Snapshot } from '@dotpm/api'
-import type { ViewMode } from '@dotpm/core'
+import { type ViewMode, locale, setLocale, t, tn } from '@dotpm/core'
 import {
   renderSnapshotGantt,
   renderSnapshotKanban,
@@ -13,10 +13,12 @@ import {
   type ViewModel
 } from '@dotpm/ui'
 
-const MODES: { id: ViewMode; icon: string; label: string }[] = [
-  { id: 'table', icon: 'table', label: 'Table' },
-  { id: 'gantt', icon: 'git-fork', label: 'Gantt' },
-  { id: 'kanban', icon: 'layout-dashboard', label: 'Board' }
+const MODE_IDS: ViewMode[] = ['table', 'gantt', 'kanban']
+
+const modes = (): { id: ViewMode; icon: string; label: string }[] => [
+  { id: 'table', icon: 'table', label: t('views.table') },
+  { id: 'gantt', icon: 'git-fork', label: t('views.gantt') },
+  { id: 'kanban', icon: 'layout-dashboard', label: t('views.kanban') }
 ]
 
 export function viewModelFromSnapshot(snapshot: Snapshot): ViewModel {
@@ -79,10 +81,11 @@ export interface MountOptions {
 }
 
 export function isViewMode(value: string): value is ViewMode {
-  return MODES.some((option) => option.id === value)
+  return MODE_IDS.some((id) => id === value)
 }
 
 export function mount(root: HTMLElement, snapshot: Snapshot, options: MountOptions = {}): void {
+  setLocale(snapshot.locale)
   installSnapshotPlatform(snapshot)
   const model = viewModelFromSnapshot(snapshot)
   root.empty()
@@ -103,7 +106,11 @@ export function mount(root: HTMLElement, snapshot: Snapshot, options: MountOptio
   const exported = new Date(snapshot.exportedAt)
   header.createDiv({
     cls: 'pm-snapshot-meta',
-    text: `${tableRows(model).length} tasks · exported ${exported.toLocaleDateString()} ${exported.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+    text: t('viewer.meta', {
+      tasks: tn('count.tasks', tableRows(model).length),
+      date: exported.toLocaleDateString(locale()),
+      time: exported.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' })
+    })
   })
 
   const body = root.createDiv('pm-snapshot-body')
@@ -116,7 +123,7 @@ export function mount(root: HTMLElement, snapshot: Snapshot, options: MountOptio
     else renderSnapshotKanban(body, model)
   }
   new ViewSwitcher<ViewMode>(header, {
-    options: MODES,
+    options: modes(),
     active: mode,
     onChange: (next) => {
       mode = next

@@ -10,7 +10,9 @@ import {
   TASK_FRONTMATTER_KEY,
   customFieldList,
   stringList,
-  dedupePeople
+  dedupePeople,
+  locale,
+  t
 } from '@dotpm/core'
 import { projectPathForTaskPath, resolveVaultLink } from './vaultFs'
 import { isRefLink, refToId, refToPath } from './refs'
@@ -184,7 +186,7 @@ export class VaultIndex {
     const archived = this.tree().archived
     return [...this.projects.values()]
       .filter((ref) => includeArchived || !archived.has(ref.path))
-      .sort((a, b) => a.title.localeCompare(b.title))
+      .sort((a, b) => a.title.localeCompare(b.title, locale()))
   }
 
   /** Projects with no parent, plus any whose parent link is broken or circular. */
@@ -201,7 +203,7 @@ export class VaultIndex {
       .filter((child) => includeArchived || !archived.has(child))
       .map((child) => this.projects.get(child))
       .filter((ref): ref is ProjectRef => ref !== undefined)
-      .sort((a, b) => a.title.localeCompare(b.title))
+      .sort((a, b) => a.title.localeCompare(b.title, locale()))
   }
 
   /** Archived on its own note or through any ancestor. */
@@ -472,7 +474,7 @@ export class VaultIndex {
       path,
       projectId,
       projectPath: this.resolveOwner(path, projectId),
-      title: str(frontmatter.title, 'Untitled'),
+      title: str(frontmatter.title, t('common.untitled')),
       status: str(frontmatter.status, 'todo'),
       priority: str(frontmatter.priority, 'medium'),
       start: str(frontmatter.start),

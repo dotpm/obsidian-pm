@@ -1,6 +1,8 @@
 import { MarkdownView, Notice, Platform, Plugin } from 'obsidian'
 import {
   DEFAULT_SETTINGS,
+  defaultPriorities,
+  defaultStatuses,
   makeDefaultFilter,
   type PMSettings,
   type Project,
@@ -399,8 +401,8 @@ export default class PMPlugin extends Plugin {
     // Cloned: a shallow merge would hand the live settings the very arrays and objects
     // DEFAULT_SETTINGS holds, and the first edit would write into the defaults.
     this.settings = Object.assign(structuredClone(DEFAULT_SETTINGS), saved ?? {})
-    if (!saved?.statuses?.length) this.settings.statuses = structuredClone(DEFAULT_SETTINGS.statuses)
-    if (!saved?.priorities?.length) this.settings.priorities = structuredClone(DEFAULT_SETTINGS.priorities)
+    if (!saved?.statuses?.length) this.settings.statuses = defaultStatuses()
+    if (!saved?.priorities?.length) this.settings.priorities = defaultPriorities()
     if (!this.settings.projectFilters) this.settings.projectFilters = {}
     if (!this.settings.scopeViews) this.settings.scopeViews = {}
     if (!this.settings.collapsedTasks) this.settings.collapsedTasks = {}

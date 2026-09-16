@@ -1,5 +1,5 @@
 import { getIcon } from 'obsidian'
-import { type FilterState, type Project, type ViewMode, flattenTasks, PRIORITY_ICON_SETS } from '@dotpm/core'
+import { type FilterState, type Project, type ViewMode, flattenTasks, locale, PRIORITY_ICON_SETS } from '@dotpm/core'
 import {
   SNAPSHOT_FORMAT,
   SNAPSHOT_VERSION,
@@ -96,6 +96,7 @@ export async function buildSnapshot(plugin: PMPlugin, scope: ProjectScope, view:
     version: SNAPSHOT_VERSION,
     generator: { name: 'dotpm', version: plugin.manifest.version },
     exportedAt: new Date().toISOString(),
+    locale: locale(),
     title: scope.label(),
     primaryProjectId: primary.id,
     view: {

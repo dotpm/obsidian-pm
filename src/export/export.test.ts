@@ -73,6 +73,7 @@ describe('renderSnapshotHtml', () => {
     projects: [],
     icons: {},
     exportedAt: '',
+    locale: 'en',
     generator: { name: 'dotpm', version: '0' },
     primaryProjectId: 'p',
     view: { mode: 'table', filter: makeDefaultFilter(), sortKey: 'title', sortDir: 'asc', ganttGranularity: 'week' },

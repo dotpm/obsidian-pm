@@ -275,6 +275,29 @@ export const DEFAULT_PRIORITIES: PriorityConfig[] = [
   { id: 'low', label: 'Low', color: '#79b58d', icon: '' }
 ]
 
+/** The default palettes with their labels in the active language, for a vault that has none yet. */
+export function defaultStatuses(): StatusConfig[] {
+  const labels: Record<string, string> = {
+    todo: t('status.todo'),
+    'in-progress': t('status.inProgress'),
+    blocked: t('status.blocked'),
+    review: t('status.review'),
+    done: t('status.done'),
+    cancelled: t('status.cancelled')
+  }
+  return DEFAULT_STATUSES.map((status) => ({ ...status, label: labels[status.id] ?? status.label }))
+}
+
+export function defaultPriorities(): PriorityConfig[] {
+  const labels: Record<string, string> = {
+    critical: t('priority.critical'),
+    high: t('priority.high'),
+    medium: t('priority.medium'),
+    low: t('priority.low')
+  }
+  return DEFAULT_PRIORITIES.map((priority) => ({ ...priority, label: labels[priority.id] ?? priority.label }))
+}
+
 /**
  * The band a vault's default local API port is drawn from. It sits clear of the numbers
  * other Obsidian plugins take by default, and below every operating system's ephemeral
@@ -330,7 +353,7 @@ export function makeTask(overrides: Partial<Task> = {}): Task {
   const now = new Date().toISOString()
   return {
     id: makeId(),
-    title: 'New Task',
+    title: t('task.newTitle'),
     description: '',
     type: 'task',
     status: 'todo',

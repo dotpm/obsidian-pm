@@ -1,4 +1,5 @@
 import { Temporal } from 'temporal-polyfill'
+import { locale, t, tn } from './i18n'
 
 export { Temporal }
 
@@ -18,19 +19,19 @@ export function parsePlainDate(s: string): Temporal.PlainDate | null {
 /** "Jun 15, 2026", or '' when empty or invalid. */
 export function formatDate(iso: string): string {
   const d = parsePlainDate(iso)
-  return d ? d.toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : ''
+  return d ? d.toLocaleString(locale(), { year: 'numeric', month: 'short', day: 'numeric' }) : ''
 }
 
 /** "Mar 28", or '' when empty or invalid. */
 export function formatDateShort(iso: string): string {
   const d = parsePlainDate(iso)
-  return d ? d.toLocaleString(undefined, { month: 'short', day: 'numeric' }) : ''
+  return d ? d.toLocaleString(locale(), { month: 'short', day: 'numeric' }) : ''
 }
 
 /** "Mar 28, 26", or '' when empty or invalid. */
 export function formatDateLong(iso: string): string {
   const d = parsePlainDate(iso)
-  return d ? d.toLocaleString(undefined, { month: 'short', day: 'numeric', year: '2-digit' }) : ''
+  return d ? d.toLocaleString(locale(), { month: 'short', day: 'numeric', year: '2-digit' }) : ''
 }
 
 export type DueTone = 'overdue' | 'today' | 'soon' | 'outcome'
@@ -40,10 +41,10 @@ export function relativeDue(iso: string, from: Temporal.PlainDate = today()): { 
   const due = parsePlainDate(iso)
   if (!due) return null
   const days = from.until(due, { largestUnit: 'day' }).days
-  if (days < 0) return { text: `${-days}d overdue`, tone: 'overdue' }
-  if (days === 0) return { text: 'Today', tone: 'today' }
-  if (days === 1) return { text: 'Tomorrow', tone: 'today' }
-  if (days <= 6) return { text: `In ${days}d`, tone: 'soon' }
+  if (days < 0) return { text: tn('dates.overdueDays', -days), tone: 'overdue' }
+  if (days === 0) return { text: t('dates.today'), tone: 'today' }
+  if (days === 1) return { text: t('dates.tomorrow'), tone: 'today' }
+  if (days <= 6) return { text: tn('dates.inDays', days), tone: 'soon' }
   return null
 }
 
@@ -53,5 +54,5 @@ export function completionOutcome(due: string, completed: string): { text: strin
   const completedDate = parsePlainDate(completed)
   if (!dueDate || !completedDate) return null
   const days = dueDate.until(completedDate, { largestUnit: 'day' }).days
-  return { text: days > 0 ? `${days}d late` : 'On time', tone: 'outcome' }
+  return { text: days > 0 ? tn('dates.daysLate', days) : t('dates.onTime'), tone: 'outcome' }
 }

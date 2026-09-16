@@ -1,6 +1,7 @@
 import type { DueUrgency, Task, StatusConfig, PriorityConfig, TaskPriority, PriorityIconSet } from './types'
 import { LOCAL_API_PORT_BASE, LOCAL_API_PORT_SPAN, PRIORITY_ICON_SETS } from './types'
 import { today, parsePlainDate } from './dates'
+import { locale } from './i18n'
 
 export function displayName(raw: string): string {
   // Values come from frontmatter, where anything YAML allows can turn up in a list of names.
@@ -33,7 +34,7 @@ export function dedupePeople(values: string[], keyOf: (raw: string) => string = 
     const kept = byKey.get(key)
     if (kept === undefined || (!kept.startsWith('[[') && value.startsWith('[['))) byKey.set(key, value)
   }
-  return [...byKey.values()].sort((a, b) => displayName(a).localeCompare(displayName(b)))
+  return [...byKey.values()].sort((a, b) => displayName(a).localeCompare(displayName(b), locale()))
 }
 
 export function stringToColor(s: string): string {
