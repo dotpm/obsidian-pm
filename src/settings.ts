@@ -62,6 +62,16 @@ export class PMSettingTab extends PluginSettingTab {
             }
           },
           {
+            name: 'Open project notes in',
+            desc: 'Choose what happens when a project note is opened the regular way (file explorer, quick switcher, links). Select "Project viewer" to swap it into the project view automatically instead of leaving it in Obsidian\'s markdown editor.',
+            aliases: ['file explorer', 'quick switcher', 'markdown', 'swap'],
+            control: {
+              type: 'dropdown',
+              key: 'projectEditorSurface',
+              options: { md: 'Markdown', viewer: 'Project viewer' }
+            }
+          },
+          {
             name: 'Default tasks view',
             desc: "Choose the view a project's tasks open in.",
             aliases: ['default view'],

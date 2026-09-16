@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, Platform, Plugin } from 'obsidian'
+import { MarkdownView, Notice, Platform, Plugin, type WorkspaceLeaf } from 'obsidian'
 import {
   DEFAULT_SETTINGS,
   makeDefaultFilter,
@@ -362,10 +362,27 @@ export default class PMPlugin extends Plugin {
     await this.router.openReleaseNotes(previous)
   }
 
-  /** Opens a task note in Obsidian's own editor, where the swap leaves it alone. */
+  /**
+   * Opens a note in Obsidian's own editor, where the swap leaves it alone. The escape is
+   * lifted a moment later: `file-open`/`layout-change`/`active-leaf-change` can each fire more
+   * than once for this one navigation, so it outlives that whole burst rather than the note
+   * being stuck out of the viewer for the rest of the session the next time it's opened.
+   */
   async openAsMarkdown(path: string): Promise<void> {
     this.markdownEscapes.add(path)
     await this.app.workspace.openLinkText(path, '', true)
+    window.setTimeout(() => this.markdownEscapes.delete(path), 1000)
+  }
+
+  /**
+   * Same escape, but for a project or task already open in its own leaf: turns that leaf
+   * back into a plain note in place instead of detaching it and opening a separate one
+   * elsewhere, which could land in an unexpected pane or leave a stray tab behind.
+   */
+  async openLeafAsMarkdown(leaf: WorkspaceLeaf, path: string): Promise<void> {
+    this.markdownEscapes.add(path)
+    await leaf.setViewState({ type: 'markdown', state: { file: path } })
+    window.setTimeout(() => this.markdownEscapes.delete(path), 1000)
   }
 
   private registerTaskNoteSwap(): void {
@@ -381,14 +398,37 @@ export default class PMPlugin extends Plugin {
    * reports it while Obsidian is still building the view it is about to overwrite.
    */
   private swapTaskNotes(): void {
-    if (this.settings.taskEditorSurface !== 'tab') return
+    const taskSwapEnabled = this.settings.taskEditorSurface === 'tab'
+    const projectSwapEnabled = this.settings.projectEditorSurface === 'viewer'
+    if (!taskSwapEnabled && !projectSwapEnabled) return
     for (const leaf of this.app.workspace.getLeavesOfType('markdown')) {
       const view = leaf.view
       if (!(view instanceof MarkdownView)) continue
       const file = view.file
       if (!file || this.markdownEscapes.has(file.path)) continue
-      if (this.app.metadataCache.getFileCache(file)?.frontmatter?.['pm-task'] !== true) continue
-      void leaf.setViewState({ type: PM_TASK_VIEW_TYPE, state: { filePath: file.path } })
+      const frontmatter = this.app.metadataCache.getFileCache(file)?.frontmatter
+      if (taskSwapEnabled && frontmatter?.['pm-task'] === true) {
+        void this.trySwap(leaf, { type: PM_TASK_VIEW_TYPE, state: { filePath: file.path } })
+      } else if (projectSwapEnabled && frontmatter?.['pm-project'] === true) {
+        const state =
+          this.settings.projectSurface === 'tasks'
+            ? { scope: { kind: 'project', path: file.path } }
+            : { filePath: file.path }
+        const type = this.settings.projectSurface === 'tasks' ? PM_PROJECT_VIEW_TYPE : PM_PROJECT_OVERVIEW_VIEW_TYPE
+        void this.trySwap(leaf, { type, state })
+      }
+    }
+  }
+
+  /** A swap that throws would otherwise fail silently: it's a floating promise off an event. */
+  private async trySwap(
+    leaf: WorkspaceLeaf,
+    viewState: { type: string; state: Record<string, unknown> }
+  ): Promise<void> {
+    try {
+      await leaf.setViewState(viewState)
+    } catch (err: unknown) {
+      console.error(`[PM] failed to swap note into ${viewState.type}`, err)
     }
   }
 

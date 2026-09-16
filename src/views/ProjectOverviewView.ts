@@ -212,6 +212,9 @@ export class ProjectOverviewView extends ItemView {
     new ButtonComponent(header)
       .setButtonText('Edit project')
       .onClick(safeAsync(() => this.plugin.router.openProjectEdit(project.filePath, this.leaf)))
+    new ButtonComponent(header).setButtonText('Open as note').onClick(() => {
+      void this.plugin.openLeafAsMarkdown(this.leaf, project.filePath)
+    })
     new ButtonComponent(header)
       .setButtonText('Open tasks')
       .setCta()

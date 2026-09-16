@@ -236,6 +236,9 @@ export interface PMSettings {
   editorSaveModifier: 'Shift' | 'Mod'
   /** Where a project link lands: its overview page or its tasks in the default view. */
   projectSurface: 'overview' | 'tasks'
+  /** Opening a project note the regular way (file explorer, quick switcher, links): stay in
+   * Obsidian's markdown editor, or swap to the project viewer per `projectSurface`. */
+  projectEditorSurface: 'md' | 'viewer'
   /** Keyed by scope key, e.g. `project:Projects/Roadmap.md`. */
   projectFilters: Record<string, PerProjectFilter>
   /** Saved views for a scope covering several projects, which has no file to keep them in. */
@@ -307,6 +310,7 @@ export const DEFAULT_SETTINGS: PMSettings = {
   taskEditorSurface: 'modal',
   editorSaveModifier: 'Shift',
   projectSurface: 'overview',
+  projectEditorSurface: 'md',
   projectFilters: {},
   scopeViews: {},
   collapsedTasks: {},
