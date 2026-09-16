@@ -1,7 +1,7 @@
 import { App, Notice, Platform, PluginSettingTab, Setting, debounce } from 'obsidian'
 import type { SettingDefinitionItem, SettingDefinitionPage } from 'obsidian'
 import type PMPlugin from './main'
-import { type PMSettings, DEFAULT_SETTINGS, PRIORITY_ICON_SET_LABELS, makeId, flattenTasks } from '@dotpm/core'
+import { type PMSettings, DEFAULT_SETTINGS, PRIORITY_ICON_SET_LABELS, makeId, flattenTasks, tn } from '@dotpm/core'
 import { saveShortcutLabel } from './utils'
 import { renderCustomFieldFields, renderCustomFieldOptions } from '@dotpm/ui'
 import {
@@ -668,7 +668,7 @@ export class PMSettingTab extends PluginSettingTab {
       }
     }
     if (remapped > 0) {
-      new Notice(`Remapped ${remapped} task${remapped === 1 ? '' : 's'} from '${deletedLabel}' to '${fallback.label}'.`)
+      new Notice(tn('settings.remappedTasks', remapped, { from: deletedLabel, to: fallback.label }))
     }
   }
 }

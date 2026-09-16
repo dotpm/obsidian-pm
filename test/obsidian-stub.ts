@@ -45,3 +45,4 @@ export class TFolder extends TAbstractFile {
     return this.parent === null
   }
 }
+export const getLanguage = (): string => 'en'

@@ -1,0 +1,18 @@
+{
+  "import.imported.one": "Imported {count} task",
+  "import.imported.other": "Imported {count} tasks",
+  "import.importedWithSkipped.one": "Imported {count} task ({skipped} skipped)",
+  "import.importedWithSkipped.other": "Imported {count} tasks ({skipped} skipped)",
+  "settings.remappedTasks.one": "Remapped {count} task from '{from}' to '{to}'.",
+  "settings.remappedTasks.other": "Remapped {count} tasks from '{from}' to '{to}'.",
+  "table.archivedTasks.one": "Archived {count} task",
+  "table.archivedTasks.other": "Archived {count} tasks",
+  "table.deleteTasksConfirm.one": "Delete {count} task? This cannot be undone.",
+  "table.deleteTasksConfirm.other": "Delete {count} tasks? This cannot be undone.",
+  "table.movedTasksToTopLevel.one": "Moved {count} task to top level",
+  "table.movedTasksToTopLevel.other": "Moved {count} tasks to top level",
+  "table.movedTasksUnderParent.one": "Moved {count} task under new parent",
+  "table.movedTasksUnderParent.other": "Moved {count} tasks under new parent",
+  "table.unarchivedTasks.one": "Unarchived {count} task",
+  "table.unarchivedTasks.other": "Unarchived {count} tasks"
+}

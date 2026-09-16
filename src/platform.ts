@@ -2,6 +2,7 @@ import {
   ButtonComponent,
   ExtraButtonComponent,
   getIconIds,
+  getLanguage,
   Menu,
   Notice,
   parseYaml,
@@ -10,12 +11,13 @@ import {
   setTooltip,
   stringifyYaml
 } from 'obsidian'
-import { setYamlCodec } from '@dotpm/core'
+import { setLocale, setYamlCodec } from '@dotpm/core'
 import { setPlatform } from '@dotpm/ui'
 
-/** Hands the core and ui packages Obsidian's own YAML, icons, components and menus. */
+/** Hands the core and ui packages Obsidian's own YAML, language, icons, components and menus. */
 export function installObsidianPlatform(): void {
   setYamlCodec({ parse: parseYaml, stringify: stringifyYaml })
+  setLocale(getLanguage())
   setPlatform({
     setIcon,
     setTooltip,

@@ -7,7 +7,8 @@ import {
   type TaskStatus,
   type TaskPriority,
   getDefaultStatusId,
-  getDefaultPriorityId
+  getDefaultPriorityId,
+  tn
 } from '@dotpm/core'
 import {
   ensurePaletteEntries,
@@ -363,10 +364,8 @@ export class ImportModal extends Modal {
       this.onImportComplete()
     }
 
-    let message = `Imported ${imported} task${imported !== 1 ? 's' : ''}`
-    if (skipped > 0) {
-      message += ` (${skipped} skipped)`
-    }
+    const message =
+      skipped > 0 ? tn('import.importedWithSkipped', imported, { skipped }) : tn('import.imported', imported)
     new Notice(message, 3000)
 
     this.close()
