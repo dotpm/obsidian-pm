@@ -7,7 +7,7 @@ import {
   DEFAULT_PRIORITIES,
   DEFAULT_STATUSES,
   PRIORITY_ICON_SETS,
-  PRIORITY_ICON_SET_LABELS,
+  priorityIconSetLabels,
   makeTask,
   displayName,
   priorityIcon
@@ -303,7 +303,7 @@ export class StyleguideView extends ItemView {
       renderStatusBadge(statusRow, makeTask({ status: status.id }), DEFAULT_STATUSES, noop)
     }
     for (const iconSet of Object.keys(PRIORITY_ICON_SETS) as PriorityIconSet[]) {
-      const prioRow = this.row(sec, `renderPriorityBadge (${PRIORITY_ICON_SET_LABELS[iconSet]})`)
+      const prioRow = this.row(sec, `renderPriorityBadge (${priorityIconSetLabels()[iconSet]})`)
       for (const priority of FIVE_PRIORITIES) {
         renderPriorityBadge(prioRow, makeTask({ priority: priority.id }), FIVE_PRIORITIES, iconSet, noop)
       }

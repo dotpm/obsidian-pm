@@ -1,4 +1,5 @@
 import { today } from './dates'
+import { t } from './i18n'
 import type { TaskIndex } from './store/TaskIndex'
 
 export type TaskStatus = string
@@ -193,12 +194,14 @@ export const PRIORITY_ICON_SETS: Record<PriorityIconSet, string[]> = {
   none: []
 }
 
-export const PRIORITY_ICON_SET_LABELS: Record<PriorityIconSet, string> = {
-  chevrons: 'Chevrons',
-  signal: 'Signal bars',
-  arrows: 'Arrows',
-  alerts: 'Alerts',
-  none: 'None'
+export function priorityIconSetLabels(): Record<PriorityIconSet, string> {
+  return {
+    chevrons: t('priorityIcons.chevrons'),
+    signal: t('priorityIcons.signal'),
+    arrows: t('priorityIcons.arrows'),
+    alerts: t('priorityIcons.alerts'),
+    none: t('priorityIcons.none')
+  }
 }
 
 export interface PMSettings {

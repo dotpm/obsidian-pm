@@ -9,7 +9,7 @@ import {
   type ProjectPatch,
   type StatusConfig,
   makeId,
-  PRIORITY_ICON_SET_LABELS,
+  priorityIconSetLabels,
   collectAllAssignees,
   flattenTasks,
   mergeById,
@@ -383,7 +383,7 @@ export class ProjectEditView extends ItemView {
     row(
       'Priority icons',
       'priorityIcons',
-      Object.entries(PRIORITY_ICON_SET_LABELS).map(([value, label]) => ({ value: value as PriorityIconSet, label }))
+      Object.entries(priorityIconSetLabels()).map(([value, label]) => ({ value: value as PriorityIconSet, label }))
     )
     row('Auto-schedule', 'autoSchedule', [
       { value: true, label: 'On' },

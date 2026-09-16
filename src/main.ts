@@ -10,7 +10,9 @@ import {
   displayName,
   localApiPortFor,
   compareVersions,
-  releaseNotesSince
+  releaseNotesSince,
+  t,
+  tn
 } from '@dotpm/core'
 import {
   matchPersonNotes,
@@ -131,13 +133,13 @@ export default class PMPlugin extends Plugin {
       })
     )
 
-    this.addRibbonIcon('chart-gantt', 'Project manager', async () => {
+    this.addRibbonIcon('chart-gantt', t('ribbon.openProjects'), async () => {
       await this.router.openDashboard()
     })
 
     this.addCommand({
       id: 'open-projects',
-      name: 'Open projects pane',
+      name: t('commands.openProjects'),
       callback: () => {
         void this.router.openDashboard()
       }
@@ -145,7 +147,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'show-release-notes',
-      name: 'Show release notes',
+      name: t('commands.showReleaseNotes'),
       callback: () => {
         void this.router.openReleaseNotes()
       }
@@ -153,7 +155,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'new-project',
-      name: 'Create new project',
+      name: t('commands.newProject'),
       callback: () => {
         openProjectCreate(this)
       }
@@ -161,7 +163,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'new-task',
-      name: 'Create new task',
+      name: t('commands.newTask'),
       callback: () => {
         this.pickProjectThenCreateTask(null)
       }
@@ -169,7 +171,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'new-subtask',
-      name: 'Create new subtask',
+      name: t('commands.newSubtask'),
       callback: () => {
         this.pickProjectThenCreateTask('pick-parent')
       }
@@ -177,7 +179,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'duplicate-project',
-      name: 'Duplicate project',
+      name: t('commands.duplicateProject'),
       callback: () => {
         this.pickProject(
           safeAsync((project) => this.duplicateProjectFlow(project)),
@@ -188,7 +190,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'undo-last-action',
-      name: 'Undo last action',
+      name: t('commands.undo'),
       callback: () => {
         void this.undoLastAction()
       }
@@ -196,7 +198,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'redo-last-action',
-      name: 'Redo last action',
+      name: t('commands.redo'),
       callback: () => {
         void this.redoLastAction()
       }
@@ -204,7 +206,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'open-all-projects',
-      name: 'Open all projects in one view',
+      name: t('commands.openAllProjects'),
       callback: () => {
         void this.router.openScope({ kind: 'vault' })
       }
@@ -212,16 +214,16 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'rebuild-project-index',
-      name: 'Rebuild project index',
+      name: t('commands.rebuildIndex'),
       callback: () => {
         this.index.build()
-        this.showNotice(`Found ${this.index.projectRefs(true).length} project(s).`)
+        this.showNotice(tn('commands.rebuildIndexDone', this.index.projectRefs(true).length))
       }
     })
 
     this.addCommand({
       id: 'archive-completed-tasks',
-      name: 'Archive completed tasks',
+      name: t('commands.archiveCompleted'),
       callback: () => {
         void this.archiveCompletedTasks()
       }
@@ -229,7 +231,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'import-notes-as-tasks',
-      name: 'Import notes as tasks',
+      name: t('commands.importNotes'),
       callback: () => {
         this.importNotes()
       }
@@ -237,7 +239,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'create-task-from-selection',
-      name: 'Create task from selection',
+      name: t('commands.taskFromSelection'),
       editorCheckCallback: (checking, editor) => {
         const selection = editor.getSelection().trim()
         if (!selection) return false
@@ -253,7 +255,7 @@ export default class PMPlugin extends Plugin {
         if (!selection) return
         menu.addItem((item) =>
           item
-            .setTitle('Create task from selection')
+            .setTitle(t('commands.taskFromSelection'))
             .setIcon('list-plus')
             .onClick(() => this.createTaskFromText(selection))
         )
@@ -262,7 +264,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'export-view-html',
-      name: 'Export current view as HTML',
+      name: t('commands.exportViewHtml'),
       checkCallback: (checking: boolean) => {
         const view = this.app.workspace.getActiveViewOfType(ProjectView)
         if (!view?.projectScope?.primary) return false
@@ -276,7 +278,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'open-current-as-project',
-      name: 'Open current file as project',
+      name: t('commands.openCurrentAsProject'),
       checkCallback: (checking: boolean) => {
         const md = this.app.workspace.getActiveViewOfType(MarkdownView)
         const file = md?.file
@@ -291,7 +293,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'person-tasks',
-      name: 'Show tasks assigned to a person',
+      name: t('commands.personTasks'),
       callback: () => {
         openPersonLookup(
           this,
@@ -303,7 +305,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'person-tasks-this-note',
-      name: 'Show tasks assigned to this note',
+      name: t('commands.personTasksThisNote'),
       checkCallback: (checking: boolean) => {
         const md = this.app.workspace.getActiveViewOfType(MarkdownView)
         const file = md?.file
@@ -318,7 +320,7 @@ export default class PMPlugin extends Plugin {
 
     this.addCommand({
       id: 'link-people-to-notes',
-      name: 'Link assignees to their person notes',
+      name: t('commands.linkPeople'),
       callback: () => {
         void this.linkPeopleToNotes()
       }
@@ -346,7 +348,7 @@ export default class PMPlugin extends Plugin {
       await this.localApi.restart()
     } catch (err: unknown) {
       console.error('[PM] local API failed to start', err)
-      new Notice(`The local API could not listen on port ${this.settings.localApiPort}.`)
+      new Notice(t('localApi.listenFailed', { port: this.settings.localApiPort }))
     }
   }
 
@@ -468,12 +470,17 @@ export default class PMPlugin extends Plugin {
     const project = await this.store.loadProjectByPath(path)
     if (!project) return
     await this.store.updateProject(project, { archived: archived || undefined })
-    this.showNotice(archived ? `Archived "${project.title}".` : `Unarchived "${project.title}".`)
+    this.showNotice(t(archived ? 'project.archived' : 'project.unarchived', { title: project.title }))
   }
 
   /** Prompts for a title, copies the project with fresh task ids, and opens the copy. */
   async duplicateProjectFlow(source: Project): Promise<void> {
-    const title = await promptText(this.app, `Duplicate "${source.title}" as`, 'Project name', `${source.title} copy`)
+    const title = await promptText(
+      this.app,
+      t('project.duplicatePrompt', { title: source.title }),
+      t('project.duplicatePlaceholder'),
+      t('project.duplicateDefaultTitle', { title: source.title })
+    )
     if (!title) return
     let copy: Project
     try {
@@ -491,17 +498,17 @@ export default class PMPlugin extends Plugin {
     const plans = await this.autoArchiver.plan(scoped?.length ? scoped : this.index.projectPaths(), true)
     const tasks = plans.reduce((sum, plan) => sum + plan.tasks, 0)
     if (!tasks) {
-      this.showNotice('No completed tasks are ready to archive.')
+      this.showNotice(t('archive.nothingReady'))
       return
     }
     const ok = await confirmDialog(
       this.app,
-      `Archive ${tasks} completed task(s) in ${plans.length} project(s)?`,
-      'Archive'
+      tn('archive.confirm', tasks, { projects: tn('count.projects', plans.length) }),
+      t('archive.confirmButton')
     )
     if (!ok) return
     await this.autoArchiver.apply(plans)
-    this.showNotice(`Archived ${tasks} task(s).`)
+    this.showNotice(tn('archive.done', tasks))
   }
 
   /** The startup work that reads the index: migration, pruning, and the first due and archive sweeps. */
@@ -610,18 +617,14 @@ export default class PMPlugin extends Plugin {
   private pickProject(onChoose: (project: Project) => void, autoSelectSingle: boolean): void {
     const refs = this.index.projectRefs()
     if (!refs.length) {
-      this.showNotice(
-        this.index.ready
-          ? 'No projects yet. Create a project first.'
-          : 'Still looking for projects. Try again in a moment.'
-      )
+      this.showNotice(this.index.ready ? t('picker.noProjects') : t('picker.indexing'))
       return
     }
     const choose = (ref: ProjectRef): void => {
       void (async () => {
         const project = await this.store.loadProjectByPath(ref.path)
         if (!project) {
-          this.showNotice(`Could not open "${ref.title}".`)
+          this.showNotice(t('picker.openFailed', { title: ref.title }))
           return
         }
         onChoose(project)
@@ -642,7 +645,7 @@ export default class PMPlugin extends Plugin {
     for (const ref of this.index.projectRefs(true)) plain.push(...ref.teamMembers)
     const names = dedupePeople(plain.filter((value) => !value.trim().startsWith('[[')))
     if (names.length === 0) {
-      this.showNotice('Every assignee already links to a note.')
+      this.showNotice(t('linkPeople.allLinked'))
       return
     }
 
@@ -650,7 +653,7 @@ export default class PMPlugin extends Plugin {
     const linkable = matches.filter((match) => match.link !== null)
     const ambiguous = matches.filter((match) => match.ambiguous)
     if (linkable.length === 0) {
-      this.showNotice(`No note matches any of the ${names.length} name(s) in use.`)
+      this.showNotice(tn('linkPeople.noMatches', names.length))
       return
     }
 
@@ -663,13 +666,10 @@ export default class PMPlugin extends Plugin {
       .slice(0, 5)
       .map((match) => match.name)
       .join(', ')
-    const extra = linkable.length > 5 ? `, and ${linkable.length - 5} more` : ''
-    const warn = ambiguous.length ? ` ${ambiguous.length} name(s) match several notes and are left alone.` : ''
-    const ok = await confirmDialog(
-      this.app,
-      `Link ${linkable.length} name(s) to their notes: ${preview}${extra}.${warn}`,
-      'Link'
-    )
+    const listed = linkable.length > 5 ? tn('linkPeople.namesMore', linkable.length - 5, { names: preview }) : preview
+    const question = tn('linkPeople.confirm', linkable.length, { names: listed })
+    const warn = ambiguous.length ? ` ${tn('linkPeople.ambiguous', ambiguous.length)}` : ''
+    const ok = await confirmDialog(this.app, question + warn, t('linkPeople.confirmButton'))
     if (!ok) return
 
     let tasksChanged = 0
@@ -699,14 +699,16 @@ export default class PMPlugin extends Plugin {
     }
 
     this.refreshViews()
-    this.showNotice(`Linked ${tasksChanged} task(s) and ${projectsChanged} project(s).`)
+    this.showNotice(
+      t('linkPeople.done', { tasks: tn('count.tasks', tasksChanged), projects: tn('count.projects', projectsChanged) })
+    )
   }
 
   /** Opens the whole vault filtered to one person, the way the assignee filter would. */
   private async showTasksForPerson(person: string): Promise<void> {
     const name = displayName(person)
     if (this.index.tasksForPerson(person).length === 0) {
-      new Notice(`No tasks assigned to ${name}`)
+      new Notice(t('personTasks.none', { name }))
       return
     }
     this.settings.projectFilters[scopeKey({ kind: 'vault' })] = {
@@ -723,7 +725,7 @@ export default class PMPlugin extends Plugin {
       if (mode === 'pick-parent') {
         const flat = flattenTasks(project.tasks)
         if (!flat.length) {
-          this.showNotice('No tasks in this project. Create a task first.')
+          this.showNotice(t('picker.noTasks'))
           return
         }
         openTaskPicker(
