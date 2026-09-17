@@ -61,7 +61,9 @@ describe('t', () => {
 
   it('interpolates named placeholders and formats numbers for the locale', () => {
     setLocale('de')
-    expect(t('import.importedWithSkipped.other', { count: 1234, skipped: 2 })).toBe('Imported 1.234 tasks (2 skipped)')
+    expect(t('import.importedWithSkipped.other', { count: 1234, skipped: 2 })).toBe(
+      '1.234 Aufgaben importiert (2 übersprungen)'
+    )
   })
 
   it('leaves a placeholder in place when its value is missing', () => {
@@ -92,9 +94,10 @@ describe('t', () => {
 })
 
 describe('tn', () => {
+  const bundled = { ru: catalogs['ru'], zh: catalogs['zh'] }
+
   afterEach(() => {
-    delete catalogs['ru']
-    delete catalogs['zh']
+    Object.assign(catalogs, bundled)
     setLocale('en')
   })
 

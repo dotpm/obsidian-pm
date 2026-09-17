@@ -452,6 +452,7 @@
   "settings.taskNotes.desc": "与 TaskNotes 插件共享状态和优先级。",
   "settings.taskNotes.import": "从 TaskNotes 导入",
   "settings.taskNotes.imported": "已从 TaskNotes 导入：新增 {added} 项，更新 {updated} 项。",
+  "settings.taskNotes.name": "TaskNotes",
   "settings.taskNotes.palettes.desc": "从 TaskNotes 4.10 或更高版本复制标签、颜色和完成标记。",
   "settings.taskNotes.palettes.name": "状态和优先级",
   "settings.taskNotes.required": "需要 TaskNotes 4.10 或更高版本。",
