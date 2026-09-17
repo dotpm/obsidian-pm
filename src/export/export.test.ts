@@ -11,7 +11,8 @@ import { renderSnapshotHtml } from './html'
 import { buildSnapshot } from './snapshot'
 
 const SETTINGS: PMSettings = { ...DEFAULT_SETTINGS, autoSchedule: false }
-const TEMPLATE = '<title>__DOTPM_TITLE__</title><script id="s" type="application/json">__DOTPM_SNAPSHOT__</script>'
+const TEMPLATE =
+  '<html lang="__DOTPM_LOCALE__"><title>__DOTPM_TITLE__</title><script id="s" type="application/json">__DOTPM_SNAPSHOT__</script>'
 
 function fakePlugin(): { plugin: PMPlugin; store: ProjectStore; index: VaultIndex } {
   const { app } = makeFakeApp({ liveMetadataCache: true })
@@ -95,6 +96,11 @@ describe('renderSnapshotHtml', () => {
     expect(json).not.toContain('</script>')
     expect(json).toContain('\\u003c/script>')
     expect(JSON.parse(json).title).toBe('A & <B> </script><script>alert(1)')
+  })
+
+  it('stamps the language of the export on the page', () => {
+    expect(renderSnapshotHtml({ ...snapshot, locale: 'zh' }, TEMPLATE)).toContain('<html lang="zh">')
+    expect(renderSnapshotHtml({ ...snapshot, locale: 'x"><b' }, TEMPLATE)).toContain('<html lang="x&quot;&gt;&lt;b">')
   })
 
   it('refuses to render without a viewer', () => {
