@@ -11,6 +11,8 @@
 
 [Install](#install) | [Quick start](#quick-start) | [Docs](docs) | [Website](https://dotpm.pm) | [Changelog](CHANGELOG.md)
 
+English | [简体中文](README.zh-CN.md)
+
 <img width="1422" alt="dotpm dashboard" src="https://github.com/user-attachments/assets/ca6bc67f-e656-45be-b93a-17410555ec1a" />
 
 </div>
