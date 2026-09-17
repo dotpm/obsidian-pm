@@ -56,6 +56,7 @@ describe('t', () => {
   afterEach(() => {
     delete catalogs['xx']
     delete catalogs['pt']
+    delete catalogs['es']
     setLocale('en')
   })
 
@@ -78,13 +79,19 @@ describe('t', () => {
   })
 
   it('resolves a regional tag to its base language and an unknown tag to English', () => {
-    const pt: Messages = { 'table.archivedTasks.other': 'pt {count}' }
-    catalogs['pt'] = pt
-    setLocale('pt-BR')
-    expect(locale()).toBe('pt-BR')
-    expect(t('table.archivedTasks.other', { count: 3 })).toBe('pt 3')
+    const es: Messages = { 'table.archivedTasks.other': 'es {count}' }
+    catalogs['es'] = es
+    setLocale('es-MX')
+    expect(locale()).toBe('es-MX')
+    expect(t('table.archivedTasks.other', { count: 3 })).toBe('es 3')
     setLocale('tlh')
     expect(t('table.archivedTasks.other', { count: 3 })).toBe('Archived 3 tasks')
+  })
+
+  it('prefers a catalog of the regional tag itself over its base language', () => {
+    catalogs['pt'] = { 'table.archivedTasks.other': 'pt {count}' }
+    setLocale('pt-BR')
+    expect(t('table.archivedTasks.other', { count: 3 })).toBe('3 tarefas arquivadas')
   })
 
   it('recovers from an invalid tag', () => {

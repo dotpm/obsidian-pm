@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The local API and MCP server can now archive a project and list archived ones on request
 - The interface can now follow the language chosen in Obsidian's settings
 - Added a Simplified Chinese translation of the interface ([#321](https://github.com/dotpm/obsidian-pm/issues/321))
-- Added German, Japanese and Russian translations of the interface
+- Added German, Japanese, Russian, French, Korean and Brazilian Portuguese translations of the interface
 
 ### Changed
 
