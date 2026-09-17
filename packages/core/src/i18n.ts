@@ -1,4 +1,5 @@
 import en from './locales/en.json'
+import zh from './locales/zh.json'
 
 export type MessageKey = keyof typeof en
 export type PluralKey = MessageKey extends infer K ? (K extends `${infer Prefix}.other` ? Prefix : never) : never
@@ -6,7 +7,7 @@ export type Messages = Partial<Record<MessageKey | `${PluralKey}.${Intl.LDMLPlur
 type Params = Record<string, string | number>
 
 /** Every bundled locale by its language tag; a partial catalog falls back to English per key. */
-export const catalogs: Record<string, Messages> = { en }
+export const catalogs: Record<string, Messages> = { en, zh }
 
 const english: Messages = en
 let currentLocale = 'en'

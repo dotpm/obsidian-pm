@@ -12,6 +12,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Projects can now be archived from the project list, the overview page and the project settings
 - Added an "Archived" toggle to the project list; archived projects stay hidden until it is on
 - The local API and MCP server can now archive a project and list archived ones on request
+- The interface can now follow the language chosen in Obsidian's settings
+- Added a Simplified Chinese translation of the interface ([#321](https://github.com/dotpm/obsidian-pm/issues/321))
+
+### Changed
+
+- Dates in the table, timeline and overview now use the format of Obsidian's language
+- Project and task lists now sort by the rules of Obsidian's language
+- Exported pages now open in the language they were exported in
 
 ## [2.4.1] - 2026-09-15
 
