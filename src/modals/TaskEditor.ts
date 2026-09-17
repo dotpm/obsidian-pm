@@ -326,11 +326,13 @@ export class TaskEditor {
     header.createDiv('pm-te-header-spacer')
 
     if (!this.isNew) {
-      const moreBtn = new ExtraButtonComponent(header).setIcon('more-horizontal').setTooltip('More actions')
+      const moreBtn = new ExtraButtonComponent(header)
+        .setIcon('more-horizontal')
+        .setTooltip(t('taskEditor.moreActions'))
       moreBtn.extraSettingsEl.addClass('pm-te-header-btn')
       moreBtn.onClick(() => this.openOverflowMenu(moreBtn.extraSettingsEl))
     }
-    const closeBtn = new ExtraButtonComponent(header).setIcon('x').setTooltip('Close')
+    const closeBtn = new ExtraButtonComponent(header).setIcon('x').setTooltip(t('common.close'))
     closeBtn.extraSettingsEl.addClass('pm-te-header-btn')
     closeBtn.onClick(() => {
       this.cancelled = true

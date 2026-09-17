@@ -77,7 +77,7 @@ class TextPromptModal extends Modal {
       this.close()
     }
 
-    new ButtonComponent(btnRow).setButtonText('OK').setCta().onClick(submit)
+    new ButtonComponent(btnRow).setButtonText(t('common.ok')).setCta().onClick(submit)
 
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') {

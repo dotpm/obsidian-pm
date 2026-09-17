@@ -75,7 +75,7 @@ export class ReleaseNotesView extends ItemView {
       if (release.date) section.createDiv({ cls: 'pm-release-notes-date', text: formatDateLong(release.date) })
       return MarkdownRenderer.render(this.app, release.body, section.createDiv('markdown-rendered'), '', this.notes)
     })
-    page.createEl('a', { cls: 'pm-release-notes-link', text: 'Full changelog', href: CHANGELOG_URL })
+    page.createEl('a', { cls: 'pm-release-notes-link', text: t('releaseNotes.fullChangelog'), href: CHANGELOG_URL })
     await Promise.all(rendering)
   }
 }

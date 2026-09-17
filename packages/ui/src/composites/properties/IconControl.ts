@@ -51,7 +51,7 @@ export function renderIconControl(opts: IconControlOpts): void {
 
     const search = popover.contentEl.createEl('input', {
       cls: 'pm-pop-field',
-      attr: { placeholder: 'Search icons or paste an emoji', spellcheck: 'false' }
+      attr: { placeholder: t('property.searchIcons'), spellcheck: 'false' }
     })
     const clearRow = popover.contentEl.createDiv()
     const grid = popover.contentEl.createDiv('pm-icon-grid')

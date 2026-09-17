@@ -5,7 +5,8 @@ import {
   type ResolvedProjectConfig,
   type StatusConfig,
   type Task,
-  findTaskById
+  findTaskById,
+  t
 } from '@dotpm/core'
 import type { TaskSource } from './TaskSource'
 import type { VaultIndex } from './VaultIndex'
@@ -98,13 +99,13 @@ export class ProjectScope {
   label(): string {
     switch (this.spec.kind) {
       case 'project':
-        return this.primary?.title ?? 'Project'
+        return this.primary?.title ?? t('common.project')
       case 'subtree':
-        return this.primary ? `${this.primary.title} and sub-projects` : 'Project'
+        return this.primary ? t('scope.subtreeLabel', { title: this.primary.title }) : t('common.project')
       case 'folder':
-        return this.spec.path.slice(this.spec.path.lastIndexOf('/') + 1) || 'Vault'
+        return this.spec.path.slice(this.spec.path.lastIndexOf('/') + 1) || t('scope.vault')
       case 'vault':
-        return 'All projects'
+        return t('scope.all')
     }
   }
 

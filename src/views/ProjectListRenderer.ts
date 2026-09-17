@@ -26,7 +26,7 @@ export interface ProjectListContext {
 export function renderProjectListToolbar(ctx: ProjectListContext): void {
   ctx.toolbarEl.empty()
   const left = ctx.toolbarEl.createDiv('pm-toolbar-left')
-  left.createEl('h2', { text: 'Projects', cls: 'pm-toolbar-title' })
+  left.createEl('h2', { text: t('dashboard.title'), cls: 'pm-toolbar-title' })
   const line = countLine(ctx)
   if (line) left.createSpan({ cls: 'pm-project-list-count', text: line })
 

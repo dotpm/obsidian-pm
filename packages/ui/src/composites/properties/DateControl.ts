@@ -51,7 +51,7 @@ export function renderDateControl(opts: DateControlOpts): void {
       }
     })
     const actions = pop.contentEl.createDiv('pm-pop-actions')
-    const todayBtn = actions.createEl('button', { cls: 'pm-pop-item pm-pop-item--center', text: 'Today' })
+    const todayBtn = actions.createEl('button', { cls: 'pm-pop-item pm-pop-item--center', text: t('dates.today') })
     todayBtn.addEventListener('click', () => {
       next = today().toString()
       pop?.close()

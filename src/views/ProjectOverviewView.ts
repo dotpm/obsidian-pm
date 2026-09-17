@@ -288,7 +288,7 @@ export class ProjectOverviewView extends ItemView {
     if (!host.isConnected) return
     host.empty()
     if (!project.description.trim()) {
-      host.createDiv({ cls: 'pm-overview-muted', text: 'No description.' })
+      host.createDiv({ cls: 'pm-overview-muted', text: t('overview.noDescription') })
       return
     }
     this.description.unload()

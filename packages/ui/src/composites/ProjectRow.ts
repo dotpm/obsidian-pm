@@ -57,7 +57,7 @@ export class ProjectRow {
     const inner = title.createDiv('pm-table-title-inner')
     renderGlyph(inner.createSpan({ cls: 'pm-project-row-icon' }), { icon: props.icon, color: props.color })
     inner.createSpan({ text: props.title, cls: 'pm-task-title-text' })
-    if (props.archived) new Chip(inner).setLabel('Archived').setVariant('outline').setSize('sm')
+    if (props.archived) new Chip(inner).setLabel(t('common.archived')).setVariant('outline').setSize('sm')
 
     const progress = this.el.createEl('td', { cls: 'pm-table-cell pm-table-cell-progress' })
     new ProgressBar(progress)

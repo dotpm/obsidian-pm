@@ -72,7 +72,7 @@ describe('AutoArchiver', () => {
     expect(archived(project, fresh)).toBe(false)
     expect(archived(project, open)).toBe(false)
     expect(settings.lastAutoArchiveDate).toBe(today().toString())
-    expect(notices).toEqual(['Archived 1 completed task(s) in 1 project(s).'])
+    expect(notices).toEqual(['Archived 1 completed task in 1 project.'])
   })
 
   it('never archives a completed task carrying no completion date', async () => {

@@ -94,7 +94,7 @@ export function drawTaskBar(
 
   if (task.recurrence) {
     const icon = svgEl('text', { x: x + width + 4, y: y + height / 2 + 5, class: 'pm-gantt-bar-icon' })
-    icon.textContent = 'R'
+    icon.textContent = t('chip.recurring')
     barGroup.appendChild(icon)
   }
 

@@ -262,7 +262,7 @@ export class ProjectCreateModal extends Modal {
     this.pathHint.lastElementChild?.setText(path)
     this.pathHint.toggleClass('pm-hidden', !path)
     if (taken) {
-      this.titleError.setText('A note with this name is already there.')
+      this.titleError.setText(t('projectCreate.nameTaken'))
       this.titleError.removeAttribute('hidden')
       this.titleInput.addClass('pm-input-error')
     } else {

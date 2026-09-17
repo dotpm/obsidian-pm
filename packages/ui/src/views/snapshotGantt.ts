@@ -1,4 +1,4 @@
-import { type GanttGranularity, type Task, applyTaskFilterPromote, flattenTasks, today } from '@dotpm/core'
+import { type GanttGranularity, type Task, applyTaskFilterPromote, flattenTasks, today, t } from '@dotpm/core'
 import { svgEl } from '#dom'
 import { SegmentedControl } from '#primitives/SegmentedControl'
 import { renderProjectChip } from '../composites/projectChip'
@@ -17,12 +17,12 @@ import { renderTimelineHeader } from '../gantt/header'
 import { HEADER_HEIGHT, LABEL_WIDTH, ROW_HEIGHT, buildTimelineConfig, dateToX } from '../gantt/TimelineConfig'
 import { allTasks, isMulti, mergedConfig, projectOf, type ViewModel } from './model'
 
-const GRANULARITIES: { id: GanttGranularity; label: string }[] = [
-  { id: 'day', label: 'Day' },
-  { id: 'week', label: 'Week' },
-  { id: 'month', label: 'Month' },
-  { id: 'quarter', label: 'Quarter' },
-  { id: 'year', label: 'Year' }
+const granularities = (): { id: GanttGranularity; label: string }[] => [
+  { id: 'day', label: t('granularity.day') },
+  { id: 'week', label: t('granularity.week') },
+  { id: 'month', label: t('granularity.month') },
+  { id: 'quarter', label: t('granularity.quarter') },
+  { id: 'year', label: t('granularity.year') }
 ]
 
 const noop = (): void => {}
@@ -56,7 +56,7 @@ function renderBody(container: HTMLElement, model: ViewModel, granularity: Gantt
   leftPanel.setCssStyles({ width: `${LABEL_WIDTH}px`, minWidth: `${LABEL_WIDTH}px` })
   const leftHeader = leftPanel.createDiv('pm-gantt-left-header')
   leftHeader.setCssStyles({ height: `${HEADER_HEIGHT}px` })
-  leftHeader.createSpan({ text: 'Task', cls: 'pm-gantt-left-header-label' })
+  leftHeader.createSpan({ text: t('columns.task'), cls: 'pm-gantt-left-header-label' })
   const leftBody = leftPanel.createDiv('pm-gantt-left-body')
 
   const rightPanel = wrapper.createDiv('pm-gantt-right')
@@ -117,7 +117,7 @@ export function renderSnapshotGantt(container: HTMLElement, model: ViewModel): H
     renderBody(body, model, granularity)
   }
   new SegmentedControl<GanttGranularity>(bar, {
-    options: GRANULARITIES,
+    options: granularities(),
     active: granularity,
     onChange: (level) => {
       granularity = level

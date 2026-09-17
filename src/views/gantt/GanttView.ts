@@ -144,7 +144,7 @@ export class GanttView implements SubView {
     leftPanel.style.minWidth = `${this.labelWidth}px`
     const leftHeader = leftPanel.createDiv('pm-gantt-left-header')
     leftHeader.style.height = `${HEADER_HEIGHT}px`
-    leftHeader.createSpan({ text: 'Task', cls: 'pm-gantt-left-header-label' })
+    leftHeader.createSpan({ text: t('columns.task'), cls: 'pm-gantt-left-header-label' })
     const leftBody = leftPanel.createDiv('pm-gantt-left-body')
 
     const resizeHandle = wrapper.createDiv('pm-gantt-resize-handle')

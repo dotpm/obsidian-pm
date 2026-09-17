@@ -150,7 +150,7 @@ function boot(): void {
   if (!root) return
   const snapshot = readEmbeddedSnapshot(document)
   if (!snapshot) {
-    root.setText('This page holds no readable snapshot.')
+    root.setText(t('viewer.noSnapshot'))
     return
   }
   followSystemTheme()
