@@ -1,6 +1,7 @@
 import bn from './locales/bn.json'
 import de from './locales/de.json'
 import en from './locales/en.json'
+import es from './locales/es.json'
 import fr from './locales/fr.json'
 import it from './locales/it.json'
 import ja from './locales/ja.json'
@@ -18,7 +19,7 @@ export type Messages = Partial<Record<MessageKey | `${PluralKey}.${Intl.LDMLPlur
 type Params = Record<string, string | number>
 
 /** Every bundled locale by its language tag; a partial catalog falls back to English per key. */
-export const catalogs: Record<string, Messages> = { bn, de, en, fr, it, ja, ko, pl, 'pt-BR': ptBR, ro, ru, sv, zh }
+export const catalogs: Record<string, Messages> = { bn, de, en, es, fr, it, ja, ko, pl, 'pt-BR': ptBR, ro, ru, sv, zh }
 
 const english: Messages = en
 let currentLocale = 'en'
