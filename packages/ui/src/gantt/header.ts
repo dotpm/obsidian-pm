@@ -1,21 +1,11 @@
 import type { GanttCanvas } from './canvas'
 import { HEADER_HEIGHT, dateToX, getWeekNumber } from './TimelineConfig'
 import { svgEl } from '#dom'
-import { Temporal, type GanttWeekLabel, locale, t } from '@dotpm/core'
-
-function formatDateRange(weekStart: Temporal.PlainDate, days: number): string {
-  const end = weekStart.add({ days: days - 1 })
-  const startMonth = weekStart.toLocaleString(locale(), { month: 'short' })
-  if (weekStart.month === end.month) {
-    return `${startMonth} ${weekStart.day}–${end.day}`
-  }
-  const endMonth = end.toLocaleString(locale(), { month: 'short' })
-  return `${startMonth} ${weekStart.day} – ${endMonth} ${end.day}`
-}
+import { Temporal, type GanttWeekLabel, formatDateRange, locale, t } from '@dotpm/core'
 
 function formatWeekLabel(weekStart: Temporal.PlainDate, days: number, weekNum: number, mode: GanttWeekLabel): string {
   if (mode === 'weekNumber') return t('gantt.weekShort', { week: weekNum })
-  const range = formatDateRange(weekStart, days)
+  const range = formatDateRange(weekStart, weekStart.add({ days: days - 1 }))
   if (mode === 'dateRange') return range
   return t('gantt.weekWithRange', { week: weekNum, range })
 }
