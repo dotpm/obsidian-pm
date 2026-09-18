@@ -7,14 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.5.0] - 2026-09-18
+
+### Highlights
+
+- **The plugin speaks your language:** Every view, menu, setting and notice now follows the language chosen in Obsidian, in thirteen languages besides English. Dates, sorting and exported pages follow it too.
+- **Archived projects:** A finished project can be archived from the project list, its overview page or its settings, and stays out of the list, the pickers and the reminders until you want it back.
+
 ### Added
 
+- The interface can now follow the language chosen in Obsidian's settings
+- Added a Simplified Chinese translation of the interface ([#321](https://github.com/dotpm/obsidian-pm/issues/321))
+- Added Bengali, Brazilian Portuguese, French, German, Italian and Japanese translations of the interface
+- Added Korean, Polish, Romanian, Russian, Spanish and Swedish translations of the interface
 - Projects can now be archived from the project list, the overview page and the project settings
 - Added an "Archived" toggle to the project list; archived projects stay hidden until it is on
 - The local API and MCP server can now archive a project and list archived ones on request
-- The interface can now follow the language chosen in Obsidian's settings
-- Added a Simplified Chinese translation of the interface ([#321](https://github.com/dotpm/obsidian-pm/issues/321))
-- Added Bengali, German, French, Italian, Japanese, Korean, Polish, Brazilian Portuguese, Romanian, Russian and Swedish translations of the interface
 
 ### Changed
 
