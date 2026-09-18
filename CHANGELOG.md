@@ -7,10 +7,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-- Timeline week headers now show date ranges in the language's own order
-
 ## [2.5.0] - 2026-09-18
 
 ### Highlights
@@ -31,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Dates in the table, timeline and overview now use the format of Obsidian's language
+- Timeline week headers now show date ranges in the language's own order
 - Project and task lists now sort by the rules of Obsidian's language
 - Exported pages now open in the language they were exported in
 
