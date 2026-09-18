@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Temporal } from 'temporal-polyfill'
-import { completionOutcome, formatDate, formatDateLong, formatDateShort, relativeDue } from './dates'
+import { completionOutcome, formatDate, formatDateLong, formatDateRange, formatDateShort, relativeDue } from './dates'
+import { setLocale } from './i18n'
 
 const from = Temporal.PlainDate.from('2026-06-15')
 
@@ -69,5 +70,20 @@ describe('date formatting', () => {
     expect(formatDate('2026-03-28')).toContain('28')
     expect(formatDateShort('2026-03-28')).toContain('28')
     expect(formatDateLong('2026-03-28')).toContain('28')
+  })
+
+  it.each(ZONES)('keeps both ends of a range on their own day in %s', (zone) => {
+    vi.stubEnv('TZ', zone)
+    const range = formatDateRange(Temporal.PlainDate.from('2026-04-07'), Temporal.PlainDate.from('2026-04-13'))
+    expect(range).toContain('7')
+    expect(range).toContain('13')
+  })
+
+  it('orders a range the way the language does', () => {
+    setLocale('de')
+    expect(formatDateRange(Temporal.PlainDate.from('2026-04-07'), Temporal.PlainDate.from('2026-04-13'))).toBe(
+      '7.–13. Apr.'
+    )
+    setLocale('en')
   })
 })

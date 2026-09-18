@@ -34,6 +34,16 @@ export function formatDateLong(iso: string): string {
   return d ? d.toLocaleString(locale(), { month: 'short', day: 'numeric', year: '2-digit' }) : ''
 }
 
+/** "Mar 28 - 31" in the order and punctuation the active language uses for a date range. */
+export function formatDateRange(start: Temporal.PlainDate, end: Temporal.PlainDate): string {
+  const format = new Intl.DateTimeFormat(locale(), { month: 'short', day: 'numeric', timeZone: 'UTC' })
+  return format.formatRange(utcDate(start), utcDate(end))
+}
+
+function utcDate(date: Temporal.PlainDate): Date {
+  return new Date(Date.UTC(date.year, date.month - 1, date.day))
+}
+
 export type DueTone = 'overdue' | 'today' | 'soon' | 'outcome'
 
 /** Null past a week out, where a relative hint adds nothing. `from` is injectable for tests. */
