@@ -356,6 +356,8 @@
   "settings.customFields.empty": "사용자 지정 필드가 없습니다.",
   "settings.customFields.name": "사용자 지정 필드",
   "settings.customFields.newLabel": "새 필드",
+  "settings.dateFormat.desc": "YYYY, MM, DD, MMM, ddd 같은 기호로 날짜 표기 방식을 설정합니다. 비워 두면 표시 언어의 형식을 따릅니다.",
+  "settings.dateFormat.name": "날짜 형식",
   "settings.defaultView.desc": "프로젝트의 작업을 열 때 사용할 뷰를 선택합니다.",
   "settings.defaultView.name": "기본 작업 뷰",
   "settings.excludedFolders.add": "폴더 추가",

@@ -416,6 +416,8 @@
   "settings.customFields.empty": "Nessun campo personalizzato.",
   "settings.customFields.name": "Campi personalizzati",
   "settings.customFields.newLabel": "Nuovo campo",
+  "settings.dateFormat.desc": "Scegli come vengono scritte le date, con codici come YYYY, MM, DD, MMM e ddd. Lascialo vuoto per usare il formato della lingua dell'interfaccia.",
+  "settings.dateFormat.name": "Formato data",
   "settings.defaultView.desc": "Scegli la vista con cui si aprono le attività di un progetto.",
   "settings.defaultView.name": "Vista predefinita delle attività",
   "settings.excludedFolders.add": "Aggiungi cartella",

@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added the "Date format" setting for writing dates with tokens such as YYYY-MM-DD
+
+### Changed
+
+- Date custom fields in the table now show dates like the due date column
+
 ## [2.5.0] - 2026-09-18
 
 ### Highlights

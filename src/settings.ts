@@ -1,7 +1,16 @@
 import { App, Notice, Platform, PluginSettingTab, Setting, debounce } from 'obsidian'
 import type { SettingDefinitionItem, SettingDefinitionPage } from 'obsidian'
 import type PMPlugin from './main'
-import { type PMSettings, DEFAULT_SETTINGS, priorityIconSetLabels, makeId, flattenTasks, t, tn } from '@dotpm/core'
+import {
+  type PMSettings,
+  DEFAULT_SETTINGS,
+  priorityIconSetLabels,
+  makeId,
+  flattenTasks,
+  setDateFormat,
+  t,
+  tn
+} from '@dotpm/core'
 import { saveShortcutLabel } from './utils'
 import { renderCustomFieldFields, renderCustomFieldOptions } from '@dotpm/ui'
 import {
@@ -108,6 +117,12 @@ export class PMSettingTab extends PluginSettingTab {
             desc: t('settings.showTagColors.desc'),
             aliases: ['appearance'],
             control: { type: 'toggle', key: 'showTagColors' }
+          },
+          {
+            name: t('settings.dateFormat.name'),
+            desc: t('settings.dateFormat.desc'),
+            aliases: ['appearance', 'date', 'moment'],
+            control: { type: 'text', key: 'dateFormat', placeholder: 'YYYY-MM-DD' }
           },
           {
             name: t('settings.priorityIcons.name'),
@@ -290,6 +305,7 @@ export class PMSettingTab extends PluginSettingTab {
       await this.plugin.autoArchiver.check()
     }
     if (key.startsWith('localApi')) await this.plugin.syncLocalApi()
+    if (key === 'dateFormat') setDateFormat(this.plugin.settings.dateFormat)
     this.plugin.refreshViews()
     this.refreshDomState()
   }

@@ -356,6 +356,8 @@
   "settings.customFields.empty": "暂无自定义字段。",
   "settings.customFields.name": "自定义字段",
   "settings.customFields.newLabel": "新字段",
+  "settings.dateFormat.desc": "使用 YYYY、MM、DD、MMM、ddd 等格式代码设置日期的显示方式。留空则使用界面语言的格式。",
+  "settings.dateFormat.name": "日期格式",
   "settings.defaultView.desc": "选择打开项目任务时使用的视图。",
   "settings.defaultView.name": "默认任务视图",
   "settings.excludedFolders.add": "添加文件夹",

@@ -16,22 +16,51 @@ export function parsePlainDate(s: string): Temporal.PlainDate | null {
   }
 }
 
+let dateFormat = ''
+
+/** Moment-style tokens every date label follows instead of the language's own format; '' turns it off. */
+export function setDateFormat(format: string): void {
+  dateFormat = format.trim()
+}
+
+const pad = (value: number, length: number): string => String(value).padStart(length, '0')
+
+const DATE_TOKENS: Record<string, (date: Temporal.PlainDate) => string> = {
+  YYYY: (date) => pad(date.year, 4),
+  YY: (date) => pad(date.year % 100, 2),
+  MMMM: (date) => date.toLocaleString(locale(), { month: 'long' }),
+  MMM: (date) => date.toLocaleString(locale(), { month: 'short' }),
+  MM: (date) => pad(date.month, 2),
+  M: (date) => String(date.month),
+  DD: (date) => pad(date.day, 2),
+  D: (date) => String(date.day),
+  dddd: (date) => date.toLocaleString(locale(), { weekday: 'long' }),
+  ddd: (date) => date.toLocaleString(locale(), { weekday: 'short' })
+}
+
+/** Text in square brackets is kept as written. */
+const DATE_PATTERN = /\[([^\]]*)\]|YYYY|YY|MMMM|MMM|MM|M|DD|D|dddd|ddd/g
+
+function formatPlainDate(iso: string, options: Intl.DateTimeFormatOptions): string {
+  const date = parsePlainDate(iso)
+  if (!date) return ''
+  if (!dateFormat) return date.toLocaleString(locale(), options)
+  return dateFormat.replace(DATE_PATTERN, (token, literal: string | undefined) => literal ?? DATE_TOKENS[token](date))
+}
+
 /** "Jun 15, 2026", or '' when empty or invalid. */
 export function formatDate(iso: string): string {
-  const d = parsePlainDate(iso)
-  return d ? d.toLocaleString(locale(), { year: 'numeric', month: 'short', day: 'numeric' }) : ''
+  return formatPlainDate(iso, { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
 /** "Mar 28", or '' when empty or invalid. */
 export function formatDateShort(iso: string): string {
-  const d = parsePlainDate(iso)
-  return d ? d.toLocaleString(locale(), { month: 'short', day: 'numeric' }) : ''
+  return formatPlainDate(iso, { month: 'short', day: 'numeric' })
 }
 
 /** "Mar 28, 26", or '' when empty or invalid. */
 export function formatDateLong(iso: string): string {
-  const d = parsePlainDate(iso)
-  return d ? d.toLocaleString(locale(), { month: 'short', day: 'numeric', year: '2-digit' }) : ''
+  return formatPlainDate(iso, { month: 'short', day: 'numeric', year: '2-digit' })
 }
 
 /** "Mar 28 - 31" in the order and punctuation the active language uses for a date range. */

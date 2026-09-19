@@ -386,6 +386,8 @@
   "settings.customFields.empty": "No custom fields.",
   "settings.customFields.name": "Custom fields",
   "settings.customFields.newLabel": "New field",
+  "settings.dateFormat.desc": "Set how dates are written, using tokens such as YYYY, MM, DD, MMM and ddd. Leave it empty to follow the interface language.",
+  "settings.dateFormat.name": "Date format",
   "settings.defaultView.desc": "Choose the view a project's tasks open in.",
   "settings.defaultView.name": "Default tasks view",
   "settings.excludedFolders.add": "Add folder",

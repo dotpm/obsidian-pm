@@ -386,6 +386,8 @@
   "settings.customFields.empty": "Keine eigenen Felder.",
   "settings.customFields.name": "Eigene Felder",
   "settings.customFields.newLabel": "Neues Feld",
+  "settings.dateFormat.desc": "Lege fest, wie Datumsangaben geschrieben werden, mit Kürzeln wie YYYY, MM, DD, MMM und ddd. Leer lassen, um das Format der Anzeige-Sprache zu verwenden.",
+  "settings.dateFormat.name": "Datumsformat",
   "settings.defaultView.desc": "Wähle die Ansicht, in der sich die Aufgaben eines Projekts öffnen.",
   "settings.defaultView.name": "Standardansicht für Aufgaben",
   "settings.excludedFolders.add": "Ordner hinzufügen",

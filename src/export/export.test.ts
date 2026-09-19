@@ -84,7 +84,8 @@ describe('renderSnapshotHtml', () => {
       showSubtreeConnections: true,
       lineBorders: 'none',
       kanbanShowSubtasks: false,
-      ganttWeekLabel: 'weekNumber'
+      ganttWeekLabel: 'weekNumber',
+      dateFormat: ''
     }
   } as Snapshot
 

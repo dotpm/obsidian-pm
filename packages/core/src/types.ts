@@ -233,6 +233,8 @@ export interface PMSettings {
   kanbanShowSubtasks: boolean
   kanbanShowDescriptionPreview: boolean
   showTagColors: boolean
+  /** Moment-style tokens for every date label. Empty follows the interface language. */
+  dateFormat: string
   saveTaskOnClose: boolean
   taskEditorSurface: 'modal' | 'tab'
   /** Key shortcut to create or save tasks and projects. */
@@ -323,6 +325,7 @@ export const DEFAULT_SETTINGS: PMSettings = {
   kanbanShowSubtasks: false,
   kanbanShowDescriptionPreview: false,
   showTagColors: true,
+  dateFormat: '',
   notificationsEnabled: true,
   notificationLeadDays: 2,
   autoArchiveDays: 0,

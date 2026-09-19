@@ -23,6 +23,7 @@ export interface SnapshotSettings {
   lineBorders: LineBorders
   kanbanShowSubtasks: boolean
   ganttWeekLabel: GanttWeekLabel
+  dateFormat: string
 }
 
 /**

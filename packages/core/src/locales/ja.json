@@ -356,6 +356,8 @@
   "settings.customFields.empty": "カスタムフィールドはありません。",
   "settings.customFields.name": "カスタムフィールド",
   "settings.customFields.newLabel": "新規フィールド",
+  "settings.dateFormat.desc": "日付の表記を YYYY、MM、DD、MMM、ddd などの記号で設定します。空欄にすると表示言語の書式に従います。",
+  "settings.dateFormat.name": "日付の書式",
   "settings.defaultView.desc": "プロジェクトのタスクを開くときのビューを選択します。",
   "settings.defaultView.name": "タスクの既定のビュー",
   "settings.excludedFolders.add": "フォルダを追加",

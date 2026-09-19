@@ -446,6 +446,8 @@
   "settings.customFields.empty": "Brak pól niestandardowych.",
   "settings.customFields.name": "Pola niestandardowe",
   "settings.customFields.newLabel": "Nowe pole",
+  "settings.dateFormat.desc": "Ustaw sposób zapisu dat za pomocą symboli takich jak YYYY, MM, DD, MMM i ddd. Zostaw puste, aby używać formatu języka interfejsu.",
+  "settings.dateFormat.name": "Format daty",
   "settings.defaultView.desc": "Wybierz widok, w którym otwierają się zadania projektu.",
   "settings.defaultView.name": "Domyślny widok zadań",
   "settings.excludedFolders.add": "Dodaj folder",

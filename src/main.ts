@@ -13,6 +13,7 @@ import {
   localApiPortFor,
   compareVersions,
   releaseNotesSince,
+  setDateFormat,
   t,
   tn
 } from '@dotpm/core'
@@ -94,6 +95,7 @@ export default class PMPlugin extends Plugin {
   async onload(): Promise<void> {
     installObsidianPlatform()
     await this.loadSettings()
+    setDateFormat(this.settings.dateFormat)
     this.index = new VaultIndex(this.app, () => this.settings)
     // The first sweep can run against a half-filled metadata cache, so it runs again once
     // the index has caught up. Everything in it is safe to repeat.
