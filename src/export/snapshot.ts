@@ -112,7 +112,8 @@ export async function buildSnapshot(plugin: PMPlugin, scope: ProjectScope, view:
       showSubtreeConnections: config.showSubtreeConnections,
       lineBorders: config.lineBorders,
       kanbanShowSubtasks: config.kanbanShowSubtasks,
-      ganttWeekLabel: plugin.settings.ganttWeekLabel
+      ganttWeekLabel: plugin.settings.ganttWeekLabel,
+      dateFormat: plugin.settings.dateFormat
     },
     projects,
     icons: iconMarkup(iconNames)

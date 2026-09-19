@@ -386,6 +386,8 @@
   "settings.customFields.empty": "Inga anpassade fält.",
   "settings.customFields.name": "Anpassade fält",
   "settings.customFields.newLabel": "Nytt fält",
+  "settings.dateFormat.desc": "Välj hur datum skrivs, med koder som YYYY, MM, DD, MMM och ddd. Lämna tomt för att använda gränssnittsspråkets format.",
+  "settings.dateFormat.name": "Datumformat",
   "settings.defaultView.desc": "Välj vyn som ett projekts uppgifter öppnas i.",
   "settings.defaultView.name": "Standardvy för uppgifter",
   "settings.excludedFolders.add": "Lägg till mapp",

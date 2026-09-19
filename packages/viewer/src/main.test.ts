@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
-import { describe, expect, it } from 'vitest'
-import { DEFAULT_PRIORITIES, DEFAULT_STATUSES, makeDefaultFilter } from '@dotpm/core'
+import { afterEach, describe, expect, it } from 'vitest'
+import { DEFAULT_PRIORITIES, DEFAULT_STATUSES, makeDefaultFilter, setDateFormat } from '@dotpm/core'
 import type { Snapshot } from '@dotpm/api'
 import { mount, readEmbeddedSnapshot, viewModelFromSnapshot } from './main'
 
@@ -22,7 +22,8 @@ function snapshot(): Snapshot {
       showSubtreeConnections: true,
       lineBorders: 'none',
       kanbanShowSubtasks: false,
-      ganttWeekLabel: 'weekNumber'
+      ganttWeekLabel: 'weekNumber',
+      dateFormat: ''
     },
     projects: [
       {
@@ -83,6 +84,10 @@ function task(id: string, title: string, parentId: string | null, position: numb
 }
 
 describe('viewer', () => {
+  afterEach(() => {
+    setDateFormat('')
+  })
+
   it('turns a snapshot into a view model with the task tree rebuilt', () => {
     const model = viewModelFromSnapshot(snapshot())
     expect(model.projects[0].tasks.map((t) => t.id)).toEqual(['a', 'b'])
@@ -103,6 +108,14 @@ describe('viewer', () => {
     expect(root.querySelector('.pm-kanban-board')).toBeNull()
     buttons[1].click()
     expect(root.querySelectorAll('.pm-gantt-bar').length).toBe(3)
+  })
+
+  it('writes dates in the format the snapshot carries', () => {
+    const root = document.body.createDiv()
+    const exported = snapshot()
+    exported.settings.dateFormat = 'DD.MM.YYYY'
+    mount(root, exported)
+    expect(root.querySelector('.pm-kanban-card')?.textContent).toContain('01.02.2030')
   })
 
   it('reads the embedded snapshot and rejects anything else', () => {

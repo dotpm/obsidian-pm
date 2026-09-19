@@ -386,6 +386,8 @@
   "settings.customFields.empty": "কোনো কাস্টম ফিল্ড নেই।",
   "settings.customFields.name": "কাস্টম ফিল্ড",
   "settings.customFields.newLabel": "নতুন ফিল্ড",
+  "settings.dateFormat.desc": "YYYY, MM, DD, MMM ও ddd-এর মতো কোড দিয়ে তারিখ কীভাবে লেখা হবে তা ঠিক করুন। ইন্টারফেসের ভাষার ফরম্যাট ব্যবহার করতে খালি রাখুন।",
+  "settings.dateFormat.name": "তারিখের ফরম্যাট",
   "settings.defaultView.desc": "প্রজেক্টের টাস্ক কোন ভিউতে খুলবে তা বাছুন।",
   "settings.defaultView.name": "ডিফল্ট টাস্ক ভিউ",
   "settings.excludedFolders.add": "ফোল্ডার যোগ করুন",

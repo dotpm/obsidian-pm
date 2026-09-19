@@ -416,6 +416,8 @@
   "settings.customFields.empty": "Aucun champ personnalisé.",
   "settings.customFields.name": "Champs personnalisés",
   "settings.customFields.newLabel": "Nouveau champ",
+  "settings.dateFormat.desc": "Définit l'écriture des dates, avec des codes comme YYYY, MM, DD, MMM et ddd. Laissez le champ vide pour suivre la langue d'affichage.",
+  "settings.dateFormat.name": "Format de la date",
   "settings.defaultView.desc": "Choisit la vue dans laquelle s'ouvrent les tâches d'un projet.",
   "settings.defaultView.name": "Vue des tâches par défaut",
   "settings.excludedFolders.add": "Ajouter un dossier",

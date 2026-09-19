@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { Temporal } from 'temporal-polyfill'
-import { completionOutcome, formatDate, formatDateLong, formatDateRange, formatDateShort, relativeDue } from './dates'
+import {
+  completionOutcome,
+  formatDate,
+  formatDateLong,
+  formatDateRange,
+  formatDateShort,
+  relativeDue,
+  setDateFormat
+} from './dates'
 import { setLocale } from './i18n'
 
 const from = Temporal.PlainDate.from('2026-06-15')
@@ -85,5 +93,49 @@ describe('date formatting', () => {
       '7.–13. Apr.'
     )
     setLocale('en')
+  })
+})
+
+describe('custom date format', () => {
+  afterEach(() => {
+    setDateFormat('')
+    setLocale('en')
+  })
+
+  it('writes numeric tokens with and without padding', () => {
+    setDateFormat('DD.MM.YYYY')
+    expect(formatDate('2026-03-08')).toBe('08.03.2026')
+    setDateFormat('D/M/YY')
+    expect(formatDate('2026-03-08')).toBe('8/3/26')
+  })
+
+  it('applies to the short and long formats too', () => {
+    setDateFormat('YYYY-MM-DD')
+    expect(formatDateShort('2026-03-08')).toBe('2026-03-08')
+    expect(formatDateLong('2026-03-08')).toBe('2026-03-08')
+  })
+
+  it('names months and weekdays in the interface language', () => {
+    setDateFormat('ddd, D MMM')
+    expect(formatDate('2026-03-08')).toBe('Sun, 8 Mar')
+    setDateFormat('dddd D MMMM')
+    setLocale('de')
+    expect(formatDate('2026-03-08')).toBe('Sonntag 8 März')
+  })
+
+  it('keeps bracketed text as written', () => {
+    setDateFormat('[Day] D [of] MMMM')
+    expect(formatDate('2026-03-08')).toBe('Day 8 of March')
+  })
+
+  it('returns an empty string for empty or invalid dates', () => {
+    setDateFormat('YYYY-MM-DD')
+    expect(formatDate('')).toBe('')
+    expect(formatDateShort('not-a-date')).toBe('')
+  })
+
+  it('falls back to the language format when blank', () => {
+    setDateFormat('   ')
+    expect(formatDate('2026-03-08')).toBe('Mar 8, 2026')
   })
 })

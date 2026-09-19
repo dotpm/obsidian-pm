@@ -416,6 +416,8 @@
   "settings.customFields.empty": "Niciun câmp personalizat.",
   "settings.customFields.name": "Câmpuri personalizate",
   "settings.customFields.newLabel": "Câmp nou",
+  "settings.dateFormat.desc": "Alege cum sunt scrise datele, cu coduri precum YYYY, MM, DD, MMM și ddd. Lasă-l gol pentru a folosi formatul limbii interfeței.",
+  "settings.dateFormat.name": "Formatul datei",
   "settings.defaultView.desc": "Alege vizualizarea în care se deschid sarcinile unui proiect.",
   "settings.defaultView.name": "Vizualizare implicită pentru sarcini",
   "settings.excludedFolders.add": "Adaugă un director",

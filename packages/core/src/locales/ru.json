@@ -446,6 +446,8 @@
   "settings.customFields.empty": "Нет настраиваемых полей.",
   "settings.customFields.name": "Настраиваемые поля",
   "settings.customFields.newLabel": "Новое поле",
+  "settings.dateFormat.desc": "Шаблон записи дат из кодов вроде YYYY, MM, DD, MMM и ddd. Оставьте пустым, чтобы использовать формат языка интерфейса.",
+  "settings.dateFormat.name": "Формат даты",
   "settings.defaultView.desc": "Представление, в котором открываются задачи проекта.",
   "settings.defaultView.name": "Представление задач по умолчанию",
   "settings.excludedFolders.add": "Добавить папку",

@@ -1,7 +1,7 @@
 import '@dotpm/ui/dom-shim'
 import { domPlatform } from '@dotpm/ui/dom-platform'
 import { isSnapshot, tasksFromResources, type Snapshot } from '@dotpm/api'
-import { type ViewMode, locale, setLocale, t, tn } from '@dotpm/core'
+import { type ViewMode, locale, setDateFormat, setLocale, t, tn } from '@dotpm/core'
 import {
   renderSnapshotGantt,
   renderSnapshotKanban,
@@ -86,6 +86,7 @@ export function isViewMode(value: string): value is ViewMode {
 
 export function mount(root: HTMLElement, snapshot: Snapshot, options: MountOptions = {}): void {
   setLocale(snapshot.locale)
+  setDateFormat(snapshot.settings.dateFormat)
   installSnapshotPlatform(snapshot)
   const model = viewModelFromSnapshot(snapshot)
   root.empty()

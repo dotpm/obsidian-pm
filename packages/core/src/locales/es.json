@@ -416,6 +416,8 @@
   "settings.customFields.empty": "No hay campos personalizados.",
   "settings.customFields.name": "Campos personalizados",
   "settings.customFields.newLabel": "Campo nuevo",
+  "settings.dateFormat.desc": "Elija cómo se escriben las fechas, con códigos como YYYY, MM, DD, MMM y ddd. Déjelo vacío para usar el formato del idioma de la interfaz.",
+  "settings.dateFormat.name": "Formato de fecha",
   "settings.defaultView.desc": "Elija la vista en la que se abren las tareas de un proyecto.",
   "settings.defaultView.name": "Vista de tareas predeterminada",
   "settings.excludedFolders.add": "Añadir carpeta",
