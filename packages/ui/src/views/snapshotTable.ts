@@ -5,6 +5,7 @@ import {
   displayName,
   dueUrgency,
   flattenTasks,
+  formatDateLong,
   getStatusConfig,
   isFilterActive,
   isTerminalStatus,
@@ -80,6 +81,7 @@ function customFieldValue(cf: CustomFieldDef, val: unknown): CustomFieldValue {
   if (cf.type === 'person') return { kind: 'people', people: values.map((raw) => ({ name: displayName(raw) })) }
   if (cf.type === 'checkbox') return { kind: 'checkbox', checked: Boolean(val) }
   if (cf.type === 'url') return { kind: 'url', url: values.join(', ') }
+  if (cf.type === 'date') return { kind: 'text', text: values.map((v) => formatDateLong(v) || v).join(', ') }
   return { kind: 'text', text: val !== undefined ? stringifyCustomValue(val) : '' }
 }
 

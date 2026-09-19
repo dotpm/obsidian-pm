@@ -106,6 +106,17 @@ describe('snapshot table', () => {
     expect(host.querySelector('tr[data-task-id="b"]')?.classList.contains('pm-table-row--done')).toBe(true)
   })
 
+  it('writes date fields the way the due column does', () => {
+    const view = model()
+    view.projects[0].config = { ...CONFIG, customFields: [{ id: 'review', name: 'Review', type: 'date' }] }
+    view.projects[0].tasks[0].customFields = { review: '2030-01-20' }
+    const host = document.body.createDiv()
+    renderSnapshotTable(host, view)
+    const cells = Array.from(host.querySelectorAll('tr[data-task-id="a"] td')).map((td) => td.textContent?.trim())
+    expect(cells).toContain('Jan 20, 30')
+    expect(cells).not.toContain('2030-01-20')
+  })
+
   it('shows archived rows only when the filter asks', () => {
     expect(tableRows(model()).map((r) => r.task.id)).not.toContain('z')
     const withArchived = model({ filter: { ...makeDefaultFilter(), showArchived: true } })

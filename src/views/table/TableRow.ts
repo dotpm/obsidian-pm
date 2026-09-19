@@ -2,6 +2,7 @@ import { Menu, type App } from 'obsidian'
 import {
   getStatusConfig,
   dueUrgency,
+  formatDateLong,
   isTerminalStatus,
   stringifyCustomValue,
   type CustomFieldDef,
@@ -186,6 +187,7 @@ function customFieldValue(app: App, cf: CustomFieldDef, val: unknown, sourcePath
   if (cf.type === 'person') return { kind: 'people', people: linkedRefs(app, values, sourcePath) }
   if (cf.type === 'checkbox') return { kind: 'checkbox', checked: Boolean(val) }
   if (cf.type === 'url') return { kind: 'url', url: values.join(', ') }
+  if (cf.type === 'date') return { kind: 'text', text: values.map((v) => formatDateLong(v) || v).join(', ') }
   if (values.some((v) => WIKILINK.test(v.trim()))) {
     return { kind: 'links', links: linkedRefs(app, values, sourcePath) }
   }
