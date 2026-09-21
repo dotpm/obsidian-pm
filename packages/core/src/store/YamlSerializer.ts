@@ -236,6 +236,10 @@ function taskSlug(title: string): string {
   return sanitizeFileName(title).toLowerCase().replace(/\s+/g, '-').slice(0, TASK_SLUG_MAX_LENGTH)
 }
 
+export function taskFileName(taskTitle: string): string {
+  return `${taskSlug(taskTitle)}.md`
+}
+
 export function taskFilePath(taskTitle: string, folder: string): string {
-  return `${folder}/${taskSlug(taskTitle)}.md`
+  return `${folder}/${taskFileName(taskTitle)}`
 }

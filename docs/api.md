@@ -68,7 +68,7 @@ Send `Authorization: Bearer <token>` with every request except `GET /v1/health`.
 | `GET /v1/projects/{id}/tasks` | Its tasks in tree order; `?includeArchived=true` adds archived ones |
 | `POST /v1/projects/{id}/tasks` | Create a task from the fields below plus an optional `parentId`; answers `201` |
 | `GET /v1/tasks/{id}` | One task |
-| `PATCH /v1/tasks/{id}` | Change the fields in the body; `If-Match: <updatedAt>` refuses with `412` if the task changed since |
+| `PATCH /v1/tasks/{id}` | Change the fields in the body; `If-Match: <updatedAt>` refuses with `412` if the task changed since, as does a `title` whose note name another note holds |
 | `POST /v1/tasks/{id}/move` | Body: `parentId` (null for top level), `projectId`, and `before` or `after` naming a sibling |
 | `POST /v1/tasks/{id}/archive` | Body `{ "archived": true }` (the default) or `false` |
 | `DELETE /v1/tasks/{id}` | Delete the task and its subtasks |
@@ -79,7 +79,7 @@ Fields a client may write: `title`, `description`, `type` (`task`, `milestone`, 
 
 A new project goes in the projects folder from settings, or inside its parent's folder when `parentId` is given. It starts with the global statuses and priorities; its palettes, custom fields and other settings are changed in Obsidian.
 
-Every task also carries `id`, `projectId`, `parentId`, `position` (its index among siblings), `path`, `archived`, `completed`, `timeLogs`, `createdAt` and `updatedAt`. Ids are stable for the life of a task. Paths change when a task is renamed or archived.
+Every task also carries `id`, `projectId`, `parentId`, `position` (its index among siblings), `path`, `archived`, `completed`, `timeLogs`, `createdAt` and `updatedAt`. Ids are stable for the life of a task. Paths change when a task is renamed or archived. A new task's note is named after its title, with a number appended when a note of that name is already there, so two tasks may share a title.
 
 Errors come back as `{ "error": { "code", "message" } }`:
 

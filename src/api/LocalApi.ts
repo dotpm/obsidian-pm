@@ -19,7 +19,7 @@ import {
   type TaskWrite
 } from '@dotpm/api'
 import type PMPlugin from '#main'
-import { findIgnoringCase, newProjectFolder, projectFilePath, type ProjectRef } from '#store'
+import { findIgnoringCase, newProjectFolder, projectFilePath, TaskFileNameConflictError, type ProjectRef } from '#store'
 import { ChangeLog } from './ChangeLog'
 
 const SCHEDULE_FIELDS: Array<keyof TaskWrite> = ['start', 'due', 'dependencies', 'status', 'type']
@@ -180,7 +180,14 @@ export class LocalApi implements DomainApi {
       throw new ApiRequestError('conflict', `task ${taskId} changed at ${task.updatedAt}`)
     }
     const write = parseTaskWrite(input, this.plugin.store.configFor(project))
-    await this.plugin.store.updateTask(project, taskId, taskPatch(write))
+    try {
+      await this.plugin.store.updateTask(project, taskId, taskPatch(write))
+    } catch (err) {
+      if (err instanceof TaskFileNameConflictError) {
+        throw new ApiRequestError('conflict', `a note named "${err.fileName}" already exists in this project`)
+      }
+      throw err
+    }
     if (SCHEDULE_FIELDS.some((field) => write[field] !== undefined)) {
       await this.plugin.store.scheduleAfterChange(project, taskId)
     }
