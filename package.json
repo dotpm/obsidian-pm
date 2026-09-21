@@ -1,6 +1,6 @@
 {
   "name": "project-manager",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "description": "Project management inside Obsidian. Table, Gantt and Kanban over plain Markdown notes, with a local API for agents and scripts.",
   "repository": "github:dotpm/obsidian-pm",
   "type": "module",

@@ -1,7 +1,7 @@
 {
   "id": "project-manager",
   "name": "dotpm",
-  "version": "2.5.0",
+  "version": "2.5.1",
   "minAppVersion": "1.13.0",
   "description": "Project management over plain Markdown notes. Table, Gantt and Kanban views with scheduling, dependencies and custom fields, plus a local API for agents and scripts.",
   "author": "dotpm",
