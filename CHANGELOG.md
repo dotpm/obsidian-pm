@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- The task editor now shows "Progress" from the start instead of behind "Add property"
+
 ## [2.5.1] - 2026-09-21
 
 ### Added

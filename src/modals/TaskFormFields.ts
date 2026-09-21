@@ -258,7 +258,7 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
     )
   }
 
-  if (task.type !== 'milestone' && (task.progress > 0 || shownExtras.has('progress'))) {
+  if (task.type !== 'milestone') {
     renderPropRow(
       grid,
       t('taskForm.progress'),
@@ -429,9 +429,6 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
   }
 
   const hidden: HiddenProperty[] = []
-  if (task.type !== 'milestone' && task.progress === 0 && !shownExtras.has('progress')) {
-    hidden.push({ id: 'progress', label: t('taskForm.progress'), icon: 'percent' })
-  }
   if (!task.recurrence && !shownExtras.has('repeat')) {
     hidden.push({ id: 'repeat', label: t('taskForm.repeat'), icon: 'repeat' })
   }
