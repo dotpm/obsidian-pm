@@ -959,6 +959,106 @@ describe('ProjectStore duplicate long titles', () => {
   })
 })
 
+describe('ProjectStore duplicate task titles', () => {
+  it('numbers the note of a second task carrying the same title', async () => {
+    const { store, vault } = newStore()
+    const project = await store.createProject('Sync', 'Projects')
+    const first = await addNamed(store, project, 'Dependency Dashboard')
+    const second = await addNamed(store, project, 'Dependency Dashboard')
+
+    expect(first.filePath).toBe('Projects/Sync/_tasks/dependency-dashboard.md')
+    expect(second.filePath).toBe('Projects/Sync/_tasks/dependency-dashboard 1.md')
+    expect(vault.getAbstractFileByPath(expectDefined(second.filePath))).toBeInstanceOf(TFile)
+  })
+
+  it('writes both files when two same-titled tasks are inserted at once', async () => {
+    const { store, vault } = newStore()
+    const project = await store.createProject('Sync', 'Projects')
+    const first = makeTask({ title: 'Dependency Dashboard' })
+    const second = makeTask({ title: 'Dependency Dashboard' })
+
+    await Promise.all([store.insertTask(project, first), store.insertTask(project, second)])
+
+    const paths = [expectDefined(first.filePath), expectDefined(second.filePath)]
+    expect(new Set(paths).size).toBe(2)
+    for (const path of paths) expect(vault.getAbstractFileByPath(path)).toBeInstanceOf(TFile)
+  })
+
+  it('reloads both same-titled tasks from the project note', async () => {
+    const { store, vault, app } = newStore()
+    const project = await store.createProject('Sync', 'Projects')
+    const first = await addNamed(store, project, 'Dependency Dashboard')
+    const second = await addNamed(store, project, 'Dependency Dashboard')
+
+    const reloaded = expectDefined(
+      await new ProjectStore(app, () => SETTINGS).loadProject(fileAt(app, project.filePath))
+    )
+
+    expect(
+      flattenTasks(reloaded.tasks)
+        .map((f) => f.task.id)
+        .sort()
+    ).toEqual([first.id, second.id].sort())
+    expect(vault.getAbstractFileByPath('Projects/Sync/_tasks/dependency-dashboard 1.md')).toBeInstanceOf(TFile)
+  })
+
+  it('leaves the numbered note in place when the task is written again', async () => {
+    const { store, vault } = newStore()
+    const project = await store.createProject('Sync', 'Projects')
+    await addNamed(store, project, 'Dependency Dashboard')
+    const second = await addNamed(store, project, 'Dependency Dashboard')
+
+    await store.updateTask(project, second.id, { description: 'From the other repo' })
+
+    expect(second.filePath).toBe('Projects/Sync/_tasks/dependency-dashboard 1.md')
+    expect(vault.getAbstractFileByPath('Projects/Sync/_tasks/dependency-dashboard 1.md')).toBeInstanceOf(TFile)
+  })
+
+  it('archives two same-titled tasks into notes of their own', async () => {
+    const { store, vault } = newStore()
+    const project = await store.createProject('Sync', 'Projects')
+    const first = await addNamed(store, project, 'Dependency Dashboard')
+    const second = await addNamed(store, project, 'Dependency Dashboard')
+
+    await store.archiveTasks(project, [first.id, second.id])
+
+    expect(first.filePath).toBe('Projects/Sync/_tasks/Archive/dependency-dashboard.md')
+    expect(second.filePath).toBe('Projects/Sync/_tasks/Archive/dependency-dashboard 1.md')
+    for (const path of [first.filePath, second.filePath]) {
+      expect(vault.getAbstractFileByPath(expectDefined(path))).toBeInstanceOf(TFile)
+    }
+  })
+
+  it('keeps the project writable when a task file cannot be written', async () => {
+    const { store, vault } = newStore()
+    const project = await store.createProject('Sync', 'Projects')
+    const failing = makeTask({ title: 'Dependency Dashboard' })
+    vi.spyOn(vault, 'create').mockRejectedValueOnce(new Error('vault write failed'))
+
+    await expect(store.insertTask(project, failing)).rejects.toThrow('vault write failed')
+
+    expect(project.tasks).toHaveLength(0)
+    expect(project.taskIndex.has(failing.id)).toBe(false)
+    const next = await addNamed(store, project, 'Something else')
+    expect(vault.getAbstractFileByPath(expectDefined(next.filePath))).toBeInstanceOf(TFile)
+  })
+
+  it('leaves the title alone when a retitle would take another task note', async () => {
+    const { store } = newStore()
+    const project = await store.createProject('Sync', 'Projects')
+    const alpha = await addNamed(store, project, 'Alpha')
+    await addNamed(store, project, 'Beta')
+
+    await expect(store.updateTask(project, alpha.id, { title: 'Beta' })).rejects.toBeInstanceOf(
+      TaskFileNameConflictError
+    )
+
+    expect(alpha.title).toBe('Alpha')
+    await store.updateTask(project, alpha.id, { status: 'in-progress' })
+    expect(alpha.status).toBe('in-progress')
+  })
+})
+
 describe('ProjectStore on a case-insensitive filesystem', () => {
   function newCaseInsensitiveStore(): { store: ProjectStore; vault: FakeVault; app: App } {
     const { app, vault } = makeFakeApp({ caseInsensitive: true })

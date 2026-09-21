@@ -97,6 +97,20 @@ describe('LocalApi over the vault', () => {
     expect(refreshes()).toBeGreaterThanOrEqual(2)
   })
 
+  it('creates a task whose title another task already holds', async () => {
+    const first = await api.createTask(projectId, { title: 'Dependency Dashboard' })
+    const second = await api.createTask(projectId, { title: 'Dependency Dashboard' })
+
+    expect(second.id).not.toBe(first.id)
+    expect(second.path).not.toBe(first.path)
+    expect((await api.listTasks(projectId)).filter((task) => task.title === 'Dependency Dashboard')).toHaveLength(2)
+
+    // A retitle still moves the note, so the one name two tasks would share is refused.
+    await rejectsWith(api.updateTask('b', { title: 'Dependency Dashboard' }), 'conflict')
+    expect(await api.getTask('b')).toMatchObject({ title: 'Beta' })
+    expect(await api.updateTask('b', { title: 'Beta 2' })).toMatchObject({ title: 'Beta 2' })
+  })
+
   it('creates projects at the root and under a parent, serving them before the index reads them', async () => {
     const root = await api.createProject({ title: 'Launch', icon: '🚀', color: '#112233', teamMembers: ['Ann'] })
     expect(root).toMatchObject({

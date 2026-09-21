@@ -15,6 +15,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Date custom fields in the table now show dates like the due date column
 
+### Fixed
+
+- Fixed a task failing to save when another task in the project has the same title ([#352](https://github.com/dotpm/obsidian-pm/issues/352))
+- Fixed every later edit to a project failing once one of its tasks could not be saved
+
 ## [2.5.0] - 2026-09-18
 
 ### Highlights

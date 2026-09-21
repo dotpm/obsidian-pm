@@ -43,6 +43,7 @@ import {
   serializeProject,
   serializeTask,
   TASK_FRONTMATTER_KEYS,
+  taskFileName,
   taskFilePath,
   TASK_SLUG_MAX_LENGTH,
   type RefWriter,
@@ -87,7 +88,14 @@ function resolveTaskPath(task: Task, folder: string, previousPath: string | unde
   if (previousFolder !== folder) return desired
   // A note named by hand keeps capitals the lowercase slug drops; on macOS and Windows
   // it is already the file the slug names.
-  if (previousBasename.toLowerCase() === desiredBasename.toLowerCase()) return previousPath
+  const previousLower = previousBasename.toLowerCase()
+  const desiredLower = desiredBasename.toLowerCase()
+  if (previousLower === desiredLower) return previousPath
+  // The slug turns spaces into dashes, so a number behind a space is the one given to a
+  // task whose title another task already holds.
+  if (previousLower.startsWith(`${desiredLower} `) && /^\d+$/.test(previousLower.slice(desiredLower.length + 1))) {
+    return previousPath
+  }
   const legacyBasename = `${desiredBasename}-${task.id.slice(0, 8)}`
   if (previousBasename === legacyBasename) return previousPath
   if (previousBasename.length === LEGACY_SLUG_CAP && previousBasename === desiredBasename.slice(0, LEGACY_SLUG_CAP)) {
@@ -742,7 +750,7 @@ export class ProjectStore implements TaskSource {
     }
     if (dirty.size === 0) return
 
-    const jobs: { task: Task; parentTask: Task | null; folder: string; kind: DirtyKind }[] = []
+    const jobs: { task: Task; parentTask: Task | null; path: string; kind: DirtyKind }[] = []
     const targetPaths = new Set<string>()
     // The batch below writes in parallel, so a task whose file is still being created has
     // no filePath when its parent is serialized. Its planned path stands in for one.
@@ -754,13 +762,17 @@ export class ProjectStore implements TaskSource {
       const { task, parentId } = entry
       const targetFolder = task.archived ? normalizePath(folder + '/Archive') : folder
       if (task.archived) hasArchived = true
-      // Two dirty tasks resolving to one file would race below into a generic
-      // create error; catching it here keeps the typed one.
-      const path = normalizePath(resolveTaskPath(task, targetFolder, task.filePath))
+      // A task with no file yet is named after its title, numbered when another note
+      // holds that name; a task that has one keeps it until its title says otherwise.
+      const path = task.filePath
+        ? normalizePath(resolveTaskPath(task, targetFolder, task.filePath))
+        : this.uniqueChildPath(targetFolder, taskFileName(task.title), targetPaths)
+      // Two files resolving to one name would race below into a generic create error;
+      // catching it here keeps the typed one.
       if (targetPaths.has(path)) throw new TaskFileNameConflictError(path)
       targetPaths.add(path)
       planned.set(id, path)
-      jobs.push({ task, parentTask: parentId ? findTaskById(project, parentId) : null, folder: targetFolder, kind })
+      jobs.push({ task, parentTask: parentId ? findTaskById(project, parentId) : null, path, kind })
     }
     if (hasArchived) await this.ensureFolder(normalizePath(folder + '/Archive'))
 
@@ -770,7 +782,7 @@ export class ProjectStore implements TaskSource {
       const results = await Promise.allSettled(
         jobs
           .slice(i, i + batchSize)
-          .map((j) => this.saveTaskFile(j.task, project, j.parentTask, j.folder, j.kind, planned))
+          .map((j) => this.saveTaskFile(j.task, project, j.parentTask, j.path, j.kind, planned))
       )
       for (const r of results) {
         if (r.status === 'rejected') errors.push(r.reason instanceof Error ? r.reason : new Error(String(r.reason)))
@@ -787,12 +799,11 @@ export class ProjectStore implements TaskSource {
     task: Task,
     project: Project,
     parentTask: Task | null,
-    folder: string,
+    filePath: string,
     kind: DirtyKind,
-    planned?: Map<string, string>
+    planned: Map<string, string>
   ): Promise<void> {
     const previousPath = task.filePath
-    const filePath = normalizePath(resolveTaskPath(task, folder, previousPath))
     const renamed = previousPath !== undefined && previousPath !== filePath
 
     try {
@@ -995,7 +1006,18 @@ export class ProjectStore implements TaskSource {
     indexAddSubtree(project, task, parentId)
     this.markDirty(project, [task.id], 'full')
     if (parentId) this.markDirty(project, [parentId], 'full')
-    await this.saveProject(project)
+    try {
+      await this.saveProject(project)
+    } catch (e) {
+      // A task that got no file goes back out of the live project; left in, every
+      // later save would retry it and fail the same way.
+      if (!task.filePath) {
+        deleteTaskFromTree(project.tasks, task.id)
+        indexRemoveSubtree(project, task)
+        this.dirtyTasks.get(project.filePath)?.delete(task.id)
+      }
+      throw e
+    }
   }
 
   /**
@@ -1017,7 +1039,7 @@ export class ProjectStore implements TaskSource {
     })
     const folder = projectTaskFolder(this.app, project.filePath)
     await this.ensureFolder(folder)
-    const newFilePath = taskFilePath(task.title, folder)
+    const newFilePath = this.uniqueChildPath(folder, taskFileName(task.title))
     const newContent = serializeTask(
       task,
       project,
@@ -1065,8 +1087,7 @@ export class ProjectStore implements TaskSource {
         task.description = parsed.body
         foreign = foreignFrontmatter(parsed.kind === 'frontmatter' ? parsed.frontmatter : null, TASK_FRONTMATTER_KEYS)
       }
-      const desired = taskFilePath(task.title, folder)
-      const dest = this.uniqueChildPath(folder, desired.slice(desired.lastIndexOf('/') + 1))
+      const dest = this.uniqueChildPath(folder, taskFileName(task.title))
       const content = serializeTask(
         task,
         project,
@@ -1318,6 +1339,12 @@ export class ProjectStore implements TaskSource {
   async updateTask(project: Project, taskId: string, patch: Partial<Task>): Promise<void> {
     const task = findTaskById(project, taskId)
     const oldTitle = task?.title
+    if (task && patch.title !== undefined && patch.title !== oldTitle) {
+      // The note the retitle would move onto is checked before the task changes, so a
+      // refused rename leaves nothing behind for the next save to retry.
+      const conflict = this.findTaskFileConflict(project, { ...task, ...patch })
+      if (conflict) throw conflict
+    }
     if (task) this.stampCompletion(project, task, patch)
     const completionMoved = task !== null && this.completionMoved(task, patch)
     // The editor saves the whole task, so snapshot the subtree to diff against.
@@ -1491,12 +1518,12 @@ export class ProjectStore implements TaskSource {
     return this.app.vault.createBinary(path, data)
   }
 
-  private uniqueChildPath(folder: string, fileName: string): string {
+  private uniqueChildPath(folder: string, fileName: string, claimed?: ReadonlySet<string>): string {
     const dot = fileName.lastIndexOf('.')
     const base = dot > 0 ? fileName.slice(0, dot) : fileName
     const ext = dot > 0 ? fileName.slice(dot) : ''
     let candidate = normalizePath(`${folder}/${base}${ext}`)
-    for (let n = 1; findIgnoringCase(this.app, candidate); n++) {
+    for (let n = 1; claimed?.has(candidate) || findIgnoringCase(this.app, candidate); n++) {
       candidate = normalizePath(`${folder}/${base} ${n}${ext}`)
     }
     return candidate
