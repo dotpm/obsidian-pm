@@ -295,6 +295,7 @@
   "project.missingBody": "It may have been deleted or renamed.",
   "project.missingTitle": "No project here",
   "project.namePlaceholder": "Project name",
+  "project.openAsNote": "Open as note",
   "project.openOverview": "Open overview",
   "project.openTasks": "Open tasks",
   "project.openWithSubProjects": "Open with sub-projects",

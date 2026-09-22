@@ -48,6 +48,7 @@
     "eslint-plugin-obsidianmd": "0.4.2",
     "happy-dom": "20.14.0",
     "lightningcss": "1.33.0",
+    "monkey-around": "3.0.0",
     "npm-run-all2": "9.0.3",
     "obsidian": "1.13.1",
     "oxfmt": "0.66.0",

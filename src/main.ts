@@ -1,4 +1,4 @@
-import { MarkdownView, Notice, Platform, Plugin } from 'obsidian'
+import { MarkdownView, Notice, Platform, Plugin, WorkspaceLeaf, type ViewState } from 'obsidian'
 import {
   DEFAULT_SETTINGS,
   defaultPriorities,
@@ -27,6 +27,7 @@ import {
   type TaskSource
 } from './store'
 import { safeAsync } from '@dotpm/ui'
+import { around } from 'monkey-around'
 import { installObsidianPlatform } from './platform'
 import { PMSettingTab } from './settings'
 import { ProjectView, PM_PROJECT_VIEW_TYPE } from './views/ProjectView'
@@ -64,8 +65,8 @@ export default class PMPlugin extends Plugin {
   idRepair!: IdRepair
   router!: PMViewRouter
   localApi!: LocalApiServer
-  /** Paths deliberately sent to the markdown editor, which the swap then leaves alone. */
-  private markdownEscapes = new Set<string>()
+  /** Leaves sent to the markdown editor for a note, which the swap leaves alone while they show it. */
+  private markdownEscapes = new WeakMap<WorkspaceLeaf, string>()
   private viewRefreshScheduled = false
   undoStack: Array<{ undo: () => Promise<void>; redo: () => Promise<void> }> = []
   redoStack: Array<{ undo: () => Promise<void>; redo: () => Promise<void> }> = []
@@ -125,7 +126,7 @@ export default class PMPlugin extends Plugin {
     this.registerView(PM_DASHBOARD_VIEW_TYPE, (leaf) => new DashboardView(leaf, this))
     this.registerView(PM_TASK_VIEW_TYPE, (leaf) => new TaskView(leaf, this))
     this.registerView(PM_RELEASE_NOTES_VIEW_TYPE, (leaf) => new ReleaseNotesView(leaf, this))
-    this.registerTaskNoteSwap()
+    this.registerNoteSwap()
     if (__STYLEGUIDE__) registerStyleguide(this)
 
     this.app.workspace.onLayoutReady(
@@ -368,34 +369,41 @@ export default class PMPlugin extends Plugin {
     await this.router.openReleaseNotes(previous)
   }
 
-  /** Opens a task note in Obsidian's own editor, where the swap leaves it alone. */
-  async openAsMarkdown(path: string): Promise<void> {
-    this.markdownEscapes.add(path)
-    await this.app.workspace.openLinkText(path, '', true)
+  /** Opens a note in Obsidian's own editor, in a new tab unless given a leaf, where the swap leaves it alone. */
+  async openAsMarkdown(path: string, leaf?: WorkspaceLeaf): Promise<void> {
+    const file = this.app.vault.getFileByPath(path)
+    if (!file) return
+    const target = leaf ?? this.app.workspace.getLeaf('tab')
+    this.markdownEscapes.set(target, path)
+    await target.openFile(file)
   }
 
-  private registerTaskNoteSwap(): void {
-    const swap = (): void => this.swapTaskNotes()
-    this.registerEvent(this.app.workspace.on('file-open', swap))
-    this.registerEvent(this.app.workspace.on('layout-change', swap))
-    this.registerEvent(this.app.workspace.on('active-leaf-change', swap))
+  /** Opens project notes, and task notes when tasks open in a tab, in our views before a markdown view is built. */
+  private registerNoteSwap(): void {
+    const swapped = (leaf: WorkspaceLeaf, viewState: ViewState): ViewState => this.swappedViewState(leaf, viewState)
+    this.register(
+      around(WorkspaceLeaf.prototype, {
+        setViewState: (next) =>
+          function (this: WorkspaceLeaf, viewState: ViewState, eState?: unknown) {
+            return next.call(this, swapped(this, viewState), eState)
+          }
+      })
+    )
   }
 
-  /**
-   * Sweeps every markdown leaf rather than the one being opened: a note opened into a
-   * background tab reports no file-open at all, and one that replaces the active leaf
-   * reports it while Obsidian is still building the view it is about to overwrite.
-   */
-  private swapTaskNotes(): void {
-    if (this.settings.taskEditorSurface !== 'tab') return
-    for (const leaf of this.app.workspace.getLeavesOfType('markdown')) {
-      const view = leaf.view
-      if (!(view instanceof MarkdownView)) continue
-      const file = view.file
-      if (!file || this.markdownEscapes.has(file.path)) continue
-      if (this.app.metadataCache.getFileCache(file)?.frontmatter?.['pm-task'] !== true) continue
-      void leaf.setViewState({ type: PM_TASK_VIEW_TYPE, state: { filePath: file.path } })
+  private swappedViewState(leaf: WorkspaceLeaf, viewState: ViewState): ViewState {
+    const path = viewState.state?.file
+    if (viewState.type !== 'markdown' || typeof path !== 'string') return viewState
+    const escaped = this.markdownEscapes.get(leaf)
+    if (escaped === path) return viewState
+    if (escaped) this.markdownEscapes.delete(leaf)
+    const file = this.app.vault.getFileByPath(path)
+    const frontmatter = file ? this.app.metadataCache.getFileCache(file)?.frontmatter : undefined
+    if (this.settings.taskEditorSurface === 'tab' && frontmatter?.['pm-task'] === true) {
+      return { ...viewState, type: PM_TASK_VIEW_TYPE, state: { filePath: path } }
     }
+    if (frontmatter?.['pm-project'] === true) return { ...viewState, ...this.router.projectLinkViewState(path) }
+    return viewState
   }
 
   async loadSettings(): Promise<void> {
