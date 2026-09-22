@@ -430,6 +430,10 @@ export class ProjectView extends ItemView {
 
     if (!scope.isMulti) {
       new ExtraButtonComponent(right)
+        .setIcon('file-text')
+        .setTooltip(t('project.openAsNote'))
+        .onClick(safeAsync(() => this.plugin.openAsMarkdown(primary.filePath, this.leaf)))
+      new ExtraButtonComponent(right)
         .setIcon('settings')
         .setTooltip(t('project.settings'))
         .onClick(safeAsync(() => this.plugin.router.openProjectEdit(primary.filePath)))

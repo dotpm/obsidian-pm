@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Added "Open as note" to the project overview and the project toolbar
+
+### Changed
+
+- Project notes now open on their project page instead of in Obsidian's editor
+
+### Fixed
+
+- Fixed a task note opened with "Open as note" never opening in the task editor again
+
 ## [2.5.2] - 2026-09-21
 
 ### Changed
