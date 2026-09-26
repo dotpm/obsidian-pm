@@ -377,6 +377,8 @@ export function makeTask(overrides: Partial<Task> = {}): Task {
 }
 
 export const DEFAULT_PROJECT_COLOR = '#8b72be'
+export const DEFAULT_PALETTE_COLOR = '#8a94a0'
+export const HEX_COLOR = /^#[0-9a-fA-F]{6}$/
 export const DEFAULT_PROJECT_ICON = '📋'
 
 export function makeProject(title: string, filePath: string): Project {

@@ -8,6 +8,7 @@ import {
   type ProjectConfig,
   type ProjectPatch,
   type StatusConfig,
+  DEFAULT_PALETTE_COLOR,
   makeId,
   priorityIconSetLabels,
   collectAllAssignees,
@@ -279,7 +280,7 @@ export class ProjectEditView extends ItemView {
       makeEntry: () => ({
         id: 'status-' + makeId().slice(0, 6),
         label: t('settings.statuses.newLabel'),
-        color: '#8a94a0',
+        color: DEFAULT_PALETTE_COLOR,
         icon: '',
         complete: false
       }),
@@ -303,7 +304,7 @@ export class ProjectEditView extends ItemView {
       makeEntry: () => ({
         id: 'priority-' + makeId().slice(0, 6),
         label: t('settings.priorities.newLabel'),
-        color: '#8a94a0',
+        color: DEFAULT_PALETTE_COLOR,
         icon: ''
       }),
       renderEditor: (container, priorities) =>

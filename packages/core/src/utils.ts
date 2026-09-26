@@ -1,5 +1,5 @@
 import type { DueUrgency, Task, StatusConfig, PriorityConfig, TaskPriority, PriorityIconSet } from './types'
-import { LOCAL_API_PORT_BASE, LOCAL_API_PORT_SPAN, PRIORITY_ICON_SETS } from './types'
+import { HEX_COLOR, LOCAL_API_PORT_BASE, LOCAL_API_PORT_SPAN, PRIORITY_ICON_SETS } from './types'
 import { today, parsePlainDate } from './dates'
 import { locale } from './i18n'
 
@@ -35,6 +35,15 @@ export function dedupePeople(values: string[], keyOf: (raw: string) => string = 
     if (kept === undefined || (!kept.startsWith('[[') && value.startsWith('[['))) byKey.set(key, value)
   }
   return [...byKey.values()].sort((a, b) => displayName(a).localeCompare(displayName(b), locale()))
+}
+
+/** A hand-edited color as `#rrggbb`, the only form a color input accepts; `#rgb` is expanded. */
+export function readColor(raw: unknown): string | null {
+  if (typeof raw !== 'string') return null
+  const value = raw.trim()
+  const short = /^#([0-9a-fA-F])([0-9a-fA-F])([0-9a-fA-F])$/.exec(value)
+  if (short) return `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`
+  return HEX_COLOR.test(value) ? value : null
 }
 
 export function stringToColor(s: string): string {

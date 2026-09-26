@@ -1,7 +1,6 @@
 import type { CustomFieldDef, PMSettings, Project, ResolvedProjectConfig, Task } from '../types'
+import { DEFAULT_PALETTE_COLOR } from '../types'
 import { flattenTasks } from './TaskTreeOps'
-
-const FALLBACK_COLOR = '#8a94a0'
 
 /**
  * The project's own overrides where defined, the global settings everywhere else. Values
@@ -25,14 +24,14 @@ export function resolveProjectConfig(
       settings.statuses,
       project,
       (task) => task.status,
-      (id) => ({ id, label: id, color: FALLBACK_COLOR, icon: '', complete: false })
+      (id) => ({ id, label: id, color: DEFAULT_PALETTE_COLOR, icon: '', complete: false })
     ),
     priorities: withInUseExtras(
       config?.priorities?.length ? config.priorities : settings.priorities,
       settings.priorities,
       project,
       (task) => task.priority,
-      (id) => ({ id, label: id, color: FALLBACK_COLOR, icon: '' })
+      (id) => ({ id, label: id, color: DEFAULT_PALETTE_COLOR, icon: '' })
     ),
     priorityIcons: config?.priorityIcons ?? settings.priorityIcons,
     defaultView: config?.defaultView ?? settings.defaultView,

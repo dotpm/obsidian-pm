@@ -12,6 +12,8 @@ import {
   stringList,
   dedupePeople,
   locale,
+  DEFAULT_PROJECT_COLOR,
+  readColor,
   t
 } from '@dotpm/core'
 import { projectPathForTaskPath, resolveVaultLink } from './vaultFs'
@@ -453,7 +455,7 @@ export class VaultIndex {
       id: str(frontmatter.id, file.basename),
       title: str(frontmatter.title, file.basename),
       icon: str(frontmatter.icon, '\u{1F4CB}'),
-      color: str(frontmatter.color, '#8b72be'),
+      color: readColor(frontmatter.color) ?? DEFAULT_PROJECT_COLOR,
       teamMembers: stringList(frontmatter.teamMembers),
       customFields: customFieldList(frontmatter.customFields),
       parentPath: resolveVaultLink(this.app, frontmatter.parent, path),
