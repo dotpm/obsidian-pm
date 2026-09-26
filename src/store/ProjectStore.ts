@@ -289,8 +289,9 @@ export class ProjectStore implements TaskSource {
   private async followProjectRename(oldPath: string, newPath: string): Promise<void> {
     if (!this.projectCache.has(oldPath) && !this.isProjectNote(newPath)) return
     try {
+      const oldTaskFolder = projectTaskFolder(this.app, oldPath)
       const notePath = await keepProjectStorageWithNote(this.app, oldPath, newPath, (p) => this.markSelfWrite(p))
-      await this.rekeyProject(oldPath, notePath)
+      await this.rekeyProject(oldPath, notePath, oldTaskFolder)
     } catch (e) {
       console.error(`[PM] Failed to move the task folder for "${newPath}":`, e)
     }
@@ -302,8 +303,8 @@ export class ProjectStore implements TaskSource {
     return this.app.metadataCache.getFileCache(file)?.frontmatter?.[FRONTMATTER_KEY] === true
   }
 
-  /** Moves the live project, its queue and its pending writes onto the note's new path. */
-  private async rekeyProject(oldPath: string, newPath: string): Promise<void> {
+  /** Moves the live project, its queue, its pending writes and its task paths onto the note's new path. */
+  private async rekeyProject(oldPath: string, newPath: string, oldTaskFolder: string): Promise<void> {
     if (oldPath === newPath) return
     const cached = this.projectCache.get(oldPath)
     if (!cached) return
@@ -322,7 +323,20 @@ export class ProjectStore implements TaskSource {
     const project = await cached
     if (!project) return
     project.filePath = newPath
+    this.followTaskFolder(project, oldTaskFolder)
     this.emitChange(newPath)
+  }
+
+  private followTaskFolder(project: Project, oldTaskFolder: string): void {
+    const newTaskFolder = projectTaskFolder(this.app, project.filePath)
+    if (newTaskFolder === oldTaskFolder) return
+    if (this.app.vault.getAbstractFileByPath(oldTaskFolder) instanceof TFolder) return
+    if (!(this.app.vault.getAbstractFileByPath(newTaskFolder) instanceof TFolder)) return
+    for (const { task } of flattenTasks(project.tasks)) {
+      if (task.filePath?.startsWith(oldTaskFolder + '/')) {
+        task.filePath = newTaskFolder + task.filePath.slice(oldTaskFolder.length)
+      }
+    }
   }
 
   /** An external write landed: reload the live project so every holder sees it. */
@@ -676,11 +690,12 @@ export class ProjectStore implements TaskSource {
       if (folderTarget !== own && findIgnoringCase(this.app, folderTarget)) return
     }
 
+    const oldTaskFolder = projectTaskFolder(this.app, currentPath)
     this.markSelfWrite(currentPath)
     this.markSelfWrite(target)
     await this.app.fileManager.renameFile(file, target)
     const notePath = await keepProjectStorageWithNote(this.app, currentPath, target, (p) => this.markSelfWrite(p))
-    await this.rekeyProject(currentPath, notePath)
+    await this.rekeyProject(currentPath, notePath, oldTaskFolder)
   }
 
   private async doSaveProject(project: Project): Promise<void> {
@@ -923,7 +938,8 @@ export class ProjectStore implements TaskSource {
     const target = normalizePath(dir ? `${dir}/${file.basename}` : file.basename)
     if (this.app.vault.getAbstractFileByPath(target) instanceof TFile) return null
 
-    const tasks = this.app.vault.getAbstractFileByPath(projectTaskFolder(this.app, projectPath))
+    const oldTaskFolder = projectTaskFolder(this.app, projectPath)
+    const tasks = this.app.vault.getAbstractFileByPath(oldTaskFolder)
     await this.ensureFolder(target)
     if (tasks instanceof TFolder) {
       const tasksTarget = normalizePath(`${target}/${TASK_FOLDER_NAME}`)
@@ -938,7 +954,7 @@ export class ProjectStore implements TaskSource {
     this.markSelfWrite(projectPath)
     this.markSelfWrite(notePath)
     await this.app.vault.rename(file, notePath)
-    await this.rekeyProject(projectPath, notePath)
+    await this.rekeyProject(projectPath, notePath, oldTaskFolder)
     return notePath
   }
 
