@@ -4,6 +4,8 @@ export interface AvatarPerson {
   name: string
   /** A link that points at no note; rendered muted, as Obsidian renders one. */
   unresolved?: boolean
+  /** A color the person chose; the name decides it otherwise. */
+  color?: string
   onClick?: () => void
 }
 
@@ -44,6 +46,7 @@ export class AvatarStack {
     const visible = this.people.slice(0, this.max)
     for (const person of visible) {
       const avatar = new Avatar(this.el).setName(person.name).setSize(this.size)
+      avatar.setColor(person.color)
       if (person.unresolved) avatar.setUnresolved(true)
       if (person.onClick) avatar.onClick(person.onClick)
     }

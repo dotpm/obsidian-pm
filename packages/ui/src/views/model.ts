@@ -9,9 +9,11 @@ import {
   type ResolvedProjectConfig,
   type StatusConfig,
   type Task,
+  displayName,
   flattenTasks,
   mergeById
 } from '@dotpm/core'
+import type { AvatarPerson } from '../primitives/AvatarStack'
 import type { SortDir, SortKey } from './tableSort'
 
 export interface ViewProject {
@@ -43,6 +45,12 @@ export interface ViewModel {
   filter: FilterState
   sortKey: SortKey
   sortDir: SortDir
+  /** A person value, as stored, to the color its note sets. */
+  personColors: Record<string, string>
+}
+
+export function personOf(model: ViewModel, raw: string): AvatarPerson {
+  return { name: displayName(raw), color: model.personColors[raw] }
 }
 
 export function isMulti(model: ViewModel): boolean {

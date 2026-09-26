@@ -6,6 +6,7 @@ import {
   createPersonNote,
   matchPersonNotes,
   personCandidates,
+  personColor,
   personKey,
   personKeyer,
   personLink,
@@ -135,6 +136,30 @@ describe('createPersonLink', () => {
     const link = await createPersonLink(app, 'People', 'Jane Doe', 'Projects/P.md')
     expect(link).toBe('[[Jane Doe]]')
     expect(resolvePerson(app, link, 'Projects/P.md').path).toBe('People/Jane Doe.md')
+  })
+})
+
+describe('personColor', () => {
+  async function appWithNote(path: string, content: string): Promise<App> {
+    const { app, vault } = makeFakeApp({ liveMetadataCache: true })
+    await vault.create(path, content)
+    return app as unknown as App
+  }
+
+  it('reads the color property of the linked person note', async () => {
+    const app = await appWithNote('People/Jane Doe.md', '---\ncolor: "#c47070"\n---\n')
+    expect(personColor(app, '[[Jane Doe]]', 'Projects/P.md')).toBe('#c47070')
+  })
+
+  it('gives a bare name the color of the note it names', async () => {
+    const app = await appWithNote('People/Jane Doe.md', '---\ncolor: "#c47070"\n---\n')
+    expect(personColor(app, 'Jane Doe', 'Projects/P.md')).toBe('#c47070')
+  })
+
+  it('has no color for a note without one, an invalid one, or no note at all', async () => {
+    const app = await appWithNote('People/Jane Doe.md', '---\ncolor: blue\n---\n')
+    expect(personColor(app, '[[Jane Doe]]', 'Projects/P.md')).toBeUndefined()
+    expect(personColor(app, '[[Ghost]]', 'Projects/P.md')).toBeUndefined()
   })
 })
 

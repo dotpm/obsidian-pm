@@ -1,5 +1,5 @@
 import type { App } from 'obsidian'
-import { resolvePeople } from '#store'
+import { personColor, resolvePeople } from '#store'
 import type { AvatarPerson } from '@dotpm/ui'
 
 /**
@@ -12,6 +12,7 @@ export function linkedRefs(app: App, values: string[], sourcePath: string): Avat
     return {
       name: person.name,
       unresolved: person.state === 'unresolved',
+      color: personColor(app, person.raw, sourcePath),
       onClick: path
         ? () => {
             void app.workspace.openLinkText(path, sourcePath)

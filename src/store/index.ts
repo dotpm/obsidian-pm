@@ -11,6 +11,7 @@ export {
   createPersonNote,
   matchPersonNotes,
   personCandidates,
+  personColor,
   personKey,
   personKeyer,
   personLink,

@@ -2,7 +2,6 @@ import {
   type CustomFieldDef,
   type FlatTask,
   applyTaskFilterFlat,
-  displayName,
   dueUrgency,
   flattenTasks,
   formatDateLong,
@@ -25,7 +24,16 @@ import { StatusCell } from '../composites/cells/StatusCell'
 import { TimeCell } from '../composites/cells/TimeCell'
 import { TitleCell } from '../composites/cells/TitleCell'
 import { childTreeGuides } from '../composites/treeGuides'
-import { allTasks, configOf, customFieldColumns, isMulti, mergedConfig, projectOf, type ViewModel } from './model'
+import {
+  allTasks,
+  configOf,
+  customFieldColumns,
+  isMulti,
+  mergedConfig,
+  personOf,
+  projectOf,
+  type ViewModel
+} from './model'
 import { compareTask, type SortKey } from './tableSort'
 
 interface TreeRow extends FlatTask {
@@ -76,9 +84,9 @@ function padGuides(trail: boolean[], depth: number): boolean[] {
   return [...Array.from<boolean>({ length: depth - trail.length }).fill(false), ...trail]
 }
 
-function customFieldValue(cf: CustomFieldDef, val: unknown): CustomFieldValue {
+function customFieldValue(model: ViewModel, cf: CustomFieldDef, val: unknown): CustomFieldValue {
   const values = (Array.isArray(val) ? val : [val]).map(stringifyCustomValue).filter(Boolean)
-  if (cf.type === 'person') return { kind: 'people', people: values.map((raw) => ({ name: displayName(raw) })) }
+  if (cf.type === 'person') return { kind: 'people', people: values.map((raw) => personOf(model, raw)) }
   if (cf.type === 'checkbox') return { kind: 'checkbox', checked: Boolean(val) }
   if (cf.type === 'url') return { kind: 'url', url: values.join(', ') }
   if (cf.type === 'date') return { kind: 'text', text: values.map((v) => formatDateLong(v) || v).join(', ') }
@@ -152,7 +160,7 @@ export function renderSnapshotTable(container: HTMLElement, model: ViewModel): H
     })
     new AssigneesCell(
       row,
-      task.assignees.map((raw) => ({ name: displayName(raw) }))
+      task.assignees.map((raw) => personOf(model, raw))
     )
     new DueDateCell(row, { task, urgency: dueUrgency(task, ownConfig.statuses), onSave: noSave })
     new ProgressCell(row, {
@@ -161,7 +169,7 @@ export function renderSnapshotTable(container: HTMLElement, model: ViewModel): H
       onSave: noSave
     })
     new TimeCell(row, { logged: totalLoggedHours(task), estimate: task.timeEstimate ?? 0 })
-    for (const cf of customFields) new CustomFieldCell(row, customFieldValue(cf, task.customFields[cf.id]))
+    for (const cf of customFields) new CustomFieldCell(row, customFieldValue(model, cf, task.customFields[cf.id]))
   }
   return wrapper
 }

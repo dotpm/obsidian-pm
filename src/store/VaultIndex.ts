@@ -107,6 +107,8 @@ export class VaultIndex {
   private taskById = new Map<string, TaskRef>()
   private tasksByProject = new Map<string, Set<string>>()
   private changeHandlers = new Set<() => void>()
+  private noteColors = new Map<string, string>()
+  private colorHandlers = new Set<() => void>()
   private cachedTree: ProjectTree = { parents: new Map(), children: new Map(), archived: new Set() }
   private treeDirty = true
   private cachedDependents = new Map<string, string[]>()
@@ -122,6 +124,7 @@ export class VaultIndex {
   /** Call once, after the layout is ready. Safe to call again to recover from a bad state. */
   build(): void {
     this.projects.clear()
+    this.noteColors.clear()
     this.projectPathById.clear()
     this.tasks.clear()
     this.taskById.clear()
@@ -147,18 +150,26 @@ export class VaultIndex {
 
     plugin.registerEvent(
       this.app.metadataCache.on('changed', (file) => {
+        const color = this.noteColors.get(normalizePath(file.path))
         this.read(file)
         this.resolveUnowned()
         this.emitChange()
+        if (this.noteColors.get(normalizePath(file.path)) !== color) this.emitColorChange()
       })
     )
     plugin.registerEvent(
       this.app.metadataCache.on('deleted', (file) => {
         if (this.forget(file.path)) this.emitChange()
+        if (this.noteColors.delete(normalizePath(file.path))) this.emitColorChange()
       })
     )
     plugin.registerEvent(
       this.app.vault.on('rename', (file: TAbstractFile, oldPath: string) => {
+        const color = this.noteColors.get(normalizePath(oldPath))
+        if (color !== undefined && file instanceof TFile) {
+          this.noteColors.delete(normalizePath(oldPath))
+          this.noteColors.set(normalizePath(file.path), color)
+        }
         // The metadata cache is not keyed by the new path yet when this fires, and a
         // renamed folder reports nothing about the notes inside it, so whatever is already
         // indexed moves by path here rather than being read back from the cache.
@@ -181,6 +192,12 @@ export class VaultIndex {
   onChange(handler: () => void): () => void {
     this.changeHandlers.add(handler)
     return () => this.changeHandlers.delete(handler)
+  }
+
+  /** Fires when a note's `color` property changes, which is how a person's avatar color is set. */
+  onNoteColorChange(handler: () => void): () => void {
+    this.colorHandlers.add(handler)
+    return () => this.colorHandlers.delete(handler)
   }
 
   /** Archived projects are left out unless asked for, so a list that forgets shows less, not more. */
@@ -441,6 +458,9 @@ export class VaultIndex {
     // where a rename leaves it. Keep what is indexed rather than dropping the note.
     if (!cache) return
     this.forget(path)
+    const color = readColor(cache.frontmatter?.color)
+    if (color) this.noteColors.set(path, color)
+    else this.noteColors.delete(path)
     if (this.isExcluded(path)) return
     const frontmatter = cache.frontmatter
     if (!frontmatter) return
@@ -675,5 +695,9 @@ export class VaultIndex {
 
   private emitChange(): void {
     for (const handler of this.changeHandlers) handler()
+  }
+
+  private emitColorChange(): void {
+    for (const handler of this.colorHandlers) handler()
   }
 }

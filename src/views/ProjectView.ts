@@ -148,6 +148,7 @@ export class ProjectView extends ItemView {
         if (this.scopeDependsOn(path)) this.redraw()
       })
     )
+    this.register(this.plugin.index.onNoteColorChange(() => this.redraw()))
     // A scope changes when a project joins or leaves it, which for a single-project scope
     // includes the project appearing once the index has caught up with the vault.
     this.register(

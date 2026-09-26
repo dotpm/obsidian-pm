@@ -46,6 +46,8 @@ export interface Snapshot {
   projects: SnapshotProject[]
   /** Lucide id to the `<svg>` markup, for every icon a status, priority or the chrome uses. */
   icons: Record<string, string>
+  /** An assignee or person field value, as stored, to the color its person note sets. */
+  personColors?: Record<string, string>
 }
 
 export function isSnapshot(value: unknown): value is Snapshot {

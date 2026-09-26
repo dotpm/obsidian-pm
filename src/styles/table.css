@@ -296,6 +296,7 @@ button.pm-chip-btn--active:hover {
   font-size: 10px;
   font-weight: 700;
   color: var(--text-on-accent);
+  background: var(--pm-avatar-color);
   border: 2px solid var(--background-primary);
   flex-shrink: 0;
 }
