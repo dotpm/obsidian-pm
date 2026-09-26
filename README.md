@@ -96,7 +96,7 @@ One column per status. Dragging a card to another column changes its status. Car
 - Archive a project that is done or no longer relevant; its sub-projects go with it
 - Saved views: named filter and sort combinations
 - Bulk edit from the table
-- People notes for assignees, with a per-person task list
+- People notes for assignees, with a per-person task list and an avatar color set by the note's `color` property
 
 **Customizing**
 

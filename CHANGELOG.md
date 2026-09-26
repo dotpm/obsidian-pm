@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Added "Open as note" to the project overview and the project toolbar
+- Person notes can now set their avatar color with a `color` property
 
 ### Changed
 

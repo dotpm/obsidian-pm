@@ -199,10 +199,11 @@ export class StyleguideView extends ItemView {
 
   private renderAvatars(): void {
     const sec = this.section('Avatar', 'avatar')
-    const row = this.row(sec, 'md / sm / wikilink alias')
+    const row = this.row(sec, 'md / sm / wikilink alias / color from the person note')
     new Avatar(row).setName(PEOPLE[0])
     new Avatar(row).setName(PEOPLE[1]).setSize('sm')
     new Avatar(row).setName(WIKILINK_PERSON)
+    new Avatar(row).setColor('#c47070').setName(PEOPLE[2])
     const stack = this.row(sec, 'AvatarStack with overflow (max 3)')
     new AvatarStack(stack).setNames(PEOPLE)
   }

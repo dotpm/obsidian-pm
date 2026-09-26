@@ -5,6 +5,7 @@ import {
   DEFAULT_STATUSES,
   makeDefaultFilter,
   makeTask,
+  stringToColor,
   type ResolvedProjectConfig
 } from '@dotpm/core'
 import type { ViewModel } from './model'
@@ -79,6 +80,7 @@ function model(overrides: Partial<ViewModel> = {}): ViewModel {
     filter: makeDefaultFilter(),
     sortKey: 'title',
     sortDir: 'asc',
+    personColors: {},
     ...overrides
   }
 }
@@ -115,6 +117,16 @@ describe('snapshot table', () => {
     const cells = Array.from(host.querySelectorAll('tr[data-task-id="a"] td')).map((td) => td.textContent?.trim())
     expect(cells).toContain('Jan 20, 30')
     expect(cells).not.toContain('2030-01-20')
+  })
+
+  it('colors an assignee avatar with the color the snapshot carries for them', () => {
+    const view = model({ personColors: { '[[Jane Doe]]': '#c47070' } })
+    view.projects[0].tasks[0].assignees = ['[[Jane Doe]]', 'Sam Lee']
+    const host = document.body.createDiv()
+    renderSnapshotTable(host, view)
+    const avatars = host.querySelectorAll<HTMLElement>('tr[data-task-id="a"] .pm-avatar')
+    expect(avatars[0].style.getPropertyValue('--pm-avatar-color')).toBe('#c47070')
+    expect(avatars[1].style.getPropertyValue('--pm-avatar-color')).toBe(stringToColor('Sam Lee'))
   })
 
   it('shows archived rows only when the filter asks', () => {

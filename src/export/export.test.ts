@@ -64,6 +64,21 @@ describe('buildSnapshot', () => {
     expect(project.tasks[0].description).toBe('Body of alpha')
     expect(typeof snapshot.icons).toBe('object')
   })
+
+  it('carries the color each person note sets for the assignees', async () => {
+    await plugin.app.vault.create('People/Jane Doe.md', '---\ncolor: "#c47070"\n---\n')
+    await plugin.store.insertTask(
+      scope.projects[0],
+      makeTask({ id: 'b', title: 'Beta', assignees: ['[[Jane Doe]]', 'Sam Lee'] })
+    )
+    const snapshot = await buildSnapshot(plugin, scope, {
+      mode: 'table',
+      filter: makeDefaultFilter(),
+      sortKey: 'title',
+      sortDir: 'asc'
+    })
+    expect(snapshot.personColors).toEqual({ '[[Jane Doe]]': '#c47070' })
+  })
 })
 
 describe('renderSnapshotHtml', () => {

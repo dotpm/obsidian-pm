@@ -1,5 +1,5 @@
 import { normalizePath, TFile, type App } from 'obsidian'
-import { displayName } from '@dotpm/core'
+import { displayName, readColor } from '@dotpm/core'
 import { ensureFolder, resolveVaultLink } from './vaultFs'
 
 /** How a stored assignee value relates to the vault. */
@@ -99,6 +99,17 @@ export async function createPersonLink(
  */
 export function personKey(app: App, raw: string): string {
   return resolveVaultLink(app, raw, '') ?? displayName(raw)
+}
+
+/**
+ * The `color` property of the note behind a person. Resolved like `personKey`, bare names
+ * included, so one person has one color however each task writes them.
+ */
+export function personColor(app: App, raw: string, sourcePath: string): string | undefined {
+  const path = resolveVaultLink(app, raw, sourcePath)
+  const file = path ? app.vault.getAbstractFileByPath(path) : null
+  if (!(file instanceof TFile)) return undefined
+  return readColor(app.metadataCache.getFileCache(file)?.frontmatter?.color) ?? undefined
 }
 
 /** Caches within one pass; filtering asks for the same handful of names on every repaint. */

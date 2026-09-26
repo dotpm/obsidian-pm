@@ -399,6 +399,23 @@ describe('VaultIndex', () => {
       expect(index.projectPaths()).not.toContain('Later/Side quest.md')
     })
 
+    it('reports a note color change only when the color changes', async () => {
+      let calls = 0
+      index.onNoteColorChange(() => calls++)
+      await vault.create('People/Jane.md', '---\ncolor: "#c47070"\n---\n')
+      expect(calls).toBe(1)
+
+      const jane = expectDefined(vault.getAbstractFileByPath('People/Jane.md') as TFile | null)
+      await vault.modify(jane, '---\ncolor: "#c47070"\nrole: Design\n---\n')
+      expect(calls).toBe(1)
+
+      await vault.modify(jane, '---\ncolor: "#79b58d"\n---\n')
+      expect(calls).toBe(2)
+
+      await vault.trashFile(jane)
+      expect(calls).toBe(3)
+    })
+
     it('reports changes to subscribers', async () => {
       let calls = 0
       index.onChange(() => calls++)

@@ -10,6 +10,7 @@ function initialsFor(name: string): string {
 
 export class Avatar {
   el: HTMLSpanElement
+  private color: string | undefined
 
   constructor(parentEl: HTMLElement) {
     this.el = parentEl.createSpan({ cls: 'pm-avatar' })
@@ -18,8 +19,16 @@ export class Avatar {
   setName(name: string): this {
     const display = displayName(name)
     this.el.setText(initialsFor(display))
-    this.el.style.background = stringToColor(display)
+    this.el.setCssProps({ '--pm-avatar-color': this.color ?? stringToColor(display) })
     setTooltip(this.el, display)
+    return this
+  }
+
+  /** Replaces the color derived from the name; `undefined` keeps it. */
+  setColor(color: string | undefined): this {
+    if (!color) return this
+    this.color = color
+    this.el.setCssProps({ '--pm-avatar-color': color })
     return this
   }
 

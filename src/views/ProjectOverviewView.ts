@@ -101,6 +101,7 @@ export class ProjectOverviewView extends ItemView {
         if (path === this.project?.filePath) this.render()
       })
     )
+    this.register(this.plugin.index.onNoteColorChange(() => this.render()))
     this.register(
       this.plugin.index.onChange(() => {
         if (this.project && this.treeSignature !== this.signTree(this.project)) this.render()
@@ -383,7 +384,7 @@ export class ProjectOverviewView extends ItemView {
     const people = (value: HTMLElement, values: string[]): void => {
       for (const person of linkedRefs(this.app, values, project.filePath)) {
         const holder = value.createSpan({ cls: 'pm-overview-member' })
-        const avatar = new Avatar(holder).setName(person.name).setSize('sm')
+        const avatar = new Avatar(holder).setColor(person.color).setName(person.name).setSize('sm')
         if (person.unresolved) avatar.setUnresolved(true)
         if (person.onClick) avatar.onClick(person.onClick)
         holder.createSpan({ text: person.name })

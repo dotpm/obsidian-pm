@@ -47,7 +47,8 @@ export function viewModelFromSnapshot(snapshot: Snapshot): ViewModel {
     settings: { ...snapshot.settings, ganttGranularity: snapshot.view.ganttGranularity },
     filter: snapshot.view.filter,
     sortKey: snapshot.view.sortKey as SortKey,
-    sortDir: snapshot.view.sortDir
+    sortDir: snapshot.view.sortDir,
+    personColors: snapshot.personColors ?? {}
   }
 }
 

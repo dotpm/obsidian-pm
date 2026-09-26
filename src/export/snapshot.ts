@@ -1,5 +1,13 @@
 import { getIcon } from 'obsidian'
-import { type FilterState, type Project, type ViewMode, flattenTasks, locale, PRIORITY_ICON_SETS } from '@dotpm/core'
+import {
+  type FilterState,
+  type Project,
+  type ViewMode,
+  flattenTasks,
+  locale,
+  PRIORITY_ICON_SETS,
+  stringifyCustomValue
+} from '@dotpm/core'
 import {
   SNAPSHOT_FORMAT,
   SNAPSHOT_VERSION,
@@ -11,7 +19,7 @@ import {
 } from '@dotpm/api'
 import type { SortDir, SortKey } from '@dotpm/ui'
 import type PMPlugin from '#main'
-import type { ProjectScope } from '#store'
+import { personColor, type ProjectScope } from '#store'
 
 export interface ExportViewState {
   mode: ViewMode
@@ -69,6 +77,26 @@ function iconMarkup(names: Iterable<string>): Record<string, string> {
   return icons
 }
 
+/** Keyed by the value as the task stores it, which is what the page's views look up. */
+function personColors(plugin: PMPlugin, projects: Project[]): Record<string, string> {
+  const colors: Record<string, string> = {}
+  for (const project of projects) {
+    const personFields = plugin.store.configFor(project).customFields.filter((field) => field.type === 'person')
+    for (const { task } of flattenTasks(project.tasks)) {
+      const fieldValues = personFields.flatMap((field) => {
+        const value = task.customFields[field.id]
+        return (Array.isArray(value) ? value : [value]).map(stringifyCustomValue).filter(Boolean)
+      })
+      for (const raw of [...task.assignees, ...fieldValues]) {
+        if (raw in colors) continue
+        const color = personColor(plugin.app, raw, task.filePath ?? project.filePath)
+        if (color) colors[raw] = color
+      }
+    }
+  }
+  return colors
+}
+
 export async function buildSnapshot(plugin: PMPlugin, scope: ProjectScope, view: ExportViewState): Promise<Snapshot> {
   const primary = scope.primary
   if (!primary) throw new Error('nothing to export: the scope holds no project')
@@ -116,6 +144,7 @@ export async function buildSnapshot(plugin: PMPlugin, scope: ProjectScope, view:
       dateFormat: plugin.settings.dateFormat
     },
     projects,
-    icons: iconMarkup(iconNames)
+    icons: iconMarkup(iconNames),
+    personColors: personColors(plugin, scope.projects)
   }
 }

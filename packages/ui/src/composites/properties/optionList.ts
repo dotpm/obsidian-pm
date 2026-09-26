@@ -41,7 +41,7 @@ export interface OptionRow extends GlyphSpec {
 export function renderOptionRow(parent: HTMLElement, row: OptionRow): HTMLElement {
   const item = parent.createEl('button', { cls: 'pm-pop-item' })
   if (row.accent) item.addClass('pm-pop-item--accent')
-  if (row.avatar) new Avatar(item).setName(row.avatar).setSize('sm')
+  if (row.avatar) new Avatar(item).setColor(row.color).setName(row.avatar).setSize('sm')
   else renderGlyph(item, row)
   item.createSpan({ cls: 'pm-pop-item-label', text: row.label })
   const check = item.createSpan({ cls: 'pm-pop-check' })

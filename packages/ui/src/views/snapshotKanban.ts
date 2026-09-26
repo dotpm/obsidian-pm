@@ -1,15 +1,7 @@
-import {
-  type Task,
-  displayName,
-  dueUrgency,
-  flattenTasks,
-  getPriorityConfig,
-  matchesFilter,
-  totalLoggedHours
-} from '@dotpm/core'
+import { type Task, dueUrgency, flattenTasks, getPriorityConfig, matchesFilter, totalLoggedHours } from '@dotpm/core'
 import { KanbanColumn, type KanbanCardData } from '../composites/KanbanColumn'
 import { renderProjectChip } from '../composites/projectChip'
-import { allTasks, configOf, isMulti, mergedConfig, projectOf, type ViewModel } from './model'
+import { allTasks, configOf, isMulti, mergedConfig, personOf, projectOf, type ViewModel } from './model'
 
 const noop = (): void => {}
 const noDrop = async (): Promise<void> => {}
@@ -27,7 +19,7 @@ function cardData(model: ViewModel, task: Task): KanbanCardData {
   const owner = isMulti(model) ? projectOf(model, task.id) : null
   return {
     task,
-    people: task.assignees.map((raw) => ({ name: displayName(raw) })),
+    people: task.assignees.map((raw) => personOf(model, raw)),
     priorityColor:
       priorityConfig && task.priority !== 'medium' && task.priority !== 'low' ? priorityConfig.color : undefined,
     parentTitle: model.settings.kanbanShowSubtasks && task.type === 'subtask' ? parentTitle(model, task.id) : undefined,

@@ -24,7 +24,7 @@ export interface MultiSelectOpts {
   /** Add-ghost label once at least one value is present (e.g. "Add another"). */
   addLabelMore?: string
   labelFor?: (id: string) => string
-  colorFor?: (id: string) => string
+  colorFor?: (id: string) => string | undefined
   /** Identity a selected value is matched by, so the same person written two ways is one row. */
   keyOf?: (id: string) => string
   search?: boolean
@@ -80,7 +80,7 @@ export function renderMultiSelect(opts: MultiSelectOpts): void {
     }
     anchorBtn.className = 'pm-prop-inline pm-assignees-trigger'
     const stack = anchorBtn.createSpan({ cls: 'pm-avatar-stack' })
-    for (const id of ids) new Avatar(stack).setName(labelOf(id)).setSize('sm')
+    for (const id of ids) new Avatar(stack).setColor(opts.colorFor?.(id)).setName(labelOf(id)).setSize('sm')
     if (ids.length === 1) {
       anchorBtn.createSpan({ cls: 'pm-assignees-label', text: labelOf(ids[0]) })
     }
@@ -178,6 +178,7 @@ export function renderMultiSelect(opts: MultiSelectOpts): void {
       for (const it of extra) {
         renderOptionRow(listEl, {
           label: it.label,
+          color: it.color ?? opts.colorFor?.(it.id),
           icon: it.icon,
           avatar: stackMode ? it.label : undefined,
           selected: picked.has(keyOf(it.id)),
