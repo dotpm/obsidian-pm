@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest'
-import { makeProject, makeTask, type Project, type SavedView, type Task } from '../types'
+import {
+  DEFAULT_PALETTE_COLOR,
+  DEFAULT_PROJECT_COLOR,
+  makeProject,
+  makeTask,
+  type Project,
+  type SavedView,
+  type Task
+} from '../types'
 import { hydrateProjectFromFrontmatter, hydrateTaskFromFile } from './YamlHydrator'
 import { parseFrontmatter } from './YamlParser'
 import {
@@ -187,6 +195,23 @@ describe('project round-trip', () => {
     const { project, frontmatter } = roundTripProject(p)
     expect(frontmatter.description).toBeUndefined()
     expect(project.description).toBe('Line one.\n\nLine two.')
+  })
+
+  it('falls back to the default color when a project note holds an invalid one', () => {
+    for (const color of [123, 'blue', ['#fff']]) {
+      const project = hydrateProjectFromFrontmatter({ color }, '# P', 'Projects/P.md', 'P')
+      expect(project.color).toBe(DEFAULT_PROJECT_COLOR)
+    }
+  })
+
+  it('falls back to the default color for a status or priority override with an invalid one', () => {
+    const config = {
+      statuses: [{ id: 'todo', label: 'To do', color: 'red' }],
+      priorities: [{ id: 'high', label: 'High', color: '#f80' }]
+    }
+    const project = hydrateProjectFromFrontmatter({ config }, '# P', 'Projects/P.md', 'P')
+    expect(project.config?.statuses?.[0].color).toBe(DEFAULT_PALETTE_COLOR)
+    expect(project.config?.priorities?.[0].color).toBe('#ff8800')
   })
 
   it('reads the description from a note that carries it only as a property', () => {

@@ -1,5 +1,5 @@
 import type { Project, ResolvedProjectConfig, Task } from '@dotpm/core'
-import { makeTask, parsePlainDate } from '@dotpm/core'
+import { HEX_COLOR, makeTask, parsePlainDate } from '@dotpm/core'
 import * as v from 'valibot'
 import {
   ApiRequestError,
@@ -211,7 +211,7 @@ export const PROJECT_CREATE_FIELDS = {
   color: v.optional(
     v.pipe(
       v.string('color must be a hex color like #8b72be'),
-      v.regex(/^#[0-9a-fA-F]{6}$/, 'color must be a hex color like #8b72be')
+      v.regex(HEX_COLOR, 'color must be a hex color like #8b72be')
     )
   ),
   teamMembers: v.optional(listField('teamMembers', 'Names or wikilinks of the people on the project')),

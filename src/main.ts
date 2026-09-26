@@ -1,5 +1,6 @@
 import { MarkdownView, Notice, Platform, Plugin, WorkspaceLeaf, type ViewState } from 'obsidian'
 import {
+  DEFAULT_PALETTE_COLOR,
   DEFAULT_SETTINGS,
   defaultPriorities,
   defaultStatuses,
@@ -11,6 +12,7 @@ import {
   dedupePeople,
   displayName,
   localApiPortFor,
+  readColor,
   compareVersions,
   releaseNotesSince,
   setDateFormat,
@@ -433,6 +435,13 @@ export default class PMPlugin extends Plugin {
         s.complete = s.id === 'done' || s.id === 'cancelled'
         migrated = true
       }
+    }
+
+    for (const entry of [...this.settings.statuses, ...this.settings.priorities]) {
+      const color = readColor(entry.color) ?? DEFAULT_PALETTE_COLOR
+      if (color === entry.color) continue
+      entry.color = color
+      migrated = true
     }
 
     // ganttHideDone was a global toggle, now expressed as a per-project status filter.

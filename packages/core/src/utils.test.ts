@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { dedupePeople, displayName, dueUrgency, localApiPortFor, priorityIcon } from './utils'
+import { dedupePeople, displayName, dueUrgency, localApiPortFor, priorityIcon, readColor } from './utils'
 import {
   makeTask,
   DEFAULT_PRIORITIES,
@@ -196,4 +196,25 @@ describe('localApiPortFor', () => {
   it('gives two vaults different ports', () => {
     expect(localApiPortFor('Work')).not.toBe(localApiPortFor('Personal'))
   })
+})
+
+describe('readColor', () => {
+  it('keeps a six-digit hex color', () => {
+    expect(readColor('#8B72be')).toBe('#8B72be')
+  })
+
+  it('expands a three-digit hex color', () => {
+    expect(readColor('#f80')).toBe('#ff8800')
+  })
+
+  it('trims whitespace around a hand-edited value', () => {
+    expect(readColor('  #8b72be ')).toBe('#8b72be')
+  })
+
+  it.each([['blue'], ['8b72be'], ['#8b72b'], ['#8b72beff'], ['var(--color-red)'], [''], [123456], [null], [['#fff']]])(
+    'rejects %j',
+    (raw) => {
+      expect(readColor(raw)).toBeNull()
+    }
+  )
 })

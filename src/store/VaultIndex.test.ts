@@ -2,7 +2,7 @@ import type { App, Plugin } from 'obsidian'
 import { TFile } from 'obsidian'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { makeFakeApp, type FakeVault } from '#test/fakeVault'
-import { DEFAULT_SETTINGS, type PMSettings } from '@dotpm/core'
+import { DEFAULT_PROJECT_COLOR, DEFAULT_SETTINGS, type PMSettings } from '@dotpm/core'
 import { VaultIndex } from './VaultIndex'
 
 const expectDefined = <T>(value: T | null | undefined, message = 'expected value to be defined'): T => {
@@ -156,6 +156,13 @@ describe('VaultIndex', () => {
     index.build()
 
     expect(expectDefined(index.projectRef('Projects/Roadmap.md')).teamMembers).toEqual(['Alice'])
+  })
+
+  it('falls back to the default color when a project note holds an invalid one', async () => {
+    await vault.create('Projects/Roadmap.md', projectNote('p1', 'Roadmap', 'color: blue\n'))
+    index.build()
+
+    expect(expectDefined(index.projectRef('Projects/Roadmap.md')).color).toBe(DEFAULT_PROJECT_COLOR)
   })
 
   it('counts a task once when a sync conflict leaves two notes with its id', async () => {

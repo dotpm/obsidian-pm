@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed a task note opened with "Open as note" never opening in the task editor again
+- Fixed projects, statuses, and priorities with an invalid color breaking the color picker
 
 ## [2.5.2] - 2026-09-21
 

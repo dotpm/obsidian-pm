@@ -3,6 +3,7 @@ import type { SettingDefinitionItem, SettingDefinitionPage } from 'obsidian'
 import type PMPlugin from './main'
 import {
   type PMSettings,
+  DEFAULT_PALETTE_COLOR,
   DEFAULT_SETTINGS,
   priorityIconSetLabels,
   makeId,
@@ -398,7 +399,7 @@ export class PMSettingTab extends PluginSettingTab {
               statuses.push({
                 id: 'status-' + makeId().slice(0, 6),
                 label: t('settings.statuses.newLabel'),
-                color: '#8a94a0',
+                color: DEFAULT_PALETTE_COLOR,
                 icon: '',
                 complete: false
               })
@@ -483,7 +484,7 @@ export class PMSettingTab extends PluginSettingTab {
               priorities.push({
                 id: 'priority-' + makeId().slice(0, 6),
                 label: t('settings.priorities.newLabel'),
-                color: '#8a94a0',
+                color: DEFAULT_PALETTE_COLOR,
                 icon: ''
               })
               this.persist()
