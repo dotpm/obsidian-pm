@@ -32,7 +32,7 @@
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
     "build:viewer": "node scripts/build-viewer.mjs",
-    "build:packages": "pnpm --filter @dotpm/core --filter @dotpm/api build"
+    "build:packages": "pnpm --filter @dotpm/core --filter @dotpm/api --filter @dotpm/viewer build"
   },
   "devDependencies": {
     "@2bad/axiom": "2.1.0",

@@ -1,4 +1,5 @@
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bundle } from 'lightningcss'
@@ -30,7 +31,8 @@ const { code } = bundle({ filename: join(viewer, 'src/viewer.css'), minify: true
 const css = code.toString()
 const built = readdirSync(dist).find((name) => /^main.*\.js$/.test(name))
 if (!built) throw new Error('tsdown wrote no viewer bundle')
-const js = readFileSync(join(dist, built), 'utf8').replace(/<\/script/gi, '<\\/script')
+const bundled = readFileSync(join(dist, built), 'utf8')
+const js = bundled.replace(/<\/script/gi, '<\\/script')
 
 const html = `<!doctype html>
 <html lang="__DOTPM_LOCALE__">
@@ -49,3 +51,16 @@ const html = `<!doctype html>
 `
 writeFileSync(join(dist, 'viewer.html'), html)
 console.log(`viewer.html -> ${join(dist, 'viewer.html')} (${(html.length / 1024).toFixed(0)} kB)`)
+
+// Hosted pages link these instead of inlining them; manifest.json names the hashed files.
+const assets = join(dist, 'assets')
+rmSync(assets, { recursive: true, force: true })
+mkdirSync(assets)
+const hashed = (name, ext, content) => {
+  const file = `${name}.${createHash('sha256').update(content).digest('hex').slice(0, 12)}.${ext}`
+  writeFileSync(join(assets, file), content)
+  return `assets/${file}`
+}
+const manifest = { js: hashed('viewer', 'js', bundled), css: hashed('viewer', 'css', css) }
+writeFileSync(join(dist, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`)
+console.log(`hosted assets -> ${manifest.js}, ${manifest.css}`)

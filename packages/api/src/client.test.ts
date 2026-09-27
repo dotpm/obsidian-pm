@@ -14,7 +14,10 @@ describe('HttpApi', () => {
   beforeEach(() => {
     host = new FakeApi()
     seen = []
-    const route = createRouter({ api: host, info: { name: 'dotpm', version: '9.9.9' }, token: () => TOKEN })
+    const route = createRouter({
+      info: { name: 'dotpm', version: '9.9.9' },
+      authorize: (token) => (token === TOKEN ? host : null)
+    })
     api = new HttpApi({
       baseUrl: 'http://127.0.0.1:27140/',
       token: TOKEN,

@@ -7,6 +7,7 @@ import {
   renderSnapshotKanban,
   renderSnapshotTable,
   setPlatform,
+  svgEl,
   tableRows,
   ViewSwitcher,
   type SortKey,
@@ -52,18 +53,68 @@ export function viewModelFromSnapshot(snapshot: Snapshot): ViewModel {
   }
 }
 
+const SVG_NS = 'http://www.w3.org/2000/svg'
+const ICON_TAGS = new Set(['svg', 'g', 'path', 'circle', 'ellipse', 'line', 'polyline', 'polygon', 'rect'])
+const ICON_ATTRIBUTES = new Set([
+  'class',
+  'viewBox',
+  'width',
+  'height',
+  'fill',
+  'stroke',
+  'stroke-width',
+  'stroke-linecap',
+  'stroke-linejoin',
+  'fill-rule',
+  'clip-rule',
+  'opacity',
+  'transform',
+  'd',
+  'cx',
+  'cy',
+  'r',
+  'rx',
+  'ry',
+  'x',
+  'y',
+  'x1',
+  'y1',
+  'x2',
+  'y2',
+  'points'
+])
+
+function copyIconElement(source: Element): SVGElement | null {
+  if (source.namespaceURI !== SVG_NS || !ICON_TAGS.has(source.localName)) return null
+  const el = svgEl(source.localName as keyof SVGElementTagNameMap)
+  for (const { name, value } of Array.from(source.attributes)) {
+    if (ICON_ATTRIBUTES.has(name)) el.setAttribute(name, value)
+  }
+  for (const child of Array.from(source.children)) {
+    const copy = copyIconElement(child)
+    if (copy) el.appendChild(copy)
+  }
+  return el
+}
+
+/**
+ * An icon from the snapshot, rebuilt from its drawing elements and attributes alone. A hosted
+ * snapshot is written by whoever published it, so its markup is never inserted as it came.
+ */
+export function iconFromMarkup(markup: string): SVGElement | null {
+  const root = new DOMParser().parseFromString(markup, 'image/svg+xml').documentElement
+  return root.localName === 'svg' ? copyIconElement(root) : null
+}
+
 /** The plain-DOM platform, with icons taken from the glyphs the snapshot carries. */
 export function installSnapshotPlatform(snapshot: Snapshot): void {
-  const parser = new DOMParser()
   setPlatform({
     ...domPlatform,
     setIcon: (el, name) => {
       el.empty()
       const markup = snapshot.icons[name]
-      if (!markup) return
-      const svg = parser.parseFromString(markup, 'image/svg+xml').documentElement
-      if (svg.nodeName !== 'svg') return
-      el.appendChild(document.importNode(svg, true))
+      const icon = markup ? iconFromMarkup(markup) : null
+      if (icon) el.appendChild(icon)
     }
   })
 }
@@ -97,12 +148,10 @@ export function mount(root: HTMLElement, snapshot: Snapshot, options: MountOptio
   const primary = model.projects[0]
   if (primary.icon) {
     const glyph = header.createSpan({ cls: 'pm-snapshot-icon' })
-    if (snapshot.icons[primary.icon]) {
-      const svg = new DOMParser().parseFromString(snapshot.icons[primary.icon], 'image/svg+xml').documentElement
-      glyph.appendChild(document.importNode(svg, true))
-    } else {
-      glyph.setText(primary.icon)
-    }
+    const markup = snapshot.icons[primary.icon]
+    const icon = markup ? iconFromMarkup(markup) : null
+    if (icon) glyph.appendChild(icon)
+    else glyph.setText(primary.icon)
   }
   header.createEl('h1', { text: snapshot.title, cls: 'pm-snapshot-title' })
   const exported = new Date(snapshot.exportedAt)
@@ -147,10 +196,29 @@ export function readEmbeddedSnapshot(doc: Document): Snapshot | null {
   }
 }
 
-function boot(): void {
+/**
+ * The snapshot embedded in the page, or else the one the root's `data-snapshot` URL points at,
+ * which is how a hosted page too large to inline carries it.
+ */
+export async function loadSnapshot(doc: Document): Promise<Snapshot | null> {
+  const embedded = readEmbeddedSnapshot(doc)
+  if (embedded) return embedded
+  const url = doc.getElementById('app')?.dataset['snapshot']
+  if (!url) return null
+  try {
+    const response = await fetch(url)
+    if (!response.ok) return null
+    const parsed: unknown = await response.json()
+    return isSnapshot(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+async function boot(): Promise<void> {
   const root = document.getElementById('app')
   if (!root) return
-  const snapshot = readEmbeddedSnapshot(document)
+  const snapshot = await loadSnapshot(document)
   if (!snapshot) {
     root.setText(t('viewer.noSnapshot'))
     return
@@ -164,4 +232,4 @@ function boot(): void {
   })
 }
 
-if (typeof document !== 'undefined' && document.getElementById('app')) boot()
+if (typeof document !== 'undefined' && document.getElementById('app')) void boot()

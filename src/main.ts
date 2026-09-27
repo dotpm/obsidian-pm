@@ -28,6 +28,7 @@ import {
   type ProjectRef,
   type TaskSource
 } from './store'
+import { tokenMatches } from '@dotpm/api'
 import { safeAsync } from '@dotpm/ui'
 import { around } from 'monkey-around'
 import { installObsidianPlatform } from './platform'
@@ -115,9 +116,8 @@ export default class PMPlugin extends Plugin {
     this.register(api.attach())
     this.localApi = new LocalApiServer(
       {
-        api,
         info: { name: 'dotpm', version: this.manifest.version },
-        token: () => this.settings.localApiToken
+        authorize: (token) => (tokenMatches(token, this.settings.localApiToken) ? api : null)
       },
       () => this.settings.localApiPort
     )
