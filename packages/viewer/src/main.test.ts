@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_PRIORITIES, DEFAULT_STATUSES, makeDefaultFilter, setDateFormat } from '@dotpm/core'
 import type { Snapshot } from '@dotpm/api'
-import { mount, readEmbeddedSnapshot, viewModelFromSnapshot } from './main'
+import { iconFromMarkup, loadSnapshot, mount, readEmbeddedSnapshot, viewModelFromSnapshot } from './main'
 
 const ICON = '<svg xmlns="http://www.w3.org/2000/svg" class="svg-icon lucide-check"><path d="M1 1"/></svg>'
 
@@ -126,5 +126,67 @@ describe('viewer', () => {
     expect(readEmbeddedSnapshot(document)).toBeNull()
     el.textContent = '{'
     expect(readEmbeddedSnapshot(document)).toBeNull()
+  })
+})
+
+describe('iconFromMarkup', () => {
+  it('keeps the drawing and drops scripts, handlers and links', () => {
+    const icon = iconFromMarkup(
+      '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" onload="alert(1)" class="svg-icon">' +
+        '<script>alert(2)</script><a href="https://example.com"><path d="M0 0"/></a>' +
+        '<g transform="scale(2)"><path d="M1 1" onclick="alert(3)" stroke-width="2"/></g></svg>'
+    )
+    expect(icon?.outerHTML).toBe(
+      '<svg viewBox="0 0 24 24" class="svg-icon"><g transform="scale(2)"><path d="M1 1" stroke-width="2"></path></g></svg>'
+    )
+  })
+
+  it('refuses markup that is not an svg', () => {
+    expect(iconFromMarkup('<html><body onload="alert(1)"></body></html>')).toBeNull()
+    expect(iconFromMarkup('not markup')).toBeNull()
+  })
+})
+
+describe('loadSnapshot', () => {
+  beforeEach(() => {
+    document.body.empty()
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  function hostedRoot(url: string): void {
+    document.body.createDiv({ attr: { id: 'app', 'data-snapshot': url } })
+  }
+
+  it('fetches the snapshot the root points at when none is embedded', async () => {
+    hostedRoot('/eu/alpha/b/abc')
+    const fetchMock = vi.fn<typeof fetch>(async () => new Response(JSON.stringify(snapshot())))
+    vi.stubGlobal('fetch', fetchMock)
+    expect((await loadSnapshot(document))?.title).toBe('Alpha')
+    expect(fetchMock).toHaveBeenCalledWith('/eu/alpha/b/abc')
+  })
+
+  it('gives up on a failed fetch or anything that is not a snapshot', async () => {
+    hostedRoot('/eu/alpha/b/abc')
+    vi.stubGlobal('fetch', async () => new Response('gone', { status: 410 }))
+    expect(await loadSnapshot(document)).toBeNull()
+    vi.stubGlobal('fetch', async () => new Response('{"format":"other"}'))
+    expect(await loadSnapshot(document)).toBeNull()
+    vi.stubGlobal('fetch', async () => {
+      throw new TypeError('offline')
+    })
+    expect(await loadSnapshot(document)).toBeNull()
+  })
+
+  it('prefers the embedded snapshot and needs no network for it', async () => {
+    hostedRoot('/eu/alpha/b/abc')
+    const el = document.body.createEl('script', { attr: { id: 'dotpm-snapshot', type: 'application/json' } })
+    el.textContent = JSON.stringify(snapshot())
+    const fetchMock = vi.fn<typeof fetch>()
+    vi.stubGlobal('fetch', fetchMock)
+    expect((await loadSnapshot(document))?.title).toBe('Alpha')
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

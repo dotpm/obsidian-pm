@@ -11,8 +11,9 @@ describe('LocalApiServer', () => {
 
   beforeAll(async () => {
     ;(globalThis as unknown as { window: unknown }).window = { require: createRequire(import.meta.url) }
+    const api = new FakeApi()
     const server = new LocalApiServer(
-      { api: new FakeApi(), info: { name: 'dotpm', version: '9.9.9' }, token: () => TOKEN },
+      { info: { name: 'dotpm', version: '9.9.9' }, authorize: (token) => (token === TOKEN ? api : null) },
       () => PORT
     )
     await server.start()

@@ -8,10 +8,12 @@ import { createMcpHandler, type ServerInfo } from './mcp'
 import { parseTaskSearch } from './resources'
 
 export interface HttpHost {
-  api: DomainApi
   info: ServerInfo
-  token: () => string
+  /** The API a bearer token opens, or null when it opens none. */
+  authorize: (token: string) => DomainApi | null | Promise<DomainApi | null>
 }
+
+type Env = { Variables: { api: DomainApi } }
 
 function fail(code: ApiErrorCode, message: string): { error: { code: ApiErrorCode; message: string } } {
   return { error: { code, message } }
@@ -59,13 +61,20 @@ function search(c: Context): Record<string, unknown> {
 
 /**
  * The whole HTTP surface as a fetch handler, so it runs in front of any server that can
- * hand it a `Request`. `/v1/health` is the one route that needs no token. The MCP server
- * behind `/mcp` is built once, so build the router once too.
+ * hand it a `Request`. `/v1/health` is the one route that needs no token; every other route
+ * serves the API its token opens. Each API gets one MCP server, built on first use.
  */
 export function createRouter(host: HttpHost): (request: Request) => Response | Promise<Response> {
-  const { api } = host
-  const mcp = createMcpHandler(api, host.info)
-  const app = new Hono()
+  const mcpServers = new WeakMap<DomainApi, (request: Request) => Promise<Response>>()
+  const mcp = (api: DomainApi): ((request: Request) => Promise<Response>) => {
+    let handler = mcpServers.get(api)
+    if (!handler) {
+      handler = createMcpHandler(api, host.info)
+      mcpServers.set(api, handler)
+    }
+    return handler
+  }
+  const app = new Hono<Env>()
 
   app.use(async (c, next) => {
     await next()
@@ -76,7 +85,11 @@ export function createRouter(host: HttpHost): (request: Request) => Response | P
     except(
       '/v1/health',
       bearerAuth({
-        verifyToken: (token) => tokenMatches(token, host.token()),
+        verifyToken: async (token, c) => {
+          const api = await host.authorize(token)
+          if (api) c.set('api', api)
+          return api !== null
+        },
         noAuthenticationHeader: { message: fail('unauthorized', 'missing or wrong bearer token') },
         invalidAuthenticationHeader: { message: fail('invalid', 'the authorization header is malformed') },
         invalidToken: { message: fail('unauthorized', 'missing or wrong bearer token') }
@@ -86,45 +99,47 @@ export function createRouter(host: HttpHost): (request: Request) => Response | P
 
   app.get('/v1/health', (c) => c.json({ ok: true, name: host.info.name, version: host.info.version }))
 
-  app.all('/mcp', (c) => mcp(c.req.raw))
+  app.all('/mcp', (c) => mcp(c.var.api)(c.req.raw))
 
-  app.get('/v1/projects', async (c) => c.json(await api.listProjects(c.req.query('includeArchived') === 'true')))
+  app.get('/v1/projects', async (c) => c.json(await c.var.api.listProjects(c.req.query('includeArchived') === 'true')))
 
-  app.post('/v1/projects', async (c) => c.json(await api.createProject(await body(c)), 201))
+  app.post('/v1/projects', async (c) => c.json(await c.var.api.createProject(await body(c)), 201))
 
-  app.get('/v1/projects/:id', async (c) => c.json(await api.getProject(c.req.param('id'))))
+  app.get('/v1/projects/:id', async (c) => c.json(await c.var.api.getProject(c.req.param('id'))))
 
   app.post('/v1/projects/:id/archive', async (c) => {
     const asked = ((await body(c)) ?? {}) as { archived?: unknown }
-    return c.json(await api.archiveProject(c.req.param('id'), asked.archived !== false))
+    return c.json(await c.var.api.archiveProject(c.req.param('id'), asked.archived !== false))
   })
 
   app.get('/v1/projects/:id/tasks', async (c) =>
-    c.json(await api.listTasks(c.req.param('id'), c.req.query('includeArchived') === 'true'))
+    c.json(await c.var.api.listTasks(c.req.param('id'), c.req.query('includeArchived') === 'true'))
   )
 
-  app.post('/v1/projects/:id/tasks', async (c) => c.json(await api.createTask(c.req.param('id'), await body(c)), 201))
+  app.post('/v1/projects/:id/tasks', async (c) =>
+    c.json(await c.var.api.createTask(c.req.param('id'), await body(c)), 201)
+  )
 
-  app.get('/v1/tasks/:id', async (c) => c.json(await api.getTask(c.req.param('id'))))
+  app.get('/v1/tasks/:id', async (c) => c.json(await c.var.api.getTask(c.req.param('id'))))
 
   app.patch('/v1/tasks/:id', async (c) => {
     const expected = c.req.header('if-match')?.replace(/^"|"$/g, '')
-    return c.json(await api.updateTask(c.req.param('id'), await body(c), expected))
+    return c.json(await c.var.api.updateTask(c.req.param('id'), await body(c), expected))
   })
 
   app.delete('/v1/tasks/:id', async (c) => {
-    await api.deleteTask(c.req.param('id'))
+    await c.var.api.deleteTask(c.req.param('id'))
     return c.body(null, 204)
   })
 
-  app.post('/v1/tasks/:id/move', async (c) => c.json(await api.moveTask(c.req.param('id'), await body(c))))
+  app.post('/v1/tasks/:id/move', async (c) => c.json(await c.var.api.moveTask(c.req.param('id'), await body(c))))
 
   app.post('/v1/tasks/:id/archive', async (c) => {
     const asked = ((await body(c)) ?? {}) as { archived?: unknown }
-    return c.json(await api.archiveTask(c.req.param('id'), asked.archived !== false))
+    return c.json(await c.var.api.archiveTask(c.req.param('id'), asked.archived !== false))
   })
 
-  app.get('/v1/search', async (c) => c.json(await api.searchTasks(parseTaskSearch(search(c)))))
+  app.get('/v1/search', async (c) => c.json(await c.var.api.searchTasks(parseTaskSearch(search(c)))))
 
   app.get('/v1/changes', async (c) => {
     const since = c.req.query('since')
@@ -132,7 +147,7 @@ export function createRouter(host: HttpHost): (request: Request) => Response | P
     if (cursor !== null && !Number.isInteger(cursor)) {
       throw new ApiRequestError('invalid', 'since must be an integer cursor')
     }
-    return c.json(await api.changes(cursor))
+    return c.json(await c.var.api.changes(cursor))
   })
 
   app.notFound((c) => c.json(fail('not_found', `no route for ${c.req.method} ${c.req.path}`), 404))

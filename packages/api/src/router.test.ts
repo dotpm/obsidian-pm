@@ -10,7 +10,10 @@ describe('createRouter', () => {
 
   beforeEach(() => {
     api = new FakeApi()
-    route = createRouter({ api, info: { name: 'dotpm', version: '9.9.9' }, token: () => TOKEN })
+    route = createRouter({
+      info: { name: 'dotpm', version: '9.9.9' },
+      authorize: (token) => (token === TOKEN ? api : null)
+    })
   })
 
   async function send(
@@ -45,6 +48,21 @@ describe('createRouter', () => {
     expect(await missing.json()).toEqual({ error: { code: 'unauthorized', message: expect.any(String) } })
     expect((await send('GET', '/v1/projects', { headers: { authorization: 'Bearer nope' } })).status).toBe(401)
     expect(api.calls).toEqual([])
+  })
+
+  it('serves each token the API it opens', async () => {
+    const other = new FakeApi()
+    const shared = createRouter({
+      info: { name: 'dotpm', version: '9.9.9' },
+      authorize: async (token) => ({ [TOKEN]: api, other })[token] ?? null
+    })
+    const list = (token: string) =>
+      shared(new Request('http://127.0.0.1/v1/projects', { headers: { authorization: `Bearer ${token}` } }))
+    expect((await list('other')).status).toBe(200)
+    expect(other.calls.length).toBe(1)
+    expect(api.calls).toEqual([])
+    expect((await list(TOKEN)).status).toBe(200)
+    expect(api.calls.length).toBe(1)
   })
 
   it('lists and reads projects and tasks', async () => {

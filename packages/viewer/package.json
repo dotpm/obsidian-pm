@@ -1,12 +1,32 @@
 {
   "name": "@dotpm/viewer",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "The dotpm snapshot viewer as hashed static assets, for hosting published project views",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/dotpm/obsidian-pm.git",
+    "directory": "packages/viewer"
+  },
+  "files": [
+    "dist/assets",
+    "dist/manifest.json"
+  ],
   "type": "module",
   "exports": {
     ".": "./src/main.ts"
   },
-  "dependencies": {
+  "publishConfig": {
+    "exports": {
+      "./manifest.json": "./dist/manifest.json",
+      "./assets/*": "./dist/assets/*"
+    },
+    "access": "public"
+  },
+  "scripts": {
+    "build": "node ../../scripts/build-viewer.mjs"
+  },
+  "devDependencies": {
     "@dotpm/api": "workspace:*",
     "@dotpm/core": "workspace:*",
     "@dotpm/ui": "workspace:*"
