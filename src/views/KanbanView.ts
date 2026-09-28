@@ -3,12 +3,12 @@ import type PMPlugin from '#main'
 import {
   type Task,
   type TaskStatus,
-  type FilterState,
+  type FilterContext,
+  type TaskQuery,
   type ResolvedProjectConfig,
   flattenTasks,
   totalLoggedHours,
-  matchesFilter,
-  displayName,
+  matchesQuery,
   dueUrgency,
   getPriorityConfig
 } from '@dotpm/core'
@@ -23,14 +23,14 @@ export class KanbanView implements SubView {
   private dragTask: Task | null = null
   /** Resolved once per board render. */
   private config!: ResolvedProjectConfig
-  private personKey: (raw: string) => string = displayName
+  private filterContext!: FilterContext
 
   constructor(
     private container: HTMLElement,
     private scope: ProjectScope,
     private plugin: PMPlugin,
     private onRefresh: () => Promise<void>,
-    private filter: FilterState
+    private query: TaskQuery
   ) {}
 
   render(): void {
@@ -42,7 +42,7 @@ export class KanbanView implements SubView {
 
   private renderBoard(): void {
     this.config = this.scope.config
-    this.personKey = personKeyer(this.plugin.app)
+    this.filterContext = this.scope.filterContext(personKeyer(this.plugin.app))
     this.container.empty()
     this.container.addClass('pm-kanban-view')
 
@@ -73,7 +73,7 @@ export class KanbanView implements SubView {
       ? flattenTasks(this.scope.tasks()).map((ft) => ft.task)
       : this.scope.tasks()
     const pending = candidates.filter(
-      (t) => t.filePath && !t.description && matchesFilter(t, this.filter, this.config.statuses, this.personKey)
+      (t) => t.filePath && !t.description && matchesQuery(t, this.query, this.filterContext)
     )
     if (!pending.length) return
     await Promise.all(pending.map((t) => this.plugin.store.loadTaskBody(t)))
@@ -84,9 +84,7 @@ export class KanbanView implements SubView {
     const candidates = this.config.kanbanShowSubtasks
       ? flattenTasks(this.scope.tasks()).map((ft) => ft.task)
       : this.scope.tasks()
-    return candidates.filter(
-      (t) => t.status === status && matchesFilter(t, this.filter, this.config.statuses, this.personKey)
-    )
+    return candidates.filter((t) => t.status === status && matchesQuery(t, this.query, this.filterContext))
   }
 
   private buildCardData(task: Task): KanbanCardData {

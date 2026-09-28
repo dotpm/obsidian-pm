@@ -390,7 +390,7 @@ button.pm-filter-chip-field {
 .pm-filter-chip-icon {
   display: inline-flex;
 }
-.pm-filter-chip-op {
+button.pm-filter-chip-op {
   padding: 0 2px;
   color: var(--text-faint);
 }
@@ -465,4 +465,50 @@ button.pm-switcher-all {
   margin-top: 4px;
   border-top: 1px solid var(--background-modifier-border);
   border-radius: 0;
+}
+
+.pm-filter-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 6px;
+  font-weight: 600;
+  font-size: var(--font-ui-small);
+  --icon-size: 14px;
+}
+.pm-filter-pop-ops {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 0 4px 6px;
+}
+button.pm-filter-pop-op {
+  height: 24px;
+  padding: 0 8px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: var(--radius-s);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+}
+button.pm-filter-pop-op.is-active {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  color: var(--text-accent);
+}
+.pm-filter-pop-range {
+  display: flex;
+  gap: 6px;
+}
+.pm-pop-item-note {
+  color: var(--text-faint);
+  font-variant-numeric: tabular-nums;
+}
+.pm-pop-empty {
+  padding: 6px 9px;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  white-space: normal;
 }

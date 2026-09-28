@@ -15,7 +15,7 @@ import type { GanttCanvas } from '../gantt/canvas'
 import { renderGridLines, renderTodayLine } from '../gantt/canvas'
 import { renderTimelineHeader } from '../gantt/header'
 import { HEADER_HEIGHT, LABEL_WIDTH, ROW_HEIGHT, buildTimelineConfig, dateToX } from '../gantt/TimelineConfig'
-import { allTasks, isMulti, mergedConfig, projectOf, type ViewModel } from './model'
+import { allTasks, filterContextOf, isMulti, mergedConfig, projectOf, queryOf, type ViewModel } from './model'
 
 const granularities = (): { id: GanttGranularity; label: string }[] => [
   { id: 'day', label: t('granularity.day') },
@@ -28,7 +28,7 @@ const granularities = (): { id: GanttGranularity; label: string }[] => [
 const noop = (): void => {}
 
 function visibleTasks(model: ViewModel): Task[] {
-  return applyTaskFilterPromote(allTasks(model), model.filter, mergedConfig(model).statuses)
+  return applyTaskFilterPromote(allTasks(model), queryOf(model), filterContextOf(model))
 }
 
 function renderLabel(container: HTMLElement, model: ViewModel, task: Task, depth: number): void {

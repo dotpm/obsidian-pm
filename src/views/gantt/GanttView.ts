@@ -3,7 +3,7 @@ import type PMPlugin from '#main'
 import {
   type Task,
   type GanttGranularity,
-  type FilterState,
+  type TaskQuery,
   type FlatTask,
   flattenTasks,
   applyTaskFilterPromote,
@@ -67,7 +67,7 @@ export class GanttView implements SubView {
     private scope: ProjectScope,
     private plugin: PMPlugin,
     private onRefresh: () => Promise<void>,
-    private filter: FilterState,
+    private query: TaskQuery,
     private granularity: GanttGranularity,
     private keyScope: Scope
   ) {}
@@ -294,9 +294,8 @@ export class GanttView implements SubView {
   private getVisibleTasks(): Task[] {
     return applyTaskFilterPromote(
       this.scope.tasks(),
-      this.filter,
-      this.scope.config.statuses,
-      personKeyer(this.plugin.app)
+      this.query,
+      this.scope.filterContext(personKeyer(this.plugin.app))
     )
   }
 

@@ -80,6 +80,22 @@ export function renderCustomFieldFields(
     onChanged()
     redraw()
   })
+
+  const filterable = new IconButton(parent)
+  const paint = (): void => {
+    const shown = field.filterable !== false
+    filterable
+      .setIcon(shown ? 'list-filter' : 'filter-x')
+      .setTooltip(shown ? t('customField.filterable') : t('customField.notFilterable'))
+    filterable.el.setAttribute('aria-pressed', String(shown))
+  }
+  paint()
+  filterable.onClick(() => {
+    if (field.filterable === false) delete field.filterable
+    else field.filterable = false
+    paint()
+    onChanged()
+  })
 }
 
 export function renderCustomFieldOptions(parent: HTMLElement, field: CustomFieldDef, onChanged: () => void): void {

@@ -1,6 +1,14 @@
 // @vitest-environment happy-dom
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { DEFAULT_PRIORITIES, DEFAULT_STATUSES, makeDefaultFilter, makeDefaultSort, type FilterState } from '@dotpm/core'
+import {
+  DEFAULT_PRIORITIES,
+  DEFAULT_STATUSES,
+  makeDefaultFilter,
+  makeDefaultSort,
+  makeTask,
+  type CustomFieldDef,
+  type FilterState
+} from '@dotpm/core'
 import { ChipButton } from '#primitives/ChipButton'
 import { renderBreadcrumb } from './Breadcrumb'
 import { FilterBar } from './FilterBar'
@@ -11,19 +19,32 @@ import { ViewHeader } from './ViewHeader'
 
 function noop(): void {}
 
+const FIELDS: CustomFieldDef[] = [
+  { id: 'estimate', name: 'Estimate', type: 'number' },
+  { id: 'secret', name: 'Secret', type: 'text', filterable: false }
+]
+
+const TASKS = [
+  makeTask({ id: 'a', status: 'todo', assignees: ['Ada'] }),
+  makeTask({ id: 'b', status: 'todo' }),
+  makeTask({ id: 'c', status: 'done', archived: true })
+]
+
 function mountBar(filter: FilterState, onChange = vi.fn<() => void>()): FilterBar {
   return new FilterBar(document.body.createDiv(), {
     filter,
-    statuses: DEFAULT_STATUSES,
+    tasks: TASKS,
+    ctx: { statuses: DEFAULT_STATUSES, customFields: FIELDS },
     priorities: DEFAULT_PRIORITIES,
     priorityIcons: 'chevrons',
-    assignees: ['Ada'],
-    tags: [],
+    projects: [],
     summary: '1 of 3 shown',
     onChange,
     onClose: noop
   })
 }
+
+const visibleChips = (bar: FilterBar): HTMLElement[] => bar.el.findAll('.pm-filter-chip:not(.pm-hidden)')
 
 const menuTitles = (): string[] => document.body.findAll('.menu .menu-item-title').map((item) => item.textContent ?? '')
 
@@ -51,42 +72,124 @@ describe('ChipButton', () => {
 })
 
 describe('FilterBar', () => {
-  it('shows one chip per field with the values it holds', () => {
-    const filter = { ...makeDefaultFilter(), statuses: ['todo', 'in-progress'], dueDateFilter: 'overdue' as const }
+  it('describes each condition as field, operator and value', () => {
+    const filter: FilterState = {
+      showArchived: false,
+      conditions: [
+        { field: 'status', op: 'any', value: ['todo', 'in-progress'] },
+        { field: 'due', op: 'bucket', value: 'overdue' },
+        { field: 'cf:estimate', op: 'between', value: [2, 8] },
+        { field: 'tag', op: 'empty' }
+      ]
+    }
     const bar = mountBar(filter)
-    const chips = bar.el.findAll('.pm-filter-chip')
-    expect(chips.map((chip) => chip.find('.pm-filter-chip-op')?.textContent)).toEqual(['is any of', 'is'])
-    expect(chips[0].find('.pm-filter-chip-value')?.textContent).toBe(
-      `${DEFAULT_STATUSES[0].label}, ${DEFAULT_STATUSES[1].label}`
-    )
+    const chips = visibleChips(bar)
+    expect(chips.map((chip) => chip.find('.pm-filter-chip-op')?.textContent)).toEqual([
+      'is any of',
+      'is',
+      'is between',
+      'is empty'
+    ])
+    expect(chips.map((chip) => chip.find('.pm-filter-chip-value')?.textContent)).toEqual([
+      `${DEFAULT_STATUSES[0].label}, ${DEFAULT_STATUSES[1].label}`,
+      'Overdue',
+      '2 to 8',
+      ''
+    ])
+    expect(chips[3].find('.pm-filter-chip-value')?.hasClass('pm-hidden')).toBe(true)
     expect(bar.el.find('.pm-filter-bar-summary')?.textContent).toBe('1 of 3 shown')
   })
 
-  it('removes a field and clears them all', () => {
+  it('removes a condition and clears them all', () => {
     const onChange = vi.fn<() => void>()
-    const filter = { ...makeDefaultFilter(), statuses: ['todo'], priorities: ['high'], showArchived: true }
+    const filter: FilterState = {
+      showArchived: true,
+      conditions: [
+        { field: 'status', op: 'any', value: ['todo'] },
+        { field: 'priority', op: 'any', value: ['high'] }
+      ]
+    }
     const bar = mountBar(filter, onChange)
+    expect(visibleChips(bar).length).toBe(3)
     bar.el.find('.pm-filter-chip-remove')?.click()
-    expect(filter.statuses).toEqual([])
-    expect(bar.el.findAll('.pm-filter-chip').length).toBe(2)
+    expect(filter.conditions.map((c) => c.field)).toEqual(['priority'])
+    expect(visibleChips(bar).length).toBe(2)
 
     bar.el.find('.pm-filter-bar-clear')?.click()
-    expect(filter.priorities).toEqual([])
+    expect(filter.conditions).toEqual([])
     expect(filter.showArchived).toBe(false)
-    expect(bar.el.findAll('.pm-filter-chip').length).toBe(0)
+    expect(visibleChips(bar).length).toBe(0)
+    expect(bar.el.find('.pm-filter-bar-clear')?.hasClass('pm-hidden')).toBe(true)
     expect(onChange).toHaveBeenCalledTimes(2)
   })
 
-  it('offers every field in the picker and applies a due date from it', async () => {
+  it('offers the built-in fields and every custom field not opted out', () => {
+    mountBar(makeDefaultFilter()).openPicker()
+    const labels = document.body.findAll('.pm-filter-pop .pm-pop-item-label').map((el) => el.textContent)
+    expect(labels).toEqual([
+      'Status',
+      'Priority',
+      'Assignee',
+      'Tag',
+      'Due date',
+      'Start date',
+      'Type',
+      'Title',
+      'Estimate',
+      'Include archived'
+    ])
+  })
+
+  it('adds a condition from the value list, with counts that leave archived tasks out', () => {
     const filter = makeDefaultFilter()
     const bar = mountBar(filter)
     bar.openPicker()
-    expect(menuTitles()).toEqual(['Status', 'Priority', 'Assignee', 'Due date', 'Include archived'])
-    document.body.findAll('.menu .menu-item')[3].click()
-    await new Promise((resolve) => window.setTimeout(resolve, 0))
-    document.body.findAll('.menu .menu-item')[0].click()
-    expect(filter.dueDateFilter).toBe('overdue')
-    expect(bar.el.find('.pm-filter-chip-value')?.textContent).toBe('Overdue')
+    document.body.findAll('.pm-filter-pop .pm-pop-item')[0].click()
+    const rows = document.body.findAll('.pm-filter-pop-value .pm-pop-item')
+    const todo = rows.find((row) => row.find('.pm-pop-item-label')?.textContent === DEFAULT_STATUSES[0].label)
+    const done = rows.find((row) => row.find('.pm-pop-item-label')?.textContent === 'Done')
+    expect(todo?.find('.pm-pop-item-note')?.textContent).toBe('2')
+    expect(done?.find('.pm-pop-item-note')?.textContent).toBe('0')
+    todo?.click()
+    expect(filter.conditions).toEqual([{ field: 'status', op: 'any', value: ['todo'] }])
+    expect(visibleChips(bar).length).toBe(1)
+  })
+
+  it('edits a condition in place from its chip', () => {
+    const filter: FilterState = { showArchived: false, conditions: [{ field: 'status', op: 'any', value: ['todo'] }] }
+    const bar = mountBar(filter)
+    visibleChips(bar)[0].querySelector<HTMLButtonElement>('.pm-filter-chip-op')?.click()
+    const ops = document.body.findAll('.pm-filter-pop-op')
+    ops.find((op) => op.textContent === 'is none of')?.click()
+    expect(filter.conditions).toEqual([{ field: 'status', op: 'none', value: ['todo'] }])
+    expect(visibleChips(bar)[0].find('.pm-filter-chip-op')?.textContent).toBe('is not')
+  })
+
+  it('drops a condition whose values are cleared', () => {
+    const filter: FilterState = { showArchived: false, conditions: [{ field: 'status', op: 'any', value: ['todo'] }] }
+    const bar = mountBar(filter)
+    visibleChips(bar)[0].querySelector<HTMLButtonElement>('.pm-filter-chip-value')?.click()
+    document.body
+      .findAll('.pm-filter-pop-value .pm-pop-item')
+      .find((row) => row.find('.pm-pop-item-label')?.textContent === DEFAULT_STATUSES[0].label)
+      ?.click()
+    expect(filter.conditions).toEqual([])
+    expect(visibleChips(bar).length).toBe(0)
+  })
+
+  it('filters by text as it is typed', () => {
+    const filter = makeDefaultFilter()
+    const bar = mountBar(filter)
+    bar.openPicker()
+    document.body
+      .findAll('.pm-filter-pop .pm-pop-item')
+      .find((row) => row.find('.pm-pop-item-label')?.textContent === 'Title')
+      ?.click()
+    const input = document.body.querySelector<HTMLInputElement>('.pm-filter-pop-value input')
+    if (!input) throw new Error('no text field')
+    input.value = 'copy'
+    input.dispatchEvent(new Event('input'))
+    expect(filter.conditions).toEqual([{ field: 'title', op: 'contains', value: 'copy' }])
   })
 })
 

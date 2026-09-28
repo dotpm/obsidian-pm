@@ -1,5 +1,6 @@
 import {
   type CustomFieldDef,
+  type FilterContext,
   type PriorityConfig,
   type Project,
   type ResolvedProjectConfig,
@@ -171,6 +172,16 @@ export class ProjectScope {
   customFields(): CustomFieldDef[] {
     if (!this.isMulti) return this.primary ? this.configOfProject(this.primary).customFields : []
     return unionById(this.projects.map((project) => this.configOfProject(project).customFields))
+  }
+
+  /** What a filter condition needs to match the tasks in scope. */
+  filterContext(keyOf: (raw: string) => string): FilterContext {
+    return {
+      statuses: this.config.statuses,
+      customFields: this.customFields(),
+      keyOf,
+      projectOf: (task) => this.projectOf(task.id)?.id
+    }
   }
 
   teamMembers(): string[] {

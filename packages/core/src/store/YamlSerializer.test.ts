@@ -46,7 +46,7 @@ function fixtureProject(): Project {
     {
       id: 'view-1',
       name: 'Open',
-      filter: { ...makeDefaultFilter(), statuses: ['todo'] },
+      filter: { ...makeDefaultFilter(), conditions: [{ field: 'status', op: 'any', value: ['todo'] }] },
       sortKey: 'due',
       sortDir: 'asc'
     }

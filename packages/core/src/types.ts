@@ -9,7 +9,7 @@ export type GanttWeekLabel = 'weekNumber' | 'dateRange' | 'both'
 export type ViewMode = 'table' | 'gantt' | 'kanban'
 export const GANTT_GRANULARITIES: GanttGranularity[] = ['day', 'week', 'month', 'quarter', 'year']
 export type LineBorders = 'none' | 'horizontal' | 'vertical' | 'both'
-export type DueDateFilter = 'any' | 'overdue' | 'this-week' | 'this-month' | 'no-date'
+export type DateBucket = 'overdue' | 'today' | 'this-week' | 'this-month'
 export type SortDir = 'asc' | 'desc'
 export type DueUrgency = 'normal' | 'near' | 'overdue'
 export type TaskType = 'task' | 'milestone' | 'subtask'
@@ -51,6 +51,8 @@ export interface CustomFieldDef {
   type: (typeof CUSTOM_FIELD_TYPES)[number]
   options?: string[] // for select / multiselect
   icon?: string // emoji or lucide icon name
+  /** False keeps the field out of the filter picker. */
+  filterable?: boolean
 }
 
 export interface Task {
@@ -118,14 +120,47 @@ export type ProjectPatch = Partial<
   >
 >
 
+export const FILTER_OPS = [
+  'any',
+  'none',
+  'all',
+  'empty',
+  'not-empty',
+  'contains',
+  'not-contains',
+  'eq',
+  'ne',
+  'gte',
+  'lte',
+  'between',
+  'bucket',
+  'checked',
+  'unchecked'
+] as const
+export type FilterOp = (typeof FILTER_OPS)[number]
+
+/**
+ * One applied filter. `field` is a built-in field id or `cf:<id>` for a custom field.
+ * `value` holds the ids an `any` / `none` / `all` compares against, the text of a
+ * `contains`, the numbers of a number comparison, the bucket of a `bucket`, or the two
+ * `YYYY-MM-DD` ends of a date `between` (either may be empty).
+ */
+export interface FilterCondition {
+  field: string
+  op: FilterOp
+  value?: string[] | string | number[]
+}
+
+/** Conditions combine with AND; the ids inside one condition with OR. */
 export interface FilterState {
-  text: string
-  statuses: TaskStatus[]
-  priorities: TaskPriority[]
-  assignees: string[]
-  tags: string[]
-  dueDateFilter: DueDateFilter
+  conditions: FilterCondition[]
   showArchived: boolean
+}
+
+/** What a view shows: the saved filter plus the search text, which is never saved. */
+export interface TaskQuery {
+  filter: FilterState
+  text: string
 }
 
 export interface SavedView extends SortOrder {
@@ -415,13 +450,5 @@ export function makeDefaultSort(): SortOrder {
 }
 
 export function makeDefaultFilter(): FilterState {
-  return {
-    text: '',
-    statuses: [],
-    priorities: [],
-    assignees: [],
-    tags: [],
-    dueDateFilter: 'any',
-    showArchived: false
-  }
+  return { conditions: [], showArchived: false }
 }

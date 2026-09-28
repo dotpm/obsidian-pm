@@ -1,6 +1,6 @@
 import type PMPlugin from '#main'
 import {
-  type FilterState,
+  type TaskQuery,
   type SortKey,
   type SortOrder,
   type LineBorders,
@@ -11,7 +11,7 @@ import {
   flattenTasks,
   findTaskById,
   applyTaskFilterFlat,
-  isFilterActive,
+  isQueryActive,
   t
 } from '@dotpm/core'
 import { personKeyer, type ProjectScope } from '#store'
@@ -29,7 +29,7 @@ export interface TableTreeRow extends FlatTask {
 
 export interface TableState {
   sort: SortOrder
-  filter: FilterState
+  query: TaskQuery
   selectedTaskId: string | null
   selectedTaskIds: Set<string>
   lastCheckedTaskId: string | null
@@ -191,8 +191,8 @@ function fillTableBody(ctx: TableContext): void {
   ctx.state.wrapper?.setAttr('data-borders', ctx.lineBorders)
 
   let flat = flattenTasks(ctx.scope.tasks(), ctx.collapsedIds)
-  const hasActiveFilter = isFilterActive(ctx.state.filter)
-  flat = applyTaskFilterFlat(flat, ctx.state.filter, ctx.statuses, personKeyer(ctx.plugin.app))
+  const hasActiveFilter = isQueryActive(ctx.state.query)
+  flat = applyTaskFilterFlat(flat, ctx.state.query, ctx.scope.filterContext(personKeyer(ctx.plugin.app)))
 
   const filteredIds = new Set(flat.map((f) => f.task.id))
 

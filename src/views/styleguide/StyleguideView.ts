@@ -682,12 +682,20 @@ export class StyleguideView extends ItemView {
     new SplitButton(header.actions).setIcon('plus').setLabel('Add task').onClick(noop)
     new ChipButton(header.actions).setIcon('ellipsis').setLabel('').setAriaLabel('More options')
     new FilterBar(header.bar, {
-      filter: { ...makeDefaultFilter(), statuses: ['todo', 'in-progress'], dueDateFilter: 'this-week' },
-      statuses: DEFAULT_STATUSES,
+      filter: {
+        ...makeDefaultFilter(),
+        conditions: [
+          { field: 'status', op: 'any', value: ['todo', 'in-progress'] },
+          { field: 'due', op: 'bucket', value: 'this-week' },
+          { field: 'cf:estimate', op: 'between', value: [2, 8] },
+          { field: 'tag', op: 'none', value: ['design'] }
+        ]
+      },
+      tasks: [makeTask({ assignees: PEOPLE, tags: ['design'] })],
+      ctx: { statuses: DEFAULT_STATUSES, customFields: [{ id: 'estimate', name: 'Estimate', type: 'number' }] },
       priorities: DEFAULT_PRIORITIES,
       priorityIcons: 'chevrons',
-      assignees: PEOPLE,
-      tags: ['design'],
+      projects: [],
       summary: '42 of 318 shown',
       onChange: noop,
       onClose: noop

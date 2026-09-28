@@ -231,13 +231,14 @@ describe('project round-trip', () => {
       id: 'v1',
       name: 'High priority',
       filter: {
-        text: 'api',
-        statuses: ['in-progress'],
-        priorities: ['high', 'critical'],
-        assignees: ['Alice'],
-        tags: ['design'],
-        dueDateFilter: 'overdue',
-        showArchived: false
+        conditions: [
+          { field: 'status', op: 'any', value: ['in-progress'] },
+          { field: 'cf:estimate', op: 'between', value: [2, 8] },
+          { field: 'due', op: 'bucket', value: 'overdue' },
+          { field: 'title', op: 'contains', value: 'api' },
+          { field: 'tag', op: 'empty' }
+        ],
+        showArchived: true
       },
       sortKey: 'due',
       sortDir: 'desc',
@@ -254,6 +255,52 @@ describe('project round-trip', () => {
     const fm = { savedViews: [{ id: 'v1', name: 'Odd', sortKey: 'estimate', sortDir: 'sideways' }] }
     const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
     expect(project.savedViews[0]).toMatchObject({ sortKey: 'status', sortDir: 'asc' })
+  })
+
+  it('reads a saved view from before conditions as the conditions it meant', () => {
+    const fm = {
+      savedViews: [
+        {
+          id: 'v1',
+          name: 'Old',
+          filter: {
+            text: ' api ',
+            statuses: ['todo'],
+            priorities: [],
+            assignees: ['Alice'],
+            tags: [],
+            dueDateFilter: 'no-date',
+            showArchived: true
+          }
+        }
+      ]
+    }
+    const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
+    expect(project.savedViews[0].filter).toEqual({
+      conditions: [
+        { field: 'status', op: 'any', value: ['todo'] },
+        { field: 'assignee', op: 'any', value: ['Alice'] },
+        { field: 'due', op: 'empty' },
+        { field: 'title', op: 'contains', value: 'api' }
+      ],
+      showArchived: true
+    })
+  })
+
+  it('drops conditions it cannot read', () => {
+    const fm = {
+      savedViews: [
+        {
+          id: 'v1',
+          name: 'Odd',
+          filter: {
+            conditions: [{ field: 'status', op: 'sometimes' }, { op: 'any' }, 'x', { field: 'tag', op: 'empty' }]
+          }
+        }
+      ]
+    }
+    const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
+    expect(project.savedViews[0].filter.conditions).toEqual([{ field: 'tag', op: 'empty' }])
   })
 
   it('drops a timeline scale it does not know', () => {

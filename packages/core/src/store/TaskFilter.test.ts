@@ -1,149 +1,228 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_STATUSES, makeDefaultFilter, makeTask, type FilterState, type Task } from '../types'
+import { today } from '../dates'
 import {
-  applyTaskFilter,
+  DEFAULT_STATUSES,
+  makeDefaultFilter,
+  makeTask,
+  type CustomFieldDef,
+  type FilterCondition,
+  type Task,
+  type TaskQuery
+} from '../types'
+import type { FilterContext } from './FilterFields'
+import {
   applyTaskFilterFlat,
   applyTaskFilterPromote,
+  bestConditionToDrop,
   countActiveFilters,
-  isFilterActive,
-  matchesFilter
+  isConditionComplete,
+  isQueryActive,
+  matchesCondition,
+  matchesQuery,
+  matchesSearch
 } from './TaskFilter'
 import { flattenTasks } from './TaskTreeOps'
+
+const FIELDS: CustomFieldDef[] = [
+  { id: 'client', name: 'Client', type: 'select', options: ['Acme', 'Globex'] },
+  { id: 'estimate', name: 'Estimate', type: 'number' },
+  { id: 'reviewed', name: 'Reviewed', type: 'checkbox' },
+  { id: 'sprint', name: 'Sprint', type: 'text' },
+  { id: 'labels', name: 'Labels', type: 'multiselect' },
+  { id: 'launch', name: 'Launch', type: 'date' }
+]
+
+const ctx: FilterContext = { statuses: DEFAULT_STATUSES, customFields: FIELDS }
 
 function task(overrides: Partial<Task> & { id: string }): Task {
   return makeTask(overrides)
 }
 
-function filter(overrides: Partial<FilterState> = {}): FilterState {
-  return { ...makeDefaultFilter(), ...overrides }
+function query(conditions: FilterCondition[] = [], extra: Partial<TaskQuery> = {}): TaskQuery {
+  return { filter: { ...makeDefaultFilter(), conditions }, text: '', ...extra }
 }
 
-describe('isFilterActive', () => {
-  it('returns false for the default filter', () => {
-    expect(isFilterActive(makeDefaultFilter())).toBe(false)
-  })
+const matches = (t: Task, condition: FilterCondition, context: FilterContext = ctx): boolean =>
+  matchesCondition(t, condition, context)
 
-  it('returns true when text is set', () => {
-    expect(isFilterActive(filter({ text: 'foo' }))).toBe(true)
-  })
-
-  it('returns true when any list filter has entries', () => {
-    expect(isFilterActive(filter({ statuses: ['todo'] }))).toBe(true)
-    expect(isFilterActive(filter({ priorities: ['high'] }))).toBe(true)
-    expect(isFilterActive(filter({ assignees: ['alice'] }))).toBe(true)
-    expect(isFilterActive(filter({ tags: ['urgent'] }))).toBe(true)
-  })
-
-  it('returns true when dueDateFilter is not "any"', () => {
-    expect(isFilterActive(filter({ dueDateFilter: 'overdue' }))).toBe(true)
-  })
-
-  it('ignores showArchived (matches legacy semantics)', () => {
-    expect(isFilterActive(filter({ showArchived: true }))).toBe(false)
-  })
-})
-
-describe('countActiveFilters', () => {
-  it('counts each active filter once', () => {
+describe('isQueryActive and countActiveFilters', () => {
+  it('treats the default query as inactive', () => {
+    expect(isQueryActive(query())).toBe(false)
     expect(countActiveFilters(makeDefaultFilter())).toBe(0)
+  })
+
+  it('counts search text as active but not as a filter', () => {
+    expect(isQueryActive(query([], { text: 'foo' }))).toBe(true)
+    expect(isQueryActive(query([], { text: '   ' }))).toBe(false)
+  })
+
+  it('counts showing archived tasks as a filter without narrowing the view', () => {
+    const q = query()
+    q.filter.showArchived = true
+    expect(isQueryActive(q)).toBe(false)
+    expect(countActiveFilters(q.filter)).toBe(1)
+  })
+})
+
+describe('list fields', () => {
+  const t = task({ id: 'a', status: 'todo', priority: 'high' })
+
+  it('matches any of the chosen values', () => {
+    expect(matches(t, { field: 'status', op: 'any', value: ['todo', 'done'] })).toBe(true)
+    expect(matches(t, { field: 'status', op: 'any', value: ['done'] })).toBe(false)
+  })
+
+  it('excludes the chosen values with none', () => {
+    expect(matches(t, { field: 'priority', op: 'none', value: ['high'] })).toBe(false)
+    expect(matches(t, { field: 'priority', op: 'none', value: ['low'] })).toBe(true)
+  })
+
+  it('ignores a condition with no values yet', () => {
+    expect(matches(t, { field: 'status', op: 'any', value: [] })).toBe(true)
+  })
+
+  it('reads a custom select and its empty state', () => {
+    const withClient = task({ id: 'b', customFields: { client: 'Acme' } })
+    const without = task({ id: 'c' })
+    expect(matches(withClient, { field: 'cf:client', op: 'any', value: ['Acme'] })).toBe(true)
+    expect(matches(without, { field: 'cf:client', op: 'empty' })).toBe(true)
+    expect(matches(withClient, { field: 'cf:client', op: 'not-empty' })).toBe(true)
+  })
+
+  it('matches the project a task belongs to', () => {
+    const withProject: FilterContext = { ...ctx, projectOf: () => 'p1' }
+    expect(matches(t, { field: 'project', op: 'any', value: ['p1'] }, withProject)).toBe(true)
+    expect(matches(t, { field: 'project', op: 'any', value: ['p2'] }, withProject)).toBe(false)
+  })
+
+  it('ignores a field nothing defines any more', () => {
+    expect(matches(t, { field: 'cf:gone', op: 'any', value: ['x'] })).toBe(true)
+  })
+})
+
+describe('multi fields', () => {
+  const t = task({ id: 'a', tags: ['design', 'web'], customFields: { labels: ['red', 'blue'] } })
+
+  it('matches any, all and none', () => {
+    expect(matches(t, { field: 'tag', op: 'any', value: ['web', 'ops'] })).toBe(true)
+    expect(matches(t, { field: 'tag', op: 'all', value: ['web', 'design'] })).toBe(true)
+    expect(matches(t, { field: 'tag', op: 'all', value: ['web', 'ops'] })).toBe(false)
+    expect(matches(t, { field: 'tag', op: 'none', value: ['ops'] })).toBe(true)
+    expect(matches(t, { field: 'cf:labels', op: 'none', value: ['red'] })).toBe(false)
+  })
+
+  it('matches a task with no values as empty', () => {
+    expect(matches(task({ id: 'b' }), { field: 'tag', op: 'empty' })).toBe(true)
+    expect(matches(t, { field: 'tag', op: 'empty' })).toBe(false)
+  })
+})
+
+describe('text, number and checkbox fields', () => {
+  const t = task({ id: 'a', title: 'Checkout copy', customFields: { estimate: 5, reviewed: true, sprint: 'S14' } })
+
+  it('matches contains case-insensitively', () => {
+    expect(matches(t, { field: 'title', op: 'contains', value: 'CHECKOUT' })).toBe(true)
+    expect(matches(t, { field: 'title', op: 'not-contains', value: 'checkout' })).toBe(false)
+    expect(matches(t, { field: 'cf:sprint', op: 'contains', value: '14' })).toBe(true)
+  })
+
+  it('compares numbers', () => {
+    expect(matches(t, { field: 'cf:estimate', op: 'eq', value: [5] })).toBe(true)
+    expect(matches(t, { field: 'cf:estimate', op: 'gte', value: [6] })).toBe(false)
+    expect(matches(t, { field: 'cf:estimate', op: 'lte', value: [5] })).toBe(true)
+    expect(matches(t, { field: 'cf:estimate', op: 'between', value: [2, 8] })).toBe(true)
+    expect(matches(t, { field: 'cf:estimate', op: 'between', value: [6, 8] })).toBe(false)
+    expect(matches(task({ id: 'b' }), { field: 'cf:estimate', op: 'empty' })).toBe(true)
+    expect(matches(task({ id: 'b' }), { field: 'cf:estimate', op: 'ne', value: [5] })).toBe(true)
+  })
+
+  it('reads a number stored as text', () => {
     expect(
-      countActiveFilters(
-        filter({
-          text: 'x',
-          statuses: ['todo'],
-          priorities: ['high'],
-          assignees: ['a'],
-          tags: ['t'],
-          dueDateFilter: 'overdue',
-          showArchived: true
-        })
-      )
-    ).toBe(7)
+      matches(task({ id: 'b', customFields: { estimate: '3' } }), { field: 'cf:estimate', op: 'eq', value: [3] })
+    ).toBe(true)
   })
 
-  it('counts showArchived', () => {
-    expect(countActiveFilters(filter({ showArchived: true }))).toBe(1)
+  it('matches checked and unchecked', () => {
+    expect(matches(t, { field: 'cf:reviewed', op: 'checked' })).toBe(true)
+    expect(matches(task({ id: 'b' }), { field: 'cf:reviewed', op: 'unchecked' })).toBe(true)
   })
 })
 
-describe('matchesFilter', () => {
-  it('hides archived tasks when showArchived is false', () => {
+describe('date fields', () => {
+  const day = (offset: number): string => today().add({ days: offset }).toString()
+
+  it('sorts dates into buckets', () => {
+    const due = (d: string) => task({ id: d, due: d, status: 'todo' })
+    expect(matches(due(day(-1)), { field: 'due', op: 'bucket', value: 'overdue' })).toBe(true)
+    expect(matches(due(day(0)), { field: 'due', op: 'bucket', value: 'overdue' })).toBe(false)
+    expect(matches(due(day(0)), { field: 'due', op: 'bucket', value: 'today' })).toBe(true)
+    expect(matches(due(day(0)), { field: 'due', op: 'bucket', value: 'this-week' })).toBe(true)
+    expect(matches(due(day(8)), { field: 'due', op: 'bucket', value: 'this-week' })).toBe(false)
+    expect(matches(due(day(0)), { field: 'due', op: 'bucket', value: 'this-month' })).toBe(true)
+    expect(matches(due(day(-1)), { field: 'due', op: 'bucket', value: 'this-month' })).toBe(false)
+  })
+
+  it('does not call a finished task overdue', () => {
+    const done = task({ id: 'a', due: '2030-05-01', status: 'done' })
+    expect(matches(done, { field: 'due', op: 'bucket', value: 'overdue' })).toBe(false)
+  })
+
+  it('matches a range with either end open', () => {
+    const t = task({ id: 'a', start: '2030-06-10', customFields: { launch: '2030-07-01' } })
+    expect(matches(t, { field: 'start', op: 'between', value: ['2030-06-01', '2030-06-30'] })).toBe(true)
+    expect(matches(t, { field: 'start', op: 'between', value: ['2030-06-11', ''] })).toBe(false)
+    expect(matches(t, { field: 'cf:launch', op: 'between', value: ['', '2030-07-01'] })).toBe(true)
+  })
+
+  it('matches a missing date as empty', () => {
+    expect(matches(task({ id: 'a' }), { field: 'due', op: 'empty' })).toBe(true)
+    expect(matches(task({ id: 'a', due: '2030-01-01' }), { field: 'due', op: 'not-empty' })).toBe(true)
+  })
+})
+
+describe('search', () => {
+  it('matches title, tags, assignees and custom values', () => {
+    const t = task({
+      id: 'abc123',
+      title: 'Payment errors',
+      tags: ['billing'],
+      assignees: ['[[People/Ada Lovelace]]'],
+      customFields: { sprint: 'S14' }
+    })
+    expect(matchesSearch(t, 'payment', ctx)).toBe(true)
+    expect(matchesSearch(t, 'BILL', ctx)).toBe(true)
+    expect(matchesSearch(t, 'ada', ctx)).toBe(true)
+    expect(matchesSearch(t, 's14', ctx)).toBe(true)
+    expect(matchesSearch(t, 'abc123', ctx)).toBe(true)
+    expect(matchesSearch(t, 'abc', ctx)).toBe(false)
+    expect(matchesSearch(t, '   ', ctx)).toBe(true)
+  })
+})
+
+describe('matchesQuery', () => {
+  it('hides archived tasks unless the filter shows them', () => {
     const t = task({ id: 'a', archived: true })
-    expect(matchesFilter(t, filter())).toBe(false)
-    expect(matchesFilter(t, filter({ showArchived: true }))).toBe(true)
+    const q = query()
+    expect(matchesQuery(t, q, ctx)).toBe(false)
+    q.filter.showArchived = true
+    expect(matchesQuery(t, q, ctx)).toBe(true)
   })
 
-  it('matches text against title, status, priority, assignees, and tags', () => {
-    const t = task({ id: 'a', title: 'Refactor parser', assignees: ['Bob'], tags: ['cleanup'] })
-    expect(matchesFilter(t, filter({ text: 'parser' }))).toBe(true)
-    expect(matchesFilter(t, filter({ text: 'BOB' }))).toBe(true)
-    expect(matchesFilter(t, filter({ text: 'cleanup' }))).toBe(true)
-    expect(matchesFilter(t, filter({ text: 'unrelated' }))).toBe(false)
-  })
-
-  it('matches a task id pasted into the search box', () => {
-    const t = task({ id: 'ci9q78ljy7xcz0out', title: 'Refactor parser' })
-    expect(matchesFilter(t, filter({ text: 'ci9q78ljy7xcz0out' }))).toBe(true)
-    expect(matchesFilter(t, filter({ text: '  ci9q78ljy7xcz0out\n' }))).toBe(true)
-    expect(matchesFilter(t, filter({ text: 'CI9Q78LJY7XCZ0OUT' }))).toBe(true)
-  })
-
-  it('does not match a partial id, so ids never pollute ordinary text search', () => {
-    const t = task({ id: 'ci9q78ljy7xcz0out', title: 'Refactor parser' })
-    expect(matchesFilter(t, filter({ text: 'out' }))).toBe(false)
-    expect(matchesFilter(t, filter({ text: 'ci9q78' }))).toBe(false)
-  })
-
-  it('ignores a whitespace-only query', () => {
-    const t = task({ id: 'a', title: 'Refactor parser' })
-    expect(matchesFilter(t, filter({ text: '   ' }))).toBe(true)
-  })
-
-  it('filters by status, priority, assignees, tags', () => {
-    const t = task({ id: 'a', status: 'in-progress', priority: 'high', assignees: ['Alice'], tags: ['x'] })
-    expect(matchesFilter(t, filter({ statuses: ['in-progress'] }))).toBe(true)
-    expect(matchesFilter(t, filter({ statuses: ['done'] }))).toBe(false)
-    expect(matchesFilter(t, filter({ priorities: ['high'] }))).toBe(true)
-    expect(matchesFilter(t, filter({ priorities: ['low'] }))).toBe(false)
-    expect(matchesFilter(t, filter({ assignees: ['Alice'] }))).toBe(true)
-    expect(matchesFilter(t, filter({ assignees: ['Bob'] }))).toBe(false)
-    expect(matchesFilter(t, filter({ tags: ['x'] }))).toBe(true)
-    expect(matchesFilter(t, filter({ tags: ['y'] }))).toBe(false)
-  })
-
-  it('treats no-date dueDateFilter correctly', () => {
-    expect(matchesFilter(task({ id: 'a', due: '' }), filter({ dueDateFilter: 'no-date' }))).toBe(true)
-    expect(matchesFilter(task({ id: 'b', due: '2026-01-01' }), filter({ dueDateFilter: 'no-date' }))).toBe(false)
+  it('needs every condition and the search to match', () => {
+    const t = task({ id: 'a', title: 'Copy', status: 'todo', priority: 'high' })
+    const both = [
+      { field: 'status', op: 'any', value: ['todo'] },
+      { field: 'priority', op: 'any', value: ['low'] }
+    ] satisfies FilterCondition[]
+    expect(matchesQuery(t, query(both), ctx)).toBe(false)
+    expect(matchesQuery(t, query([both[0]], { text: 'copy' }), ctx)).toBe(true)
+    expect(matchesQuery(t, query([both[0]], { text: 'paste' }), ctx)).toBe(false)
   })
 })
 
-describe('applyTaskFilter (tree-shaped)', () => {
-  it('keeps tasks that match and rebuilds subtask trees', () => {
-    const tasks = [
-      task({ id: 'a', status: 'todo', subtasks: [task({ id: 'a1', status: 'todo' })] }),
-      task({ id: 'b', status: 'done' })
-    ]
-    const out = applyTaskFilter(tasks, filter({ statuses: ['todo'] }), DEFAULT_STATUSES)
-    expect(out.map((t) => t.id)).toEqual(['a'])
-    expect(out[0].subtasks.map((t) => t.id)).toEqual(['a1'])
-  })
+describe('applying to trees', () => {
+  const todo = [{ field: 'status', op: 'any', value: ['todo'] }] satisfies FilterCondition[]
 
-  it('drops the entire subtree when the parent is filtered out (strict tree)', () => {
-    const tasks = [task({ id: 'a', status: 'done', subtasks: [task({ id: 'a1', status: 'todo' })] })]
-    const out = applyTaskFilter(tasks, filter({ statuses: ['todo'] }), DEFAULT_STATUSES)
-    expect(out).toEqual([])
-  })
-
-  it('does not mutate the input tree', () => {
-    const child = task({ id: 'a1', status: 'done' })
-    const parent = task({ id: 'a', status: 'todo', subtasks: [child] })
-    const out = applyTaskFilter([parent], filter({ statuses: ['todo'] }), DEFAULT_STATUSES)
-    expect(parent.subtasks).toEqual([child])
-    expect(out[0].subtasks).toEqual([])
-  })
-})
-
-describe('applyTaskFilterPromote', () => {
   it('lifts a matching grandchild to the slot of its dropped parent', () => {
     const tasks = [
       task({
@@ -152,39 +231,8 @@ describe('applyTaskFilterPromote', () => {
         subtasks: [task({ id: 'mid', status: 'done', subtasks: [task({ id: 'leaf', status: 'todo' })] })]
       })
     ]
-    const out = applyTaskFilterPromote(tasks, filter({ statuses: ['todo'] }), DEFAULT_STATUSES)
+    const out = applyTaskFilterPromote(tasks, query(todo), ctx)
     expect(out.map((t) => t.id)).toEqual(['root'])
-    expect(out[0].subtasks.map((t) => t.id)).toEqual(['leaf'])
-  })
-
-  it('promotes orphans all the way to top level when ancestors are dropped', () => {
-    const tasks = [
-      task({
-        id: 'root',
-        status: 'done',
-        subtasks: [task({ id: 'mid', status: 'done', subtasks: [task({ id: 'leaf', status: 'todo' })] })]
-      })
-    ]
-    const out = applyTaskFilterPromote(tasks, filter({ statuses: ['todo'] }), DEFAULT_STATUSES)
-    expect(out.map((t) => t.id)).toEqual(['leaf'])
-  })
-
-  it('preserves a promoted task’s own subtree', () => {
-    const tasks = [
-      task({
-        id: 'root',
-        status: 'done',
-        subtasks: [
-          task({
-            id: 'mid',
-            status: 'todo',
-            subtasks: [task({ id: 'leaf', status: 'todo' })]
-          })
-        ]
-      })
-    ]
-    const out = applyTaskFilterPromote(tasks, filter({ statuses: ['todo'] }), DEFAULT_STATUSES)
-    expect(out.map((t) => t.id)).toEqual(['mid'])
     expect(out[0].subtasks.map((t) => t.id)).toEqual(['leaf'])
   })
 
@@ -193,53 +241,16 @@ describe('applyTaskFilterPromote', () => {
       task({ id: 'a', status: 'done', subtasks: [task({ id: 'a1', status: 'done' })] }),
       task({ id: 'b', status: 'todo' })
     ]
-    const out = applyTaskFilterPromote(tasks, filter({ statuses: ['todo'] }), DEFAULT_STATUSES)
-    expect(out.map((t) => t.id)).toEqual(['b'])
+    expect(applyTaskFilterPromote(tasks, query(todo), ctx).map((t) => t.id)).toEqual(['b'])
+  })
+
+  it('filters a flat list', () => {
+    const flat = flattenTasks([task({ id: 'a', status: 'todo' }), task({ id: 'b', status: 'done' })])
+    expect(applyTaskFilterFlat(flat, query(todo), ctx).map((f) => f.task.id)).toEqual(['a'])
   })
 })
 
-describe('applyTaskFilterFlat', () => {
-  it('returns only entries whose task matches', () => {
-    const tasks = [task({ id: 'a', status: 'todo' }), task({ id: 'b', status: 'done' })]
-    const flat = flattenTasks(tasks)
-    const out = applyTaskFilterFlat(flat, filter({ statuses: ['todo'] }), DEFAULT_STATUSES)
-    expect(out.map((f) => f.task.id)).toEqual(['a'])
-  })
-
-  it('respects showArchived', () => {
-    const tasks = [task({ id: 'a' }), task({ id: 'b', archived: true })]
-    const flat = flattenTasks(tasks)
-    expect(applyTaskFilterFlat(flat, filter(), DEFAULT_STATUSES).map((f) => f.task.id)).toEqual(['a'])
-    expect(applyTaskFilterFlat(flat, filter({ showArchived: true }), DEFAULT_STATUSES).map((f) => f.task.id)).toEqual([
-      'a',
-      'b'
-    ])
-  })
-})
-
-describe('assignee matching across spellings', () => {
-  it('matches a wikilink assignee against a plain-name filter', () => {
-    const t = task({ id: 'a', assignees: ['[[People/John Doe]]'] })
-    expect(matchesFilter(t, filter({ assignees: ['John Doe'] }))).toBe(true)
-  })
-
-  it('matches a plain-name assignee against a wikilink filter', () => {
-    const t = task({ id: 'a', assignees: ['John Doe'] })
-    expect(matchesFilter(t, filter({ assignees: ['[[John Doe]]'] }))).toBe(true)
-  })
-
-  it('matches through an alias', () => {
-    const t = task({ id: 'a', assignees: ['[[People/jdoe|John Doe]]'] })
-    expect(matchesFilter(t, filter({ assignees: ['John Doe'] }))).toBe(true)
-  })
-
-  it('still rejects a different person', () => {
-    const t = task({ id: 'a', assignees: ['[[People/John Doe]]'] })
-    expect(matchesFilter(t, filter({ assignees: ['Anna Reid'] }))).toBe(false)
-  })
-})
-
-describe('assignee matching by person key', () => {
+describe('people', () => {
   // Stands in for personKeyer: two Janes in different folders, one Bob with no note.
   const keyOf = (raw: string): string => {
     const inner = /^\[\[(.+?)\]\]$/.exec(raw.trim())?.[1] ?? raw.trim()
@@ -248,33 +259,61 @@ describe('assignee matching by person key', () => {
     if (path === 'Contacts/Jane') return 'Contacts/Jane.md'
     return path
   }
+  const keyed: FilterContext = { ...ctx, keyOf }
+  const assignee = (value: string): FilterCondition => ({ field: 'assignee', op: 'any', value: [value] })
+
+  it('matches a wikilink against a plain name through the display name by default', () => {
+    expect(matches(task({ id: 'a', assignees: ['[[People/John Doe]]'] }), assignee('John Doe'))).toBe(true)
+    expect(matches(task({ id: 'a', assignees: ['[[People/jdoe|John Doe]]'] }), assignee('John Doe'))).toBe(true)
+    expect(matches(task({ id: 'a', assignees: ['[[People/John Doe]]'] }), assignee('Anna Reid'))).toBe(false)
+  })
 
   it('separates two people who share a name but not a note', () => {
     const t = task({ id: 'a', assignees: ['[[People/Jane]]'] })
-    expect(matchesFilter(t, filter({ assignees: ['[[Contacts/Jane]]'] }), [], keyOf)).toBe(false)
+    expect(matches(t, assignee('[[Contacts/Jane]]'), keyed)).toBe(false)
+    expect(matches(t, assignee('Jane'), keyed)).toBe(true)
   })
 
-  it('still matches the same person written two ways', () => {
-    const t = task({ id: 'a', assignees: ['[[People/Jane]]'] })
-    expect(matchesFilter(t, filter({ assignees: ['Jane'] }), [], keyOf)).toBe(true)
+  it('compares a person custom field the same way', () => {
+    const fields: CustomFieldDef[] = [{ id: 'owner', name: 'Owner', type: 'person' }]
+    const t = task({ id: 'a', customFields: { owner: '[[People/Jane|JD]]' } })
+    expect(
+      matches(t, { field: 'cf:owner', op: 'any', value: ['[[People/Jane]]'] }, { ...keyed, customFields: fields })
+    ).toBe(true)
   })
+})
 
-  it('matches through an alias to the same note', () => {
-    const t = task({ id: 'a', assignees: ['[[People/Jane|JD]]'] })
-    expect(matchesFilter(t, filter({ assignees: ['[[People/Jane]]'] }), [], keyOf)).toBe(true)
+describe('isConditionComplete', () => {
+  it('knows which conditions narrow anything yet', () => {
+    expect(isConditionComplete({ field: 'status', op: 'any', value: [] })).toBe(false)
+    expect(isConditionComplete({ field: 'status', op: 'any', value: ['todo'] })).toBe(true)
+    expect(isConditionComplete({ field: 'title', op: 'contains', value: ' ' })).toBe(false)
+    expect(isConditionComplete({ field: 'due', op: 'empty' })).toBe(true)
+    expect(isConditionComplete({ field: 'due', op: 'between', value: ['', ''] })).toBe(false)
+    expect(isConditionComplete({ field: 'due', op: 'between', value: ['2030-01-01', ''] })).toBe(true)
   })
+})
 
-  it('falls back to the display name when no key function is given', () => {
-    const t = task({ id: 'a', assignees: ['[[People/Jane]]'] })
-    expect(matchesFilter(t, filter({ assignees: ['Jane'] }))).toBe(true)
-  })
-
-  it('filters a whole tree by key', () => {
+describe('bestConditionToDrop', () => {
+  it('names the condition whose removal brings back the most tasks', () => {
     const tasks = [
-      task({ id: 'a', assignees: ['[[People/Jane]]'] }),
-      task({ id: 'b', assignees: ['[[Contacts/Jane]]'] })
+      task({ id: 'a', status: 'todo', priority: 'low' }),
+      task({ id: 'b', status: 'todo', priority: 'low' }),
+      task({ id: 'c', status: 'done', priority: 'high' })
     ]
-    const kept = applyTaskFilter(tasks, filter({ assignees: ['[[People/Jane]]'] }), [], keyOf)
-    expect(kept.map((t) => t.id)).toEqual(['a'])
+    const q = query([
+      { field: 'status', op: 'any', value: ['done'] },
+      { field: 'priority', op: 'any', value: ['low'] }
+    ])
+    expect(bestConditionToDrop(tasks, q, ctx)).toEqual({ index: 0, shown: 2 })
+  })
+
+  it('returns null when no single condition brings anything back', () => {
+    const tasks = [task({ id: 'a', status: 'todo', priority: 'low' })]
+    const q = query([
+      { field: 'status', op: 'any', value: ['done'] },
+      { field: 'priority', op: 'any', value: ['high'] }
+    ])
+    expect(bestConditionToDrop(tasks, q, ctx)).toBeNull()
   })
 })

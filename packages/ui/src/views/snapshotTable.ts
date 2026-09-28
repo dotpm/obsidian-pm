@@ -7,7 +7,7 @@ import {
   flattenTasks,
   formatDateLong,
   getStatusConfig,
-  isFilterActive,
+  isQueryActive,
   isTerminalStatus,
   stringifyCustomValue,
   totalLoggedHours,
@@ -29,10 +29,12 @@ import {
   allTasks,
   configOf,
   customFieldColumns,
+  filterContextOf,
   isMulti,
   mergedConfig,
   personOf,
   projectOf,
+  queryOf,
   type ViewModel
 } from './model'
 import { compareTask } from './tableSort'
@@ -51,8 +53,9 @@ const noSave = async (): Promise<void> => {}
  */
 export function tableRows(model: ViewModel): TreeRow[] {
   const config = mergedConfig(model)
-  const hasActiveFilter = isFilterActive(model.filter)
-  const flat = applyTaskFilterFlat(flattenTasks(allTasks(model)), model.filter, config.statuses)
+  const query = queryOf(model)
+  const hasActiveFilter = isQueryActive(query)
+  const flat = applyTaskFilterFlat(flattenTasks(allTasks(model)), query, filterContextOf(model))
   const filteredIds = new Set(flat.map((f) => f.task.id))
 
   const childrenByParent = new Map<string | null, FlatTask[]>()

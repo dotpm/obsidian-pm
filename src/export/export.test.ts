@@ -43,7 +43,7 @@ describe('buildSnapshot', () => {
   it('carries the projects, the tasks with bodies, the view state and the icon table', async () => {
     const snapshot = await buildSnapshot(plugin, scope, {
       mode: 'gantt',
-      filter: { ...makeDefaultFilter(), statuses: ['todo'] },
+      filter: { ...makeDefaultFilter(), conditions: [{ field: 'status', op: 'any', value: ['todo'] }] },
       sortKey: 'due',
       sortDir: 'desc',
       ganttGranularity: 'month'
@@ -52,7 +52,7 @@ describe('buildSnapshot', () => {
     expect(snapshot.title).toBe('Roadmap <b>')
     expect(snapshot.generator).toEqual({ name: 'dotpm', version: '9.9.9' })
     expect(snapshot.view).toMatchObject({ mode: 'gantt', sortKey: 'due', sortDir: 'desc', ganttGranularity: 'month' })
-    expect(snapshot.view.filter.statuses).toEqual(['todo'])
+    expect(snapshot.view.filter.conditions).toEqual([{ field: 'status', op: 'any', value: ['todo'] }])
     expect(snapshot.projects.length).toBe(1)
     const [project] = snapshot.projects
     expect(project.taskCount).toBe(2)
