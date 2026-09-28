@@ -1,12 +1,14 @@
 import {
   type CustomFieldDef,
   type FilterContext,
+  type FilterState,
   type PriorityConfig,
   type Project,
   type ResolvedProjectConfig,
   type StatusConfig,
   type Task,
   findTaskById,
+  flattenTasks,
   t
 } from '@dotpm/core'
 import type { TaskSource } from './TaskSource'
@@ -181,6 +183,20 @@ export class ProjectScope {
       customFields: this.customFields(),
       keyOf,
       projectOf: (task) => this.projectOf(task.id)?.id
+    }
+  }
+
+  /** What the filter picker and the board's columns read: every task in scope and how to name its values. */
+  filterSetup(filter: FilterState, keyOf: (raw: string) => string) {
+    return {
+      filter,
+      tasks: flattenTasks(this.tasks()).map((flat) => flat.task),
+      ctx: this.filterContext(keyOf),
+      priorities: this.config.priorities,
+      priorityIcons: this.config.priorityIcons,
+      projects: this.isMulti
+        ? this.projects.map((project) => ({ id: project.id, title: project.title, color: project.color }))
+        : []
     }
   }
 

@@ -161,3 +161,30 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+button.pm-kanban-hidden-rail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  gap: 8px;
+  width: 32px;
+  height: auto;
+  padding: 12px 0;
+  border: 1px dashed var(--background-modifier-border);
+  border-radius: var(--radius-m);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  writing-mode: vertical-rl;
+  cursor: pointer;
+  --icon-size: 14px;
+}
+button.pm-kanban-hidden-rail:hover {
+  color: var(--text-normal);
+  background: var(--background-modifier-hover);
+}
+.pm-kanban-hidden-icon {
+  display: inline-flex;
+}

@@ -5,11 +5,12 @@ import { safeAsync } from '#dom'
 import { KanbanCard } from './KanbanCard'
 import type { AvatarPerson } from '#primitives/AvatarStack'
 
-export interface KanbanColumnStatus {
+/** What a column stands for: a status, a priority, a person, a tag... */
+export interface KanbanColumnHead {
   id: string
   label: string
-  color: string
-  icon: string
+  color?: string
+  icon?: string
 }
 
 export interface KanbanCardData {
@@ -25,13 +26,13 @@ export interface KanbanCardData {
 }
 
 export interface KanbanColumnProps {
-  status: KanbanColumnStatus
+  column: KanbanColumnHead
   cards: KanbanCardData[]
   onCardClick: (task: Task) => void
   onCardContextMenu: (task: Task, e: MouseEvent) => void
   onCardDragStart: (task: Task) => void
   onCardDragEnd: () => void
-  onDrop: (taskId: string, newStatus: string) => Promise<void>
+  onDrop: (taskId: string, columnId: string) => Promise<void>
 }
 
 export class KanbanColumn {
@@ -39,24 +40,26 @@ export class KanbanColumn {
 
   constructor(parentEl: HTMLElement, props: KanbanColumnProps) {
     const col = parentEl.createDiv('pm-kanban-col')
-    col.dataset.status = props.status.id
+    const { column } = props
+    const color = column.color ?? 'var(--text-muted)'
+    col.dataset.column = column.id
     this.el = col
 
     const header = col.createDiv('pm-kanban-col-header')
-    header.style.setProperty('--col-color', props.status.color)
+    header.style.setProperty('--col-color', color)
 
     const topBar = header.createDiv('pm-kanban-col-topbar')
-    topBar.setCssStyles({ background: props.status.color })
+    topBar.setCssStyles({ background: color })
 
     const titleRow = header.createDiv('pm-kanban-col-title-row')
     const badge = titleRow.createSpan({ cls: 'pm-kanban-col-badge' })
-    if (props.status.icon && isIconName(props.status.icon)) {
-      setIcon(badge.createSpan({ cls: 'pm-kanban-col-badge-icon' }), props.status.icon)
-      badge.appendText(props.status.label)
+    if (column.icon && isIconName(column.icon)) {
+      setIcon(badge.createSpan({ cls: 'pm-kanban-col-badge-icon' }), column.icon)
+      badge.appendText(column.label)
     } else {
-      badge.setText(formatBadgeText(props.status.icon, props.status.label))
+      badge.setText(formatBadgeText(column.icon ?? '', column.label))
     }
-    badge.style.color = props.status.color
+    badge.style.color = color
 
     const headerRight = titleRow.createDiv('pm-kanban-col-header-right')
     headerRight.createSpan({
@@ -65,7 +68,7 @@ export class KanbanColumn {
     })
 
     const cardsEl = col.createDiv('pm-kanban-cards')
-    cardsEl.dataset.status = props.status.id
+    cardsEl.dataset.column = column.id
 
     for (const card of props.cards) {
       new KanbanCard(cardsEl, {
@@ -110,7 +113,7 @@ export class KanbanColumn {
         cardsEl.removeClass('pm-kanban-drop-target')
         const taskId = e.dataTransfer?.getData('text/plain') ?? ''
         if (!taskId) return
-        await props.onDrop(taskId, props.status.id)
+        await props.onDrop(taskId, column.id)
       })
     )
   }

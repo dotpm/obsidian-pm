@@ -5,7 +5,7 @@ import { makeFakeApp } from '#test/fakeVault'
 import { migrateProjectLayout, migrateTaskRefs } from './migration'
 import type PMPlugin from './main'
 import { ProjectStore, VaultIndex } from './store'
-import { DEFAULT_SETTINGS, makeDefaultFilter, makeDefaultSort, type PMSettings } from '@dotpm/core'
+import { DEFAULT_SETTINGS, makeDefaultFilter, makeDefaultGroup, makeDefaultSort, type PMSettings } from '@dotpm/core'
 
 const expectDefined = <T>(value: T | null | undefined): T => {
   if (value == null) throw new Error('expected value to be defined')
@@ -85,6 +85,7 @@ describe('migrateProjectLayout', () => {
       filter: makeDefaultFilter(),
       activeSavedViewId: null,
       sort: makeDefaultSort(),
+      group: makeDefaultGroup(),
       ganttGranularity: 'week'
     }
     settings.scopeViews['subtree:Projects/Roadmap.md'] = []

@@ -6,6 +6,7 @@ import {
   type SavedView,
   type ResolvedProjectConfig,
   type SortRule,
+  type GroupState,
   type TaskQuery,
   type ViewMode,
   flattenTasks,
@@ -15,6 +16,7 @@ import {
   filterFieldLabel,
   isQueryActive,
   makeDefaultFilter,
+  makeDefaultGroup,
   makeDefaultSort,
   sameValue,
   viewDifferences,
@@ -34,8 +36,12 @@ import {
   type ScopeSpec
 } from '#store'
 import {
+  boardColumns,
   ChipButton,
   EmptyState,
+  groupableFields,
+  openGroupPopover,
+  type BoardColumn,
   FilterBar,
   openProjectSwitcher,
   openSavedViewsPopover,
@@ -111,6 +117,7 @@ export class ProjectView extends ItemView {
   query: TaskQuery = { filter: makeDefaultFilter(), text: '' }
   activeSavedViewId: string | null = null
   sort: SortRule[] = makeDefaultSort()
+  group: GroupState = makeDefaultGroup()
   granularity: GanttGranularity
   private subview: SubView | null = null
   private headerEl!: HTMLElement
@@ -123,6 +130,7 @@ export class ProjectView extends ItemView {
   private countEl: HTMLElement | null = null
   private filterButton: ChipButton | null = null
   private sortButton: ChipButton | null = null
+  private groupButton: ChipButton | null = null
   private saveViewButton: ChipButton | null = null
   private keyScope: Scope
   private pendingRefresh: Promise<void> | null = null
@@ -164,6 +172,7 @@ export class ProjectView extends ItemView {
       mode: this.currentView,
       filter: structuredClone(this.query.filter),
       sort: structuredClone(this.sort),
+      group: structuredClone(this.group),
       ganttGranularity: this.granularity
     }
   }
@@ -310,12 +319,14 @@ export class ProjectView extends ItemView {
       this.query.filter = saved.filter
       this.activeSavedViewId = saved.activeSavedViewId
       this.sort = saved.sort
+      this.group = saved.group
       this.granularity = saved.ganttGranularity
       return
     }
     this.query.filter = makeDefaultFilter()
     this.activeSavedViewId = null
     this.sort = makeDefaultSort()
+    this.group = makeDefaultGroup()
     this.granularity = this.plugin.settings.ganttGranularity
     // A scope seen for the first time opens with its starred view, and keeps it from then on.
     const starred = this.savedViews().find((view) => view.isDefault)
@@ -329,6 +340,7 @@ export class ProjectView extends ItemView {
     this.query.filter = structuredClone(view.filter)
     this.activeSavedViewId = view.id
     this.sort = structuredClone(view.sort)
+    if (view.group) this.group = structuredClone(view.group)
     if (view.ganttGranularity) this.granularity = view.ganttGranularity
     if (view.viewMode) this.currentView = view.viewMode
   }
@@ -344,10 +356,17 @@ export class ProjectView extends ItemView {
     const labels = {
       filter: t('header.changedFilter'),
       sort: t('header.changedSort'),
+      group: t('header.changedGroup'),
       mode: t('header.mode'),
       scale: t('header.scale')
     }
-    const state = { filter: this.query.filter, sort: this.sort, mode: this.currentView, granularity: this.granularity }
+    const state = {
+      filter: this.query.filter,
+      sort: this.sort,
+      group: this.group,
+      mode: this.currentView,
+      granularity: this.granularity
+    }
     return viewDifferences(active, state).map((part) => labels[part])
   }
 
@@ -357,6 +376,7 @@ export class ProjectView extends ItemView {
       filter: this.query.filter,
       activeSavedViewId: this.activeSavedViewId,
       sort: this.sort,
+      group: this.group,
       ganttGranularity: this.granularity
     }
     await this.plugin.saveSettings()
@@ -431,6 +451,14 @@ export class ProjectView extends ItemView {
     this.syncFilterEmpty(counts)
     const filters = countActiveFilters(this.query.filter)
     this.filterButton?.setBadge(filters ? String(filters) : '').setActive(filters > 0)
+    if (this.groupButton) {
+      const setup = this.groupSetup()
+      const hidden = this.boardColumnsNow().filter((column) => column.hidden).length
+      this.groupButton
+        .setLabel(setup ? filterFieldLabel(this.group.field, setup.ctx.customFields) : t('header.group'))
+        .setDetail(hidden ? tn('header.hiddenCount', hidden) : '')
+        .setActive(this.group.field !== makeDefaultGroup().field)
+    }
     if (this.sortButton) {
       const [first] = this.sort
       const isDefault = sameValue(this.sort, makeDefaultSort())
@@ -682,6 +710,7 @@ export class ProjectView extends ItemView {
         this.filterBar?.openPicker()
       })
     this.sortButton = null
+    this.groupButton = null
     if (this.currentView === 'gantt') return
     const sortButton = new ChipButton(parent).setAriaLabel(t('header.sort'))
     const sorted = (): void => {
@@ -701,6 +730,40 @@ export class ProjectView extends ItemView {
       })
     })
     this.sortButton = sortButton
+    if (this.currentView !== 'kanban') return
+    const groupButton = new ChipButton(parent).setIcon('group').setAriaLabel(t('header.group'))
+    groupButton.onClick(() => this.openGroup(groupButton.el))
+    this.groupButton = groupButton
+  }
+
+  private groupSetup() {
+    const scope = this.projectScope
+    return scope ? scope.filterSetup(this.query.filter, personKeyer(this.plugin.app)) : null
+  }
+
+  /** The board's columns as the Group popover lists them: every task the filter lets through. */
+  private boardColumnsNow(): BoardColumn[] {
+    const setup = this.groupSetup()
+    const scope = this.projectScope
+    if (!setup || !scope) return []
+    const candidates = scope.config.kanbanShowSubtasks ? setup.tasks : scope.tasks()
+    const shown = candidates.filter((task) => matchesQuery(task, this.query, setup.ctx))
+    return boardColumns(setup, this.group, shown)
+  }
+
+  private openGroup(anchor: HTMLElement): void {
+    const setup = this.groupSetup()
+    if (!setup) return
+    openGroupPopover(anchor, {
+      fields: groupableFields(setup).map((id) => ({ id, label: filterFieldLabel(id, setup.ctx.customFields) })),
+      group: this.group,
+      columns: () => this.boardColumnsNow(),
+      onChange: () => {
+        this.syncHeader()
+        this.refreshSubview()
+        void this.persistFilter()
+      }
+    })
   }
 
   private renderOptionsSlot(parent: HTMLElement, scope: ProjectScope): void {
@@ -857,6 +920,7 @@ export class ProjectView extends ItemView {
       name,
       filter: structuredClone(this.query.filter),
       sort: structuredClone(this.sort),
+      group: structuredClone(this.group),
       viewMode: this.currentView,
       ganttGranularity: this.granularity,
       ...(isDefault ? { isDefault: true } : {})
@@ -875,6 +939,7 @@ export class ProjectView extends ItemView {
     sv.filter = structuredClone(this.query.filter)
     sv.viewMode = this.currentView
     sv.sort = structuredClone(this.sort)
+    sv.group = structuredClone(this.group)
     sv.ganttGranularity = this.granularity
     this.activeSavedViewId = sv.id
     await this.persistSavedViews(views)
@@ -1001,7 +1066,9 @@ export class ProjectView extends ItemView {
           this.plugin,
           () => this.refreshProject(),
           this.query,
-          this.sort
+          this.sort,
+          this.group,
+          (anchor) => this.openGroup(anchor)
         )
         break
     }

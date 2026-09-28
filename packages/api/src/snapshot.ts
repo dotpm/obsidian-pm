@@ -1,5 +1,6 @@
 import type {
   FilterState,
+  GroupState,
   SortRule,
   GanttGranularity,
   GanttWeekLabel,
@@ -25,6 +26,8 @@ export interface SnapshotView {
   filter: FilterState
   /** Read through `hydrateSort`: a version 1 page holds one `sortKey` / `sortDir` pair. */
   sort: SortRule[]
+  /** Absent on a page exported before boards could group by other fields; read through `hydrateGroup`. */
+  group?: GroupState
   ganttGranularity: GanttGranularity
 }
 

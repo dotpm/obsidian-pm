@@ -3,6 +3,8 @@ import type {
   DateBucket,
   FilterCondition,
   FilterState,
+  GroupColumns,
+  GroupState,
   PriorityConfig,
   PriorityIconSet,
   Project,
@@ -19,6 +21,7 @@ import {
   DEFAULT_PROJECT_COLOR,
   FILTER_OPS,
   GANTT_GRANULARITIES,
+  makeDefaultGroup,
   makeDefaultSort,
   MAX_SORT_RULES,
   makeTask,
@@ -134,6 +137,25 @@ export function hydrateSort(record: Record<string, unknown>): SortRule[] {
   return [{ key, dir: record.sortDir === 'desc' ? 'desc' : 'asc' }]
 }
 
+export function hydrateGroup(raw: unknown): GroupState {
+  const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+  const group: GroupState = typeof r.field === 'string' && r.field ? { field: r.field } : makeDefaultGroup()
+  if (r.hideEmpty === true) group.hideEmpty = true
+  if (r.columns && typeof r.columns === 'object') {
+    const columns: Record<string, GroupColumns> = {}
+    for (const [field, value] of Object.entries(r.columns as Record<string, unknown>)) {
+      if (!value || typeof value !== 'object') continue
+      const v = value as Record<string, unknown>
+      const entry: GroupColumns = {}
+      if (Array.isArray(v.order)) entry.order = v.order.filter((id): id is string => typeof id === 'string')
+      if (Array.isArray(v.hidden)) entry.hidden = v.hidden.filter((id): id is string => typeof id === 'string')
+      if (entry.order || entry.hidden) columns[field] = entry
+    }
+    if (Object.keys(columns).length) group.columns = columns
+  }
+  return group
+}
+
 export function hydrateSavedViews(raw: unknown[]): SavedView[] {
   if (!Array.isArray(raw)) return []
   return raw
@@ -149,6 +171,7 @@ export function hydrateSavedViews(raw: unknown[]): SavedView[] {
         name: (v.name as string) ?? t('common.untitled'),
         filter: hydrateFilter(v.filter),
         sort: hydrateSort(v),
+        ...(v.group ? { group: hydrateGroup(v.group) } : {}),
         ...(validViewMode ? { viewMode: validViewMode } : {}),
         ...(granularity ? { ganttGranularity: granularity } : {}),
         ...(v.isDefault === true ? { isDefault: true } : {})

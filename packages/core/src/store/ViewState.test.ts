@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { makeDefaultFilter, makeDefaultSort, type SavedView } from '../types'
+import { makeDefaultFilter, makeDefaultGroup, makeDefaultSort, type SavedView } from '../types'
 import { sameValue, viewDifferences, type ViewState } from './ViewState'
 
 const view: SavedView = {
@@ -15,6 +15,7 @@ function state(overrides: Partial<ViewState> = {}): ViewState {
   return {
     filter: structuredClone(view.filter),
     sort: structuredClone(view.sort),
+    group: makeDefaultGroup(),
     mode: 'table',
     granularity: 'week',
     ...overrides
@@ -39,6 +40,13 @@ describe('viewDifferences', () => {
       granularity: 'month'
     })
     expect(viewDifferences(view, changed)).toEqual(['filter', 'sort', 'mode', 'scale'])
+  })
+
+  it('compares the grouping only when the view saved one', () => {
+    const byPriority = { field: 'priority', columns: { priority: { hidden: ['low'] } } }
+    expect(viewDifferences(view, state({ group: byPriority }))).toEqual([])
+    const grouped: SavedView = { ...view, group: makeDefaultGroup() }
+    expect(viewDifferences(grouped, state({ group: byPriority }))).toEqual(['group'])
   })
 
   it('does not care about a mode or scale the view never named', () => {

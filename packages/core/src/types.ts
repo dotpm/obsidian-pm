@@ -166,12 +166,30 @@ export interface TaskQuery {
   text: string
 }
 
+/** How one board column choice is arranged: the column ids in their order, and the ones hidden. */
+export interface GroupColumns {
+  order?: string[]
+  hidden?: string[]
+}
+
+/**
+ * What board columns stand for. `field` is a filter field id (`status`, `assignee`,
+ * `cf:<id>`...). Column order and hidden columns are kept per field, so hiding a status
+ * column leaves the priority columns alone.
+ */
+export interface GroupState {
+  field: string
+  hideEmpty?: boolean
+  columns?: Record<string, GroupColumns>
+}
+
 export interface SavedView {
   id: string
   name: string
   filter: FilterState
   /** Empty keeps the order the tasks are stored in. */
   sort: SortRule[]
+  group?: GroupState
   viewMode?: ViewMode
   ganttGranularity?: GanttGranularity
   /** The view a scope opens with. At most one per scope. */
@@ -186,6 +204,7 @@ export interface PerProjectFilter {
   filter: FilterState
   activeSavedViewId: string | null
   sort: SortRule[]
+  group: GroupState
   ganttGranularity: GanttGranularity
 }
 
@@ -455,6 +474,10 @@ export function makeProject(title: string, filePath: string): Project {
     savedViews: [],
     taskIndex: new Map()
   }
+}
+
+export function makeDefaultGroup(): GroupState {
+  return { field: 'status' }
 }
 
 export function makeDefaultSort(): SortRule[] {
