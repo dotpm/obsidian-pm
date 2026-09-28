@@ -1,6 +1,8 @@
 import {
   type CustomFieldDef,
+  type FilterContext,
   type FilterState,
+  type TaskQuery,
   type GanttGranularity,
   type GanttWeekLabel,
   type LineBorders,
@@ -84,4 +86,17 @@ export function mergedConfig(model: ViewModel): ResolvedProjectConfig {
 export function customFieldColumns(model: ViewModel): CustomFieldDef[] {
   if (!isMulti(model)) return model.projects[0].config.customFields
   return mergeById(model.projects.map((p) => p.config.customFields))
+}
+
+/** A page has no search box, so its query is the filter the export started from. */
+export function queryOf(model: ViewModel): TaskQuery {
+  return { filter: model.filter, text: '' }
+}
+
+export function filterContextOf(model: ViewModel): FilterContext {
+  return {
+    statuses: mergedConfig(model).statuses,
+    customFields: customFieldColumns(model),
+    projectOf: (task) => projectOf(model, task.id)?.id
+  }
 }

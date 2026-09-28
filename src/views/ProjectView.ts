@@ -1,23 +1,23 @@
 import { ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
 import {
-  type FilterState,
   type GanttGranularity,
   type Project,
   type SavedView,
   type SortKey,
   type SortOrder,
+  type TaskQuery,
   type ViewMode,
-  collectAllAssignees,
-  collectAllTags,
-  countActiveFilters,
   flattenTasks,
   GANTT_GRANULARITIES,
-  isFilterActive,
+  bestConditionToDrop,
+  countActiveFilters,
+  filterFieldLabel,
+  isQueryActive,
   makeDefaultFilter,
   makeDefaultSort,
   makeId,
-  matchesFilter,
+  matchesQuery,
   truncateTitle,
   t,
   tn
@@ -33,6 +33,7 @@ import {
 } from '#store'
 import {
   ChipButton,
+  EmptyState,
   FilterBar,
   openProjectSwitcher,
   openSavedViewsPopover,
@@ -78,11 +79,6 @@ const sortFields = (): { id: SortKey; label: string }[] => [
   { id: 'progress', label: t('columns.progress') }
 ]
 
-/** Filters the query bar shows as chips; the search text stays in the search box. */
-function barFilterCount(filter: FilterState): number {
-  return countActiveFilters(filter) - (filter.text ? 1 : 0)
-}
-
 function specOf(state: ProjectViewState): ScopeSpec | null {
   if (state.scope) return state.scope
   if (state.filePath) return { kind: 'project', path: state.filePath }
@@ -94,13 +90,15 @@ export class ProjectView extends ItemView {
   projectScope: ProjectScope | null = null
   private spec: ScopeSpec | null = null
   currentView: ViewMode
-  filter: FilterState = makeDefaultFilter()
+  /** The saved filter plus the search text, which lives only as long as this view. */
+  query: TaskQuery = { filter: makeDefaultFilter(), text: '' }
   activeSavedViewId: string | null = null
   sort: SortOrder = makeDefaultSort()
   granularity: GanttGranularity
   private subview: SubView | null = null
   private headerEl!: HTMLElement
   private bodyEl!: HTMLElement
+  private emptyEl!: HTMLElement
   private header: ViewHeader | null = null
   private filterBar: FilterBar | null = null
   private queryBarOpen = false
@@ -141,7 +139,7 @@ export class ProjectView extends ItemView {
   exportState(): ExportViewState {
     return {
       mode: this.currentView,
-      filter: { ...this.filter },
+      filter: structuredClone(this.query.filter),
       ...this.sort,
       ganttGranularity: this.granularity
     }
@@ -195,6 +193,7 @@ export class ProjectView extends ItemView {
     root.addClass('pm-root')
     this.headerEl = root.createDiv('pm-vh-mount')
     this.bodyEl = root.createDiv('pm-content')
+    this.emptyEl = root.createDiv('pm-filter-empty pm-hidden')
 
     this.register(
       this.plugin.store.onProjectChanged((path) => {
@@ -260,7 +259,7 @@ export class ProjectView extends ItemView {
       this.currentView = this.projectScope.config.defaultView
     }
     this.loadFilterFromSettings()
-    this.queryBarOpen = barFilterCount(this.filter) > 0
+    this.queryBarOpen = countActiveFilters(this.query.filter) > 0
     ;(this.leaf as WorkspaceLeaf & { updateHeader?: () => void }).updateHeader?.()
     this.renderHeader()
     this.renderCurrentView()
@@ -285,12 +284,12 @@ export class ProjectView extends ItemView {
   private loadFilterFromSettings(): void {
     const saved = this.projectScope ? this.plugin.settings.projectFilters[this.projectScope.key] : undefined
     if (saved) {
-      this.filter = saved.filter
+      this.query.filter = saved.filter
       this.activeSavedViewId = saved.activeSavedViewId
       this.sort = { sortKey: saved.sortKey, sortDir: saved.sortDir }
       this.granularity = saved.ganttGranularity
     } else {
-      this.filter = makeDefaultFilter()
+      this.query.filter = makeDefaultFilter()
       this.activeSavedViewId = null
       this.sort = makeDefaultSort()
       this.granularity = this.plugin.settings.ganttGranularity
@@ -300,7 +299,7 @@ export class ProjectView extends ItemView {
   private async persistFilter(): Promise<void> {
     if (!this.projectScope) return
     this.plugin.settings.projectFilters[this.projectScope.key] = {
-      filter: this.filter,
+      filter: this.query.filter,
       activeSavedViewId: this.activeSavedViewId,
       ...this.sort,
       ganttGranularity: this.granularity
@@ -333,6 +332,8 @@ export class ProjectView extends ItemView {
     this.filterBar = null
     this.headerEl.empty()
     this.bodyEl.empty()
+    this.bodyEl.removeClass('pm-hidden')
+    this.emptyEl.addClass('pm-hidden')
     const msg = this.bodyEl.createDiv('pm-empty-state')
     msg.createEl('h3', { text: t('projectView.nothingToShow') })
     msg.createEl('p', { text: t('projectView.missing') })
@@ -364,12 +365,13 @@ export class ProjectView extends ItemView {
     this.savedViewButton?.el.toggleClass('pm-vh-saved-view--none', !active)
     const counts = this.taskCounts()
     this.countEl?.setText(
-      isFilterActive(this.filter)
+      isQueryActive(this.query)
         ? t('header.shownOf', { shown: counts.shown, total: counts.total })
         : tn('header.taskCount', counts.total)
     )
     this.filterBar?.setSummary(t('header.shownSummary', { shown: counts.shown, total: counts.total }))
-    const filters = barFilterCount(this.filter)
+    this.syncFilterEmpty(counts)
+    const filters = countActiveFilters(this.query.filter)
     this.filterButton?.setBadge(filters ? String(filters) : '').setActive(filters > 0)
     if (this.sortButton) {
       const isDefault = this.sort.sortKey === makeDefaultSort().sortKey
@@ -382,14 +384,52 @@ export class ProjectView extends ItemView {
     this.header?.fit()
   }
 
+  /** Replaces a body the filter has emptied with a way back: the one condition that frees the most tasks. */
+  private syncFilterEmpty(counts: { shown: number; total: number }): void {
+    const scope = this.projectScope
+    const emptied = !!scope && isQueryActive(this.query) && counts.shown === 0 && counts.total > 0
+    this.emptyEl.empty()
+    this.emptyEl.toggleClass('pm-hidden', !emptied)
+    this.bodyEl.toggleClass('pm-hidden', emptied)
+    if (!scope || !emptied) return
+    const state = new EmptyState(this.emptyEl).setIcon('search-x')
+    const { conditions } = this.query.filter
+    if (!conditions.length) {
+      state.setTitle(t('filter.noSearchMatch', { text: this.query.text.trim() }))
+      return
+    }
+    const ctx = scope.filterContext(personKeyer(this.plugin.app))
+    const tasks = flattenTasks(scope.tasks()).map((flat) => flat.task)
+    const best = bestConditionToDrop(tasks, this.query, ctx)
+    const apply = (): void => {
+      this.handleFilterMutation()
+      this.renderFilterBar()
+    }
+    state.setTitle(t('filter.emptyTitle'))
+    if (best) {
+      const label = filterFieldLabel(conditions[best.index].field, ctx.customFields)
+      state
+        .setBody(tn('filter.emptySuggest', best.shown, { label }))
+        .setAction(t('filter.removeNamed', { label }), () => {
+          conditions.splice(best.index, 1)
+          apply()
+        })
+    } else {
+      state.setBody(t('filter.emptyNone'))
+    }
+    state.addSecondaryAction(t('filter.clearAllFilters'), () => {
+      this.query.filter.conditions = []
+      apply()
+    })
+  }
+
   private taskCounts(): { shown: number; total: number } {
     const scope = this.projectScope
     if (!scope) return { shown: 0, total: 0 }
-    const statuses = scope.config.statuses
-    const keyOf = personKeyer(this.plugin.app)
+    const ctx = scope.filterContext(personKeyer(this.plugin.app))
     const all = flattenTasks(scope.tasks())
-    const total = all.filter((flat) => this.filter.showArchived || !flat.task.archived).length
-    const shown = all.filter((flat) => matchesFilter(flat.task, this.filter, statuses, keyOf)).length
+    const total = all.filter((flat) => this.query.filter.showArchived || !flat.task.archived).length
+    const shown = all.filter((flat) => matchesQuery(flat.task, this.query, ctx)).length
     return { shown, total }
   }
 
@@ -525,7 +565,7 @@ export class ProjectView extends ItemView {
           modeIcon: view.viewMode ? MODE_ICONS[view.viewMode] : undefined
         })),
         activeId: this.activeSavedViewId,
-        canSave: isFilterActive(this.filter) || this.filter.showArchived,
+        canSave: countActiveFilters(this.query.filter) > 0,
         onSelect: (id) => this.handleSavedViewSelect(id),
         onSave: (name) => this.handleSavedViewSave(name),
         onUpdate: (id) => this.handleSavedViewUpdate(id),
@@ -538,13 +578,14 @@ export class ProjectView extends ItemView {
 
   private renderQuerySlot(parent: HTMLElement): void {
     new SearchBox(parent, {
-      value: this.filter.text,
+      value: this.query.text,
       label: t('header.search'),
       placeholder: t('taskForm.searchTasks'),
       clearLabel: t('common.clear'),
       onChange: (value) => {
-        this.filter.text = value
-        this.handleFilterMutation()
+        this.query.text = value
+        this.syncHeader()
+        this.refreshSubview()
       }
     })
     this.filterButton = new ChipButton(parent)
@@ -678,16 +719,17 @@ export class ProjectView extends ItemView {
     header.bar.empty()
     this.filterBar = null
     if (!this.queryBarOpen) return
-    const tasks = scope.tasks()
     const config = scope.config
     const counts = this.taskCounts()
     this.filterBar = new FilterBar(header.bar, {
-      filter: this.filter,
-      statuses: config.statuses,
+      filter: this.query.filter,
+      tasks: flattenTasks(scope.tasks()).map((flat) => flat.task),
+      ctx: scope.filterContext(personKeyer(this.plugin.app)),
       priorities: config.priorities,
       priorityIcons: config.priorityIcons,
-      assignees: collectAllAssignees(tasks, undefined, personKeyer(this.plugin.app)),
-      tags: collectAllTags(tasks),
+      projects: scope.isMulti
+        ? scope.projects.map((project) => ({ id: project.id, title: project.title, color: project.color }))
+        : [],
       summary: t('header.shownSummary', { shown: counts.shown, total: counts.total }),
       onChange: () => this.handleFilterMutation(),
       onClose: () => {
@@ -707,18 +749,18 @@ export class ProjectView extends ItemView {
   private handleSavedViewSelect(id: string | null): void {
     if (!this.projectScope) return
     if (id === null) {
-      Object.assign(this.filter, makeDefaultFilter())
+      this.query.filter = makeDefaultFilter()
       this.activeSavedViewId = null
     } else {
       const sv = this.savedViews().find((v) => v.id === id)
       if (!sv) return
-      Object.assign(this.filter, sv.filter)
+      this.query.filter = structuredClone(sv.filter)
       this.activeSavedViewId = sv.id
       this.sort = { sortKey: sv.sortKey, sortDir: sv.sortDir }
       if (sv.ganttGranularity) this.granularity = sv.ganttGranularity
       if (sv.viewMode) this.currentView = sv.viewMode
     }
-    this.queryBarOpen = barFilterCount(this.filter) > 0
+    this.queryBarOpen = countActiveFilters(this.query.filter) > 0
     void this.persistFilter()
     this.renderHeader()
     this.renderCurrentView()
@@ -729,7 +771,7 @@ export class ProjectView extends ItemView {
     const sv: SavedView = {
       id: makeId(),
       name,
-      filter: { ...this.filter },
+      filter: structuredClone(this.query.filter),
       ...this.sort,
       viewMode: this.currentView,
       ganttGranularity: this.granularity
@@ -744,7 +786,7 @@ export class ProjectView extends ItemView {
     const views = this.savedViews()
     const sv = views.find((v) => v.id === id)
     if (!sv) return
-    sv.filter = { ...this.filter }
+    sv.filter = structuredClone(this.query.filter)
     sv.viewMode = this.currentView
     sv.sortKey = this.sort.sortKey
     sv.sortDir = this.sort.sortDir
@@ -821,7 +863,7 @@ export class ProjectView extends ItemView {
           scope,
           this.plugin,
           () => this.refreshProject(),
-          this.filter,
+          this.query,
           this.sort,
           safeAsync(async () => {
             this.syncHeader()
@@ -839,7 +881,7 @@ export class ProjectView extends ItemView {
           scope,
           this.plugin,
           () => this.refreshProject(),
-          this.filter,
+          this.query,
           this.granularity,
           this.keyScope
         )
@@ -849,7 +891,7 @@ export class ProjectView extends ItemView {
         break
       }
       case 'kanban':
-        this.subview = new KanbanView(this.bodyEl, scope, this.plugin, () => this.refreshProject(), this.filter)
+        this.subview = new KanbanView(this.bodyEl, scope, this.plugin, () => this.refreshProject(), this.query)
         break
     }
     this.bodyEl.toggleClass('pm-content--kanban', this.currentView === 'kanban')

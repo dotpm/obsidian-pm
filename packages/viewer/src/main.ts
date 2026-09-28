@@ -1,7 +1,7 @@
 import '@dotpm/ui/dom-shim'
 import { domPlatform } from '@dotpm/ui/dom-platform'
 import { isSnapshot, tasksFromResources, type Snapshot } from '@dotpm/api'
-import { type SortKey, type ViewMode, locale, setDateFormat, setLocale, t, tn } from '@dotpm/core'
+import { type SortKey, type ViewMode, hydrateFilter, locale, setDateFormat, setLocale, t, tn } from '@dotpm/core'
 import {
   renderSnapshotGantt,
   renderSnapshotKanban,
@@ -45,7 +45,7 @@ export function viewModelFromSnapshot(snapshot: Snapshot): ViewModel {
       }
     })),
     settings: { ...snapshot.settings, ganttGranularity: snapshot.view.ganttGranularity },
-    filter: snapshot.view.filter,
+    filter: hydrateFilter(snapshot.view.filter),
     sortKey: snapshot.view.sortKey as SortKey,
     sortDir: snapshot.view.sortDir,
     personColors: snapshot.personColors ?? {}

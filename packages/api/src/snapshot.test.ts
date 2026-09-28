@@ -28,6 +28,7 @@ describe('tasksFromResources', () => {
 describe('isSnapshot', () => {
   it('accepts the current format and nothing else', () => {
     expect(isSnapshot({ format: SNAPSHOT_FORMAT, version: SNAPSHOT_VERSION, projects: [] })).toBe(true)
+    expect(isSnapshot({ format: SNAPSHOT_FORMAT, version: 1, projects: [] })).toBe(true)
     expect(isSnapshot({ format: SNAPSHOT_FORMAT, version: 99, projects: [] })).toBe(false)
     expect(isSnapshot({ format: 'other', version: SNAPSHOT_VERSION, projects: [] })).toBe(false)
     expect(isSnapshot(null)).toBe(false)

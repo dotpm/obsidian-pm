@@ -6,6 +6,7 @@ import {
   defaultStatuses,
   makeDefaultFilter,
   makeDefaultSort,
+  hydrateFilter,
   type PMSettings,
   type Project,
   type Task,
@@ -431,8 +432,13 @@ export default class PMPlugin extends Plugin {
       migrated = true
     }
 
-    // Sort was held by the table alone, and the timeline scale was one setting for every view.
+    // Sort was held by the table alone, the timeline scale was one setting for every view,
+    // and a filter was a fixed set of facets before it became a list of conditions.
     for (const entry of Object.values(this.settings.projectFilters)) {
+      if (!Array.isArray(entry.filter.conditions)) {
+        entry.filter = hydrateFilter(entry.filter)
+        migrated = true
+      }
       if (!entry.sortKey) {
         Object.assign(entry, makeDefaultSort())
         migrated = true
@@ -441,6 +447,12 @@ export default class PMPlugin extends Plugin {
         entry.ganttGranularity = this.settings.ganttGranularity
         migrated = true
       }
+    }
+
+    for (const view of Object.values(this.settings.scopeViews).flat()) {
+      if (Array.isArray(view.filter.conditions)) continue
+      view.filter = hydrateFilter(view.filter)
+      migrated = true
     }
 
     for (const s of this.settings.statuses) {
@@ -462,8 +474,8 @@ export default class PMPlugin extends Plugin {
     if (legacy.ganttHideDone === true) {
       const nonTerminal = this.settings.statuses.filter((s) => !s.complete).map((s) => s.id)
       for (const entry of Object.values(this.settings.projectFilters)) {
-        if (entry.filter.statuses.length === 0) {
-          entry.filter.statuses = nonTerminal
+        if (!entry.filter.conditions.some((condition) => condition.field === 'status')) {
+          entry.filter.conditions.push({ field: 'status', op: 'any', value: nonTerminal })
         }
       }
       migrated = true
@@ -746,7 +758,7 @@ export default class PMPlugin extends Plugin {
       return
     }
     this.settings.projectFilters[scopeKey({ kind: 'vault' })] = {
-      filter: { ...makeDefaultFilter(), assignees: [person] },
+      filter: { ...makeDefaultFilter(), conditions: [{ field: 'assignee', op: 'any', value: [person] }] },
       activeSavedViewId: null,
       ...makeDefaultSort(),
       ganttGranularity: this.settings.ganttGranularity

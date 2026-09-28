@@ -12,6 +12,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added "Open as note" to the project overview and the "More options" menu of the task views
 - Added parent project links and a project switcher to the top of the task views
 - Added "Expand all" and "Collapse all" to the table
+- Filters can now match custom fields, start dates, task types and titles
+- Filters can now exclude values, match empty fields, and compare numbers and date ranges
+- Custom fields can now be left out of the filter picker
+- Added a way back when filters hide every task, naming the filter to remove
 - Person notes can now set their avatar color with a `color` property
 
 ### Changed
@@ -22,6 +26,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Saved views now open from one menu instead of a row of buttons
 - Renamed the Gantt view to Timeline
 - The timeline scale is now kept per view and in saved views
+- Search text is no longer saved with a view. Saved views that searched now filter by title.
 
 ### Fixed
 
@@ -29,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed projects, statuses, and priorities with an invalid color breaking the color picker
 - Fixed tasks failing to save or losing their description after renaming their project ([#359](https://github.com/dotpm/obsidian-pm/issues/359))
 - Fixed saved views losing their sort when saved, updated, or opened outside the table
+- Fixed the page for a missing task showing an icon name instead of the icon
 
 ## [2.5.2] - 2026-09-21
 

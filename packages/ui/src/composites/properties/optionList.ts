@@ -34,6 +34,8 @@ export interface OptionRow extends GlyphSpec {
   accent?: boolean
   /** Draws initials from this name instead of a glyph. Used by the assignee picker. */
   avatar?: string
+  /** Faint text before the check, such as how many tasks hold the value. */
+  note?: string
   onPick: () => void
 }
 
@@ -44,6 +46,7 @@ export function renderOptionRow(parent: HTMLElement, row: OptionRow): HTMLElemen
   if (row.avatar) new Avatar(item).setColor(row.color).setName(row.avatar).setSize('sm')
   else renderGlyph(item, row)
   item.createSpan({ cls: 'pm-pop-item-label', text: row.label })
+  if (row.note) item.createSpan({ cls: 'pm-pop-item-note', text: row.note })
   const check = item.createSpan({ cls: 'pm-pop-check' })
   setIcon(check, 'check')
   if (!row.selected) check.addClass('pm-pop-check--hidden')

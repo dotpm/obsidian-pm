@@ -2,7 +2,10 @@ import type { FilterState, GanttGranularity, GanttWeekLabel, LineBorders, Priori
 import type { ProjectResource, TaskResource } from './contract'
 
 export const SNAPSHOT_FORMAT = 'dotpm-snapshot'
-export const SNAPSHOT_VERSION = 1
+export const SNAPSHOT_VERSION = 2
+
+/** Version 1 pages hold the filter as fixed facets; `hydrateFilter` reads either shape. */
+const READABLE_VERSIONS: unknown[] = [1, SNAPSHOT_VERSION]
 
 export interface SnapshotProject extends ProjectResource {
   tasks: TaskResource[]
@@ -10,6 +13,7 @@ export interface SnapshotProject extends ProjectResource {
 
 export interface SnapshotView {
   mode: ViewMode
+  /** Read through `hydrateFilter`: a version 1 page holds the older facet shape. */
   filter: FilterState
   sortKey: string
   sortDir: 'asc' | 'desc'
@@ -33,7 +37,7 @@ export interface SnapshotSettings {
  */
 export interface Snapshot {
   format: typeof SNAPSHOT_FORMAT
-  version: typeof SNAPSHOT_VERSION
+  version: number
   generator: { name: string; version: string }
   exportedAt: string
   /** The language tag the page's own text is shown in. */
@@ -54,6 +58,8 @@ export function isSnapshot(value: unknown): value is Snapshot {
   if (typeof value !== 'object' || value === null) return false
   const record = value as Record<string, unknown>
   return (
-    record['format'] === SNAPSHOT_FORMAT && record['version'] === SNAPSHOT_VERSION && Array.isArray(record['projects'])
+    record['format'] === SNAPSHOT_FORMAT &&
+    READABLE_VERSIONS.includes(record['version']) &&
+    Array.isArray(record['projects'])
   )
 }

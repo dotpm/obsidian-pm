@@ -94,6 +94,7 @@ One column per status. Dragging a card to another column changes its status. Car
 - Sub-projects, with an overview page per project: progress, milestones, sub-projects, properties
 - One view over a project, its subtree, a folder or the whole vault
 - Archive a project that is done or no longer relevant; its sub-projects go with it
+- Filters on any field, custom fields included: is, is not, contains, between, date buckets and ranges
 - Saved views: named filter and sort combinations
 - Bulk edit from the table
 - People notes for assignees, with a per-person task list and an avatar color set by the note's `color` property

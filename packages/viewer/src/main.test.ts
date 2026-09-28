@@ -9,7 +9,7 @@ const ICON = '<svg xmlns="http://www.w3.org/2000/svg" class="svg-icon lucide-che
 function snapshot(): Snapshot {
   return {
     format: 'dotpm-snapshot',
-    version: 1,
+    version: 2,
     generator: { name: 'dotpm', version: '0' },
     exportedAt: '2030-01-01T10:00:00.000Z',
     locale: 'en',
@@ -93,6 +93,23 @@ describe('viewer', () => {
     expect(model.projects[0].tasks.map((t) => t.id)).toEqual(['a', 'b'])
     expect(model.projects[0].tasks[0].subtasks.map((t) => t.id)).toEqual(['a1'])
     expect(model.settings.ganttGranularity).toBe('week')
+  })
+
+  it('reads the filter of a version 1 page, which held fixed facets', () => {
+    const old = snapshot()
+    old.version = 1
+    old.view.filter = {
+      statuses: ['todo'],
+      dueDateFilter: 'overdue',
+      showArchived: false
+    } as unknown as Snapshot['view']['filter']
+    expect(viewModelFromSnapshot(old).filter).toEqual({
+      conditions: [
+        { field: 'status', op: 'any', value: ['todo'] },
+        { field: 'due', op: 'bucket', value: 'overdue' }
+      ],
+      showArchived: false
+    })
   })
 
   it('mounts the header and the view the snapshot was taken in, and switches views', () => {

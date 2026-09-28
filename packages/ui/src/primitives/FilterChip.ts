@@ -2,19 +2,19 @@ import { setIcon, setTooltip } from '#platform'
 
 /**
  * One applied filter as field, operator and value, each its own button, plus a remove
- * button. The field and value open the same editor; the operator is plain text.
+ * button. All three open the same editor. An empty operator or value hides that part.
  */
 export class FilterChip {
   el: HTMLElement
   private fieldEl: HTMLButtonElement
-  private opEl: HTMLElement
+  private opEl: HTMLButtonElement
   private valueEl: HTMLButtonElement
   private removeEl: HTMLButtonElement
 
   constructor(parentEl: HTMLElement) {
     this.el = parentEl.createDiv('pm-filter-chip')
     this.fieldEl = this.el.createEl('button', { cls: 'pm-filter-chip-part pm-filter-chip-field' })
-    this.opEl = this.el.createSpan('pm-filter-chip-op')
+    this.opEl = this.el.createEl('button', { cls: 'pm-filter-chip-part pm-filter-chip-op' })
     this.valueEl = this.el.createEl('button', { cls: 'pm-filter-chip-part pm-filter-chip-value' })
     this.removeEl = this.el.createEl('button', { cls: 'pm-filter-chip-part pm-filter-chip-remove' })
     setIcon(this.removeEl, 'x')
@@ -35,6 +35,7 @@ export class FilterChip {
 
   setValue(text: string): this {
     this.valueEl.setText(text)
+    this.valueEl.toggleClass('pm-hidden', !text)
     setTooltip(this.valueEl, text)
     return this
   }
@@ -45,8 +46,7 @@ export class FilterChip {
   }
 
   onEdit(handler: (anchor: HTMLElement) => void): this {
-    this.fieldEl.addEventListener('click', () => handler(this.el))
-    this.valueEl.addEventListener('click', () => handler(this.el))
+    for (const part of [this.fieldEl, this.opEl, this.valueEl]) part.addEventListener('click', () => handler(this.el))
     return this
   }
 

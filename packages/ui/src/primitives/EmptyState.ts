@@ -1,4 +1,5 @@
-import { createButton } from '#platform'
+import { createButton, setIcon } from '#platform'
+import { isIconName } from '#icons'
 
 export class EmptyState {
   el: HTMLElement
@@ -11,9 +12,12 @@ export class EmptyState {
     this.el = parentEl.createDiv('pm-empty-state')
   }
 
-  setIcon(text: string): this {
+  /** A Lucide icon name, or any other text such as an emoji. */
+  setIcon(icon: string): this {
     this.iconEl ??= this.el.createDiv('pm-empty-icon')
-    this.iconEl.setText(text)
+    this.iconEl.empty()
+    if (isIconName(icon)) setIcon(this.iconEl, icon)
+    else this.iconEl.setText(icon)
     return this
   }
 
@@ -33,6 +37,13 @@ export class EmptyState {
     if (!this.actionEl) this.actionEl = this.el.createDiv('pm-empty-action')
     this.actionEl.empty()
     createButton(this.actionEl).setButtonText(label).setCta().onClick(onClick)
+    return this
+  }
+
+  /** A plain button after the main action. */
+  addSecondaryAction(label: string, onClick: () => void): this {
+    if (!this.actionEl) this.actionEl = this.el.createDiv('pm-empty-action')
+    createButton(this.actionEl).setButtonText(label).onClick(onClick)
     return this
   }
 }

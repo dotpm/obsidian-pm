@@ -1,5 +1,8 @@
 import type {
   CustomFieldDef,
+  DateBucket,
+  FilterCondition,
+  FilterState,
   PriorityConfig,
   PriorityIconSet,
   Project,
@@ -13,6 +16,7 @@ import {
   CUSTOM_FIELD_TYPES,
   DEFAULT_PALETTE_COLOR,
   DEFAULT_PROJECT_COLOR,
+  FILTER_OPS,
   GANTT_GRANULARITIES,
   makeDefaultSort,
   makeTask,
@@ -54,9 +58,57 @@ export function customFieldList(raw: unknown): CustomFieldDef[] {
     const options = stringList(f.options)
     if (options.length) field.options = options
     if (typeof f.icon === 'string' && f.icon) field.icon = f.icon
+    if (f.filterable === false) field.filterable = false
     fields.push(field)
   }
   return fields
+}
+
+const DATE_BUCKETS: DateBucket[] = ['overdue', 'today', 'this-week', 'this-month']
+
+function conditionValue(raw: unknown): FilterCondition['value'] {
+  if (typeof raw === 'string') return raw
+  if (!Array.isArray(raw)) return undefined
+  if (raw.length && raw.every((v) => typeof v === 'number' && Number.isFinite(v))) return raw as number[]
+  return stringList(raw)
+}
+
+/**
+ * Reads a saved filter. Before conditions, a filter was a fixed set of facets plus search
+ * text; those become the conditions they meant, and the text a "title contains" condition.
+ */
+export function hydrateFilter(raw: unknown): FilterState {
+  const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+  const filter: FilterState = { conditions: [], showArchived: r.showArchived === true }
+  if (Array.isArray(r.conditions)) {
+    for (const entry of r.conditions) {
+      if (!entry || typeof entry !== 'object') continue
+      const c = entry as Record<string, unknown>
+      if (typeof c.field !== 'string' || !c.field) continue
+      const op = FILTER_OPS.find((known) => known === c.op)
+      if (!op) continue
+      const value = conditionValue(c.value)
+      filter.conditions.push(value === undefined ? { field: c.field, op } : { field: c.field, op, value })
+    }
+    return filter
+  }
+  const facets: [string, string][] = [
+    ['statuses', 'status'],
+    ['priorities', 'priority'],
+    ['assignees', 'assignee'],
+    ['tags', 'tag']
+  ]
+  for (const [key, field] of facets) {
+    const values = stringList(r[key])
+    if (values.length) filter.conditions.push({ field, op: 'any', value: values })
+  }
+  if (r.dueDateFilter === 'no-date') filter.conditions.push({ field: 'due', op: 'empty' })
+  const bucket = DATE_BUCKETS.find((b) => b === r.dueDateFilter)
+  if (bucket) filter.conditions.push({ field: 'due', op: 'bucket', value: bucket })
+  if (typeof r.text === 'string' && r.text.trim()) {
+    filter.conditions.push({ field: 'title', op: 'contains', value: r.text.trim() })
+  }
+  return filter
 }
 
 export function hydrateSavedViews(raw: unknown[]): SavedView[] {
@@ -66,7 +118,6 @@ export function hydrateSavedViews(raw: unknown[]): SavedView[] {
     .filter((r) => r && typeof r === 'object')
     .map((r) => {
       const v = r as Record<string, unknown>
-      const filter = (v.filter ?? {}) as Record<string, unknown>
       const viewMode = v.viewMode
       const validViewMode: ViewMode | undefined =
         viewMode === 'table' || viewMode === 'gantt' || viewMode === 'kanban' ? viewMode : undefined
@@ -74,15 +125,7 @@ export function hydrateSavedViews(raw: unknown[]): SavedView[] {
       return {
         id: (v.id as string) ?? '',
         name: (v.name as string) ?? t('common.untitled'),
-        filter: {
-          text: (filter.text as string) ?? '',
-          statuses: Array.isArray(filter.statuses) ? filter.statuses : [],
-          priorities: Array.isArray(filter.priorities) ? filter.priorities : [],
-          assignees: Array.isArray(filter.assignees) ? filter.assignees : [],
-          tags: Array.isArray(filter.tags) ? filter.tags : [],
-          dueDateFilter: (filter.dueDateFilter as string as SavedView['filter']['dueDateFilter']) ?? 'any',
-          showArchived: (filter.showArchived as boolean) ?? false
-        },
+        filter: hydrateFilter(v.filter),
         sortKey: SORT_KEYS.find((key) => key === v.sortKey) ?? defaultSort.sortKey,
         sortDir: v.sortDir === 'asc' || v.sortDir === 'desc' ? v.sortDir : defaultSort.sortDir,
         ...(validViewMode ? { viewMode: validViewMode } : {}),

@@ -1,7 +1,17 @@
-import { type Task, dueUrgency, flattenTasks, getPriorityConfig, matchesFilter, totalLoggedHours } from '@dotpm/core'
+import { type Task, dueUrgency, flattenTasks, getPriorityConfig, matchesQuery, totalLoggedHours } from '@dotpm/core'
 import { KanbanColumn, type KanbanCardData } from '../composites/KanbanColumn'
 import { renderProjectChip } from '../composites/projectChip'
-import { allTasks, configOf, isMulti, mergedConfig, personOf, projectOf, type ViewModel } from './model'
+import {
+  allTasks,
+  configOf,
+  filterContextOf,
+  isMulti,
+  mergedConfig,
+  personOf,
+  projectOf,
+  queryOf,
+  type ViewModel
+} from './model'
 
 const noop = (): void => {}
 const noDrop = async (): Promise<void> => {}
@@ -40,9 +50,11 @@ export function renderSnapshotKanban(container: HTMLElement, model: ViewModel): 
   const candidates = model.settings.kanbanShowSubtasks
     ? flattenTasks(allTasks(model)).map((f) => f.task)
     : allTasks(model)
+  const query = queryOf(model)
+  const ctx = filterContextOf(model)
   for (const status of config.statuses) {
     const cards = candidates
-      .filter((task) => task.status === status.id && matchesFilter(task, model.filter, config.statuses))
+      .filter((task) => task.status === status.id && matchesQuery(task, query, ctx))
       .map((task) => cardData(model, task))
     new KanbanColumn(board, {
       status,
