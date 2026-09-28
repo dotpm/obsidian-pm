@@ -47,8 +47,7 @@ function fixtureProject(): Project {
       id: 'view-1',
       name: 'Open',
       filter: { ...makeDefaultFilter(), conditions: [{ field: 'status', op: 'any', value: ['todo'] }] },
-      sortKey: 'due',
-      sortDir: 'asc'
+      sort: [{ key: 'due', dir: 'asc' }]
     }
   ]
   project.createdAt = '2026-03-01T10:00:00.000Z'

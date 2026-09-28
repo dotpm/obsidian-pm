@@ -40,10 +40,13 @@ export const CUSTOM_FIELD_TYPES = [
 export const SORT_KEYS = ['title', 'status', 'priority', 'due', 'assignees', 'progress'] as const
 export type SortKey = (typeof SORT_KEYS)[number]
 
-export interface SortOrder {
-  sortKey: SortKey
-  sortDir: SortDir
+/** One key of a sort; a view sorts by up to `MAX_SORT_RULES` of them, first rule first. */
+export interface SortRule {
+  key: SortKey
+  dir: SortDir
 }
+
+export const MAX_SORT_RULES = 3
 
 export interface CustomFieldDef {
   id: string
@@ -163,17 +166,26 @@ export interface TaskQuery {
   text: string
 }
 
-export interface SavedView extends SortOrder {
+export interface SavedView {
   id: string
   name: string
   filter: FilterState
+  /** Empty keeps the order the tasks are stored in. */
+  sort: SortRule[]
   viewMode?: ViewMode
   ganttGranularity?: GanttGranularity
+  /** The view a scope opens with. At most one per scope. */
+  isDefault?: boolean
 }
 
-export interface PerProjectFilter extends SortOrder {
+/**
+ * What a scope was last showing. While `activeSavedViewId` is set and these differ from
+ * that view, the view has unsaved changes.
+ */
+export interface PerProjectFilter {
   filter: FilterState
   activeSavedViewId: string | null
+  sort: SortRule[]
   ganttGranularity: GanttGranularity
 }
 
@@ -445,8 +457,8 @@ export function makeProject(title: string, filePath: string): Project {
   }
 }
 
-export function makeDefaultSort(): SortOrder {
-  return { sortKey: 'status', sortDir: 'asc' }
+export function makeDefaultSort(): SortRule[] {
+  return [{ key: 'status', dir: 'asc' }]
 }
 
 export function makeDefaultFilter(): FilterState {

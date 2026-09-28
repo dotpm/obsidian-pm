@@ -3,21 +3,30 @@ import {
   type TaskPriority,
   type StatusConfig,
   type PriorityConfig,
-  type SortOrder,
+  type SortRule,
   displayName,
   locale,
   statusSortOrder
 } from '@dotpm/core'
 
-export function compareTask(
+/** Compares by each rule in turn; a tie on every rule keeps the stored order. */
+export function compareTasks(
   a: Task,
   b: Task,
-  order: SortOrder,
+  sort: SortRule[],
   statuses: StatusConfig[] = [],
   priorities: PriorityConfig[] = []
 ): number {
-  const dir = order.sortDir === 'asc' ? 1 : -1
-  switch (order.sortKey) {
+  for (const rule of sort) {
+    const result = compareBy(a, b, rule, statuses, priorities)
+    if (result !== 0) return result
+  }
+  return 0
+}
+
+function compareBy(a: Task, b: Task, rule: SortRule, statuses: StatusConfig[], priorities: PriorityConfig[]): number {
+  const dir = rule.dir === 'asc' ? 1 : -1
+  switch (rule.key) {
     case 'title':
       return dir * a.title.localeCompare(b.title, locale())
     case 'status':

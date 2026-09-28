@@ -15,7 +15,12 @@ function snapshot(): Snapshot {
     locale: 'en',
     title: 'Alpha',
     primaryProjectId: 'p1',
-    view: { mode: 'kanban', filter: makeDefaultFilter(), sortKey: 'title', sortDir: 'asc', ganttGranularity: 'week' },
+    view: {
+      mode: 'kanban',
+      filter: makeDefaultFilter(),
+      sort: [{ key: 'title', dir: 'asc' }],
+      ganttGranularity: 'week'
+    },
     settings: {
       priorityIcons: 'chevrons',
       showTagColors: true,
@@ -93,6 +98,13 @@ describe('viewer', () => {
     expect(model.projects[0].tasks.map((t) => t.id)).toEqual(['a', 'b'])
     expect(model.projects[0].tasks[0].subtasks.map((t) => t.id)).toEqual(['a1'])
     expect(model.settings.ganttGranularity).toBe('week')
+  })
+
+  it('reads the single sort key of a version 1 page', () => {
+    const old = snapshot()
+    old.version = 1
+    Object.assign(old.view, { sort: undefined, sortKey: 'due', sortDir: 'desc' })
+    expect(viewModelFromSnapshot(old).sort).toEqual([{ key: 'due', dir: 'desc' }])
   })
 
   it('reads the filter of a version 1 page, which held fixed facets', () => {

@@ -4,8 +4,8 @@ import {
   type GanttGranularity,
   type Project,
   type SavedView,
-  type SortKey,
-  type SortOrder,
+  type ResolvedProjectConfig,
+  type SortRule,
   type TaskQuery,
   type ViewMode,
   flattenTasks,
@@ -16,6 +16,8 @@ import {
   isQueryActive,
   makeDefaultFilter,
   makeDefaultSort,
+  sameValue,
+  viewDifferences,
   makeId,
   matchesQuery,
   truncateTitle,
@@ -44,6 +46,7 @@ import {
   showMenuBelow,
   SplitButton,
   ViewHeader,
+  type SortField,
   type SwitcherProject
 } from '@dotpm/ui'
 import type { SubView } from './SubView'
@@ -70,14 +73,28 @@ const modeLabel = (mode: ViewMode): string =>
   ({ table: t('views.table'), gantt: t('views.gantt'), kanban: t('views.kanban') })[mode]
 const granularityLabel = (granularity: GanttGranularity): string => t(`granularity.${granularity}`)
 
-const sortFields = (): { id: SortKey; label: string }[] => [
+function ends(list: { label: string }[]): [string, string] | undefined {
+  return list.length ? [list[0].label, list[list.length - 1].label] : undefined
+}
+
+const sortFields = (config?: ResolvedProjectConfig): SortField[] => [
   { id: 'title', label: t('columns.task') },
-  { id: 'status', label: t('columns.status') },
-  { id: 'priority', label: t('columns.priority') },
+  { id: 'status', label: t('columns.status'), ends: config && ends(config.statuses) },
+  { id: 'priority', label: t('columns.priority'), ends: config && ends(config.priorities) },
   { id: 'assignees', label: t('columns.assignees') },
   { id: 'due', label: t('columns.due') },
   { id: 'progress', label: t('columns.progress') }
 ]
+
+/** The views with the star on `id` alone, or on none. */
+function withDefault(views: SavedView[], id: string | null): SavedView[] {
+  return views.map((view) => {
+    const copy = { ...view }
+    delete copy.isDefault
+    if (view.id === id) copy.isDefault = true
+    return copy
+  })
+}
 
 function specOf(state: ProjectViewState): ScopeSpec | null {
   if (state.scope) return state.scope
@@ -93,7 +110,7 @@ export class ProjectView extends ItemView {
   /** The saved filter plus the search text, which lives only as long as this view. */
   query: TaskQuery = { filter: makeDefaultFilter(), text: '' }
   activeSavedViewId: string | null = null
-  sort: SortOrder = makeDefaultSort()
+  sort: SortRule[] = makeDefaultSort()
   granularity: GanttGranularity
   private subview: SubView | null = null
   private headerEl!: HTMLElement
@@ -106,6 +123,7 @@ export class ProjectView extends ItemView {
   private countEl: HTMLElement | null = null
   private filterButton: ChipButton | null = null
   private sortButton: ChipButton | null = null
+  private saveViewButton: ChipButton | null = null
   private keyScope: Scope
   private pendingRefresh: Promise<void> | null = null
   private initialized = false
@@ -126,6 +144,11 @@ export class ProjectView extends ItemView {
     this.navigation = false
     this.keyScope = new Scope(this.app.scope)
     this.scope = this.keyScope
+    this.keyScope.register(['Mod'], 's', () => {
+      if (!this.viewChanges().length) return true
+      safeAsync(() => this.updateActiveView())()
+      return false
+    })
   }
 
   getViewType(): string {
@@ -140,7 +163,7 @@ export class ProjectView extends ItemView {
     return {
       mode: this.currentView,
       filter: structuredClone(this.query.filter),
-      ...this.sort,
+      sort: structuredClone(this.sort),
       ganttGranularity: this.granularity
     }
   }
@@ -286,14 +309,46 @@ export class ProjectView extends ItemView {
     if (saved) {
       this.query.filter = saved.filter
       this.activeSavedViewId = saved.activeSavedViewId
-      this.sort = { sortKey: saved.sortKey, sortDir: saved.sortDir }
+      this.sort = saved.sort
       this.granularity = saved.ganttGranularity
-    } else {
-      this.query.filter = makeDefaultFilter()
-      this.activeSavedViewId = null
-      this.sort = makeDefaultSort()
-      this.granularity = this.plugin.settings.ganttGranularity
+      return
     }
+    this.query.filter = makeDefaultFilter()
+    this.activeSavedViewId = null
+    this.sort = makeDefaultSort()
+    this.granularity = this.plugin.settings.ganttGranularity
+    // A scope seen for the first time opens with its starred view, and keeps it from then on.
+    const starred = this.savedViews().find((view) => view.isDefault)
+    if (starred) {
+      this.applySavedView(starred)
+      void this.persistFilter()
+    }
+  }
+
+  private applySavedView(view: SavedView): void {
+    this.query.filter = structuredClone(view.filter)
+    this.activeSavedViewId = view.id
+    this.sort = structuredClone(view.sort)
+    if (view.ganttGranularity) this.granularity = view.ganttGranularity
+    if (view.viewMode) this.currentView = view.viewMode
+  }
+
+  private activeView(): SavedView | undefined {
+    return this.savedViews().find((view) => view.id === this.activeSavedViewId)
+  }
+
+  /** What differs from the active saved view, as the reader would name it. */
+  private viewChanges(): string[] {
+    const active = this.activeView()
+    if (!active) return []
+    const labels = {
+      filter: t('header.changedFilter'),
+      sort: t('header.changedSort'),
+      mode: t('header.mode'),
+      scale: t('header.scale')
+    }
+    const state = { filter: this.query.filter, sort: this.sort, mode: this.currentView, granularity: this.granularity }
+    return viewDifferences(active, state).map((part) => labels[part])
   }
 
   private async persistFilter(): Promise<void> {
@@ -301,7 +356,7 @@ export class ProjectView extends ItemView {
     this.plugin.settings.projectFilters[this.projectScope.key] = {
       filter: this.query.filter,
       activeSavedViewId: this.activeSavedViewId,
-      ...this.sort,
+      sort: this.sort,
       ganttGranularity: this.granularity
     }
     await this.plugin.saveSettings()
@@ -358,11 +413,14 @@ export class ProjectView extends ItemView {
 
   /** Brings the parts that follow the filter, sort and task counts up to date without rebuilding them. */
   private syncHeader(): void {
-    const active = this.savedViews().find((view) => view.id === this.activeSavedViewId)
+    const active = this.activeView()
+    const dirty = this.viewChanges().length > 0
     this.savedViewButton
       ?.setLabel(active?.name ?? t('header.allTasks'))
       .setTooltip(active?.name ?? t('header.allTasks'))
     this.savedViewButton?.el.toggleClass('pm-vh-saved-view--none', !active)
+    this.savedViewButton?.el.toggleClass('pm-vh-saved-view--dirty', dirty)
+    this.saveViewButton?.el.toggleClass('pm-hidden', !dirty)
     const counts = this.taskCounts()
     this.countEl?.setText(
       isQueryActive(this.query)
@@ -374,11 +432,13 @@ export class ProjectView extends ItemView {
     const filters = countActiveFilters(this.query.filter)
     this.filterButton?.setBadge(filters ? String(filters) : '').setActive(filters > 0)
     if (this.sortButton) {
-      const isDefault = this.sort.sortKey === makeDefaultSort().sortKey
-      const field = sortFields().find((f) => f.id === this.sort.sortKey)
+      const [first] = this.sort
+      const isDefault = sameValue(this.sort, makeDefaultSort())
+      const field = first ? sortFields().find((f) => f.id === first.key) : undefined
       this.sortButton
-        .setLabel(isDefault ? t('header.sort') : (field?.label ?? t('header.sort')))
-        .setIcon(this.sort.sortDir === 'asc' ? 'arrow-up-narrow-wide' : 'arrow-down-wide-narrow')
+        .setLabel(isDefault || !field ? t('header.sort') : field.label)
+        .setIcon(!first ? 'arrow-down-up' : first.dir === 'asc' ? 'arrow-up-narrow-wide' : 'arrow-down-wide-narrow')
+        .setBadge(!isDefault && this.sort.length > 1 ? `+${this.sort.length - 1}` : '')
         .setActive(!isDefault)
     }
     this.header?.fit()
@@ -557,23 +617,47 @@ export class ProjectView extends ItemView {
   private renderViewSlot(parent: HTMLElement): void {
     const button = new ChipButton(parent).setIcon('bookmark').setChevron(true).setAriaLabel(t('header.savedViews'))
     button.el.addClass('pm-vh-saved-view')
+    button.el.createSpan({ cls: 'pm-dirty-dot', attr: { 'aria-hidden': 'true' } })
     button.onClick(() => {
+      const primary = this.projectScope?.primary
       openSavedViewsPopover(button.el, {
         views: this.savedViews().map((view) => ({
           id: view.id,
           name: view.name,
-          modeIcon: view.viewMode ? MODE_ICONS[view.viewMode] : undefined
+          modeIcon: view.viewMode ? MODE_ICONS[view.viewMode] : undefined,
+          isDefault: view.isDefault
         })),
         activeId: this.activeSavedViewId,
-        canSave: countActiveFilters(this.query.filter) > 0,
+        changes: this.viewChanges(),
+        canSave:
+          countActiveFilters(this.query.filter) > 0 ||
+          !sameValue(this.sort, makeDefaultSort()) ||
+          this.currentView !== this.projectScope?.config.defaultView,
+        storageNote:
+          this.projectScope?.spec.kind === 'project' && primary
+            ? t('header.storedInNote', { name: primary.title })
+            : t('header.storedInSettings'),
         onSelect: (id) => this.handleSavedViewSelect(id),
-        onSave: (name) => this.handleSavedViewSave(name),
+        onSave: (name, isDefault) => this.handleSavedViewSave(name, isDefault),
         onUpdate: (id) => this.handleSavedViewUpdate(id),
-        onDelete: (id) => this.handleSavedViewDelete(id)
+        onRevert: () => this.handleSavedViewSelect(this.activeSavedViewId),
+        onRename: (id, name) => this.handleSavedViewRename(id, name),
+        onDelete: (id) => this.handleSavedViewDelete(id),
+        onReorder: (ids) => this.handleSavedViewReorder(ids),
+        onSetDefault: (id) => this.handleSavedViewDefault(id)
       })
     })
     this.savedViewButton = button
+    this.saveViewButton = new ChipButton(parent)
+      .setLabel(t('header.saveChanges'))
+      .setTooltip(t('header.updateView'))
+      .onClick(safeAsync(() => this.updateActiveView()))
+    this.saveViewButton.el.addClass('pm-vh-save-view')
     this.countEl = parent.createSpan('pm-vh-count')
+  }
+
+  private async updateActiveView(): Promise<void> {
+    if (this.activeSavedViewId && this.viewChanges().length) await this.handleSavedViewUpdate(this.activeSavedViewId)
   }
 
   private renderQuerySlot(parent: HTMLElement): void {
@@ -598,16 +682,21 @@ export class ProjectView extends ItemView {
         this.filterBar?.openPicker()
       })
     this.sortButton = null
-    if (this.currentView !== 'table') return
+    if (this.currentView === 'gantt') return
     const sortButton = new ChipButton(parent).setAriaLabel(t('header.sort'))
+    const sorted = (): void => {
+      this.syncHeader()
+      this.refreshSubview()
+      void this.persistFilter()
+    }
     sortButton.onClick(() => {
       openSortPopover(sortButton.el, {
-        fields: sortFields(),
+        fields: sortFields(this.projectScope?.config),
         sort: this.sort,
-        onChange: () => {
-          this.syncHeader()
-          this.refreshSubview()
-          void this.persistFilter()
+        onChange: sorted,
+        onReset: () => {
+          this.sort.splice(0, this.sort.length, ...structuredClone(this.activeView()?.sort ?? makeDefaultSort()))
+          sorted()
         }
       })
     })
@@ -740,7 +829,6 @@ export class ProjectView extends ItemView {
   }
 
   private handleFilterMutation(): void {
-    this.activeSavedViewId = null
     this.syncHeader()
     void this.persistFilter()
     this.refreshSubview()
@@ -754,11 +842,7 @@ export class ProjectView extends ItemView {
     } else {
       const sv = this.savedViews().find((v) => v.id === id)
       if (!sv) return
-      this.query.filter = structuredClone(sv.filter)
-      this.activeSavedViewId = sv.id
-      this.sort = { sortKey: sv.sortKey, sortDir: sv.sortDir }
-      if (sv.ganttGranularity) this.granularity = sv.ganttGranularity
-      if (sv.viewMode) this.currentView = sv.viewMode
+      this.applySavedView(sv)
     }
     this.queryBarOpen = countActiveFilters(this.query.filter) > 0
     void this.persistFilter()
@@ -766,18 +850,20 @@ export class ProjectView extends ItemView {
     this.renderCurrentView()
   }
 
-  private async handleSavedViewSave(name: string): Promise<void> {
+  private async handleSavedViewSave(name: string, isDefault: boolean): Promise<void> {
     if (!this.projectScope) return
     const sv: SavedView = {
       id: makeId(),
       name,
       filter: structuredClone(this.query.filter),
-      ...this.sort,
+      sort: structuredClone(this.sort),
       viewMode: this.currentView,
-      ganttGranularity: this.granularity
+      ganttGranularity: this.granularity,
+      ...(isDefault ? { isDefault: true } : {})
     }
     this.activeSavedViewId = sv.id
-    await this.persistSavedViews([...this.savedViews(), sv])
+    const views = isDefault ? withDefault(this.savedViews(), null) : this.savedViews()
+    await this.persistSavedViews([...views, sv])
     void this.persistFilter()
     this.syncHeader()
   }
@@ -788,8 +874,7 @@ export class ProjectView extends ItemView {
     if (!sv) return
     sv.filter = structuredClone(this.query.filter)
     sv.viewMode = this.currentView
-    sv.sortKey = this.sort.sortKey
-    sv.sortDir = this.sort.sortDir
+    sv.sort = structuredClone(this.sort)
     sv.ganttGranularity = this.granularity
     this.activeSavedViewId = sv.id
     await this.persistSavedViews(views)
@@ -802,6 +887,25 @@ export class ProjectView extends ItemView {
     await this.persistSavedViews(this.savedViews().filter((v) => v.id !== id))
     void this.persistFilter()
     this.syncHeader()
+  }
+
+  private async handleSavedViewRename(id: string, name: string): Promise<void> {
+    const views = this.savedViews()
+    const sv = views.find((v) => v.id === id)
+    if (!sv) return
+    sv.name = name
+    await this.persistSavedViews(views)
+    this.syncHeader()
+  }
+
+  private async handleSavedViewReorder(ids: string[]): Promise<void> {
+    const byId = new Map(this.savedViews().map((view) => [view.id, view]))
+    await this.persistSavedViews(ids.flatMap((id) => byId.get(id) ?? []))
+  }
+
+  /** One view per scope carries the star; starring another moves it. */
+  private async handleSavedViewDefault(id: string | null): Promise<void> {
+    await this.persistSavedViews(withDefault(this.savedViews(), id))
   }
 
   private refreshSubview(): void {
@@ -891,7 +995,14 @@ export class ProjectView extends ItemView {
         break
       }
       case 'kanban':
-        this.subview = new KanbanView(this.bodyEl, scope, this.plugin, () => this.refreshProject(), this.query)
+        this.subview = new KanbanView(
+          this.bodyEl,
+          scope,
+          this.plugin,
+          () => this.refreshProject(),
+          this.query,
+          this.sort
+        )
         break
     }
     this.bodyEl.toggleClass('pm-content--kanban', this.currentView === 'kanban')

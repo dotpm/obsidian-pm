@@ -44,14 +44,17 @@ describe('buildSnapshot', () => {
     const snapshot = await buildSnapshot(plugin, scope, {
       mode: 'gantt',
       filter: { ...makeDefaultFilter(), conditions: [{ field: 'status', op: 'any', value: ['todo'] }] },
-      sortKey: 'due',
-      sortDir: 'desc',
+      sort: [{ key: 'due', dir: 'desc' }],
       ganttGranularity: 'month'
     })
     expect(isSnapshot(snapshot)).toBe(true)
     expect(snapshot.title).toBe('Roadmap <b>')
     expect(snapshot.generator).toEqual({ name: 'dotpm', version: '9.9.9' })
-    expect(snapshot.view).toMatchObject({ mode: 'gantt', sortKey: 'due', sortDir: 'desc', ganttGranularity: 'month' })
+    expect(snapshot.view).toMatchObject({
+      mode: 'gantt',
+      sort: [{ key: 'due', dir: 'desc' }],
+      ganttGranularity: 'month'
+    })
     expect(snapshot.view.filter.conditions).toEqual([{ field: 'status', op: 'any', value: ['todo'] }])
     expect(snapshot.projects.length).toBe(1)
     const [project] = snapshot.projects
@@ -75,8 +78,7 @@ describe('buildSnapshot', () => {
     const snapshot = await buildSnapshot(plugin, scope, {
       mode: 'table',
       filter: makeDefaultFilter(),
-      sortKey: 'title',
-      sortDir: 'asc',
+      sort: [{ key: 'title', dir: 'asc' }],
       ganttGranularity: 'week'
     })
     expect(snapshot.personColors).toEqual({ '[[Jane Doe]]': '#c47070' })
@@ -94,7 +96,12 @@ describe('renderSnapshotHtml', () => {
     locale: 'en',
     generator: { name: 'dotpm', version: '0' },
     primaryProjectId: 'p',
-    view: { mode: 'table', filter: makeDefaultFilter(), sortKey: 'title', sortDir: 'asc', ganttGranularity: 'week' },
+    view: {
+      mode: 'table',
+      filter: makeDefaultFilter(),
+      sort: [{ key: 'title', dir: 'asc' }],
+      ganttGranularity: 'week'
+    },
     settings: {
       priorityIcons: 'chevrons',
       showTagColors: true,

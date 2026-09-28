@@ -16,6 +16,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Filters can now exclude values, match empty fields, and compare numbers and date ranges
 - Custom fields can now be left out of the filter picker
 - Added a way back when filters hide every task, naming the filter to remove
+- Tables and boards can now sort by up to three keys
+- Table column headers can now add another sort key with Shift-click
+- Saved views can now be renamed, reordered, and starred as the view to open with
+- Added Ctrl+S (Cmd+S on macOS) to save changes to the current saved view
 - Person notes can now set their avatar color with a `color` property
 
 ### Changed
@@ -26,6 +30,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Saved views now open from one menu instead of a row of buttons
 - Renamed the Gantt view to Timeline
 - The timeline scale is now kept per view and in saved views
+- Board cards now follow the sort order of the view
+- Changing a saved view now marks it unsaved instead of switching back to all tasks
 - Search text is no longer saved with a view. Saved views that searched now filter by title.
 
 ### Fixed

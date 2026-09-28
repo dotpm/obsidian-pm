@@ -37,7 +37,7 @@ import {
   queryOf,
   type ViewModel
 } from './model'
-import { compareTask } from './tableSort'
+import { compareTasks } from './tableSort'
 
 interface TreeRow extends FlatTask {
   guides: boolean[]
@@ -66,7 +66,7 @@ export function tableRows(model: ViewModel): TreeRow[] {
     childrenByParent.set(bucket, list)
   }
   for (const list of childrenByParent.values()) {
-    list.sort((a, b) => compareTask(a.task, b.task, model, config.statuses, config.priorities))
+    list.sort((a, b) => compareTasks(a.task, b.task, model.sort, config.statuses, config.priorities))
   }
 
   const rows: TreeRow[] = []
@@ -122,8 +122,13 @@ export function renderSnapshotTable(container: HTMLElement, model: ViewModel): H
   for (const col of cols) {
     const th = hrow.createEl('th', { text: col.label })
     th.setCssStyles({ width: col.width })
-    if (col.key && col.key === model.sortKey) {
-      th.createSpan({ text: model.sortDir === 'asc' ? ' ↑' : ' ↓', cls: 'pm-sort-indicator' })
+    const rank = col.key ? model.sort.findIndex((rule) => rule.key === col.key) : -1
+    if (rank >= 0) {
+      const indicator = th.createSpan({
+        text: model.sort[rank].dir === 'asc' ? ' ↑' : ' ↓',
+        cls: 'pm-sort-indicator'
+      })
+      if (model.sort.length > 1) indicator.createEl('sup', { text: String(rank + 1) })
     }
   }
   for (const cf of customFields) hrow.createEl('th', { text: cf.name }).setCssStyles({ width: '120px' })

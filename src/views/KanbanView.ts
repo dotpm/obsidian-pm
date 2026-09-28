@@ -4,6 +4,7 @@ import {
   type Task,
   type TaskStatus,
   type FilterContext,
+  type SortRule,
   type TaskQuery,
   type ResolvedProjectConfig,
   flattenTasks,
@@ -13,7 +14,7 @@ import {
   getPriorityConfig
 } from '@dotpm/core'
 import { personKeyer, type ProjectScope } from '#store'
-import { safeAsync, KanbanColumn, type KanbanCardData, renderProjectChip } from '@dotpm/ui'
+import { safeAsync, compareTasks, KanbanColumn, type KanbanCardData, renderProjectChip } from '@dotpm/ui'
 import { openTaskModal } from '#ui/ModalFactory'
 import { buildTaskContextMenu } from '#ui/TaskContextMenu'
 import { linkedRefs } from './linkedRefs'
@@ -30,7 +31,8 @@ export class KanbanView implements SubView {
     private scope: ProjectScope,
     private plugin: PMPlugin,
     private onRefresh: () => Promise<void>,
-    private query: TaskQuery
+    private query: TaskQuery,
+    private sort: SortRule[]
   ) {}
 
   render(): void {
@@ -84,7 +86,9 @@ export class KanbanView implements SubView {
     const candidates = this.config.kanbanShowSubtasks
       ? flattenTasks(this.scope.tasks()).map((ft) => ft.task)
       : this.scope.tasks()
-    return candidates.filter((t) => t.status === status && matchesQuery(t, this.query, this.filterContext))
+    return candidates
+      .filter((t) => t.status === status && matchesQuery(t, this.query, this.filterContext))
+      .sort((a, b) => compareTasks(a, b, this.sort, this.config.statuses, this.config.priorities))
   }
 
   private buildCardData(task: Task): KanbanCardData {

@@ -4,17 +4,17 @@ import {
   DEFAULT_PRIORITIES,
   DEFAULT_STATUSES,
   makeDefaultFilter,
-  makeDefaultSort,
   makeTask,
   type CustomFieldDef,
+  type SortRule,
   type FilterState
 } from '@dotpm/core'
 import { ChipButton } from '#primitives/ChipButton'
 import { renderBreadcrumb } from './Breadcrumb'
 import { FilterBar } from './FilterBar'
-import { openSavedViewsPopover } from './savedViewsPopover'
+import { openSavedViewsPopover, type SavedViewsProps } from './savedViewsPopover'
 import { SearchBox } from './SearchBox'
-import { openSortPopover } from './sortPopover'
+import { openSortPopover, type SortField } from './sortPopover'
 import { ViewHeader } from './ViewHeader'
 
 function noop(): void {}
@@ -196,74 +196,181 @@ describe('FilterBar', () => {
 describe('saved views popover', () => {
   const views = [
     { id: 'v1', name: 'Mine', modeIcon: 'table' },
-    { id: 'v2', name: 'Roadmap' }
+    { id: 'v2', name: 'Roadmap', isDefault: true }
   ]
-  const props = () => ({
+  const props = (overrides: Partial<SavedViewsProps> = {}): SavedViewsProps => ({
     views,
     activeId: 'v2',
+    changes: [],
     canSave: true,
+    storageNote: 'Kept in the note of Alpha.',
     onSelect: vi.fn<(id: string | null) => void>(),
-    onSave: vi.fn<(name: string) => Promise<void>>(async () => {}),
+    onSave: vi.fn<(name: string, isDefault: boolean) => Promise<void>>(async () => {}),
     onUpdate: vi.fn<(id: string) => Promise<void>>(async () => {}),
-    onDelete: vi.fn<(id: string) => Promise<void>>(async () => {})
+    onRevert: vi.fn<() => void>(),
+    onRename: vi.fn<(id: string, name: string) => Promise<void>>(async () => {}),
+    onDelete: vi.fn<(id: string) => Promise<void>>(async () => {}),
+    onReorder: vi.fn<(ids: string[]) => Promise<void>>(async () => {}),
+    onSetDefault: vi.fn<(id: string | null) => Promise<void>>(async () => {}),
+    ...overrides
   })
+  const rows = (): HTMLElement[] => document.body.findAll('.pm-saved-view-row')
+  const action = (row: HTMLElement, label: string): HTMLButtonElement | null =>
+    row.querySelector<HTMLButtonElement>(`.pm-saved-view-action[aria-label="${label}"]`)
 
-  it('lists the built-in view first and marks the active one', () => {
+  it('lists the built-in view first, marks the active one and stars the default', () => {
     openSavedViewsPopover(document.body.createEl('button'), props())
-    const rows = document.body.findAll('.pm-saved-view-main')
-    expect(rows.map((row) => row.find('.pm-pop-item-label')?.textContent)).toEqual(['All tasks', 'Mine', 'Roadmap'])
-    expect(rows.map((row) => !row.find('.pm-pop-check')?.hasClass('pm-pop-check--hidden'))).toEqual([
+    const mains = document.body.findAll('.pm-saved-view-main')
+    expect(mains.map((row) => row.find('.pm-pop-item-label')?.textContent)).toEqual(['All tasks', 'Mine', 'Roadmap'])
+    expect(mains.map((row) => !row.find('.pm-pop-check')?.hasClass('pm-pop-check--hidden'))).toEqual([
       false,
       false,
       true
     ])
+    expect(action(rows()[2], 'Opens with this view')?.hasClass('is-default')).toBe(true)
+    expect(document.body.find('.pm-saved-views-dirty')).toBeNull()
   })
 
-  it('selects, updates and deletes through its callbacks', async () => {
+  it('offers update, save as new and revert while the active view has unsaved changes', async () => {
+    const p = props({ changes: ['Filter', 'Sort'] })
+    openSavedViewsPopover(document.body.createEl('button'), p)
+    expect(document.body.find('.pm-saved-views-dirty-note')?.textContent).toBe('Unsaved changes: Filter, Sort')
+    document.body.find('.pm-saved-views-dirty-actions .mod-cta')?.click()
+    await vi.waitFor(() => expect(p.onUpdate).toHaveBeenCalledWith('v2'))
+
+    openSavedViewsPopover(document.body.createEl('button'), p)
+    document.body
+      .querySelector<HTMLButtonElement>('.pm-saved-views-dirty-actions [aria-label="Revert changes"]')
+      ?.click()
+    expect(p.onRevert).toHaveBeenCalled()
+  })
+
+  it('selects, stars and deletes through its callbacks', async () => {
     const p = props()
     openSavedViewsPopover(document.body.createEl('button'), p)
-    document.body.findAll('.pm-saved-view-row')[1].findAll('.pm-saved-view-action')[1].click()
+    action(rows()[1], 'Delete view')?.click()
     await vi.waitFor(() => expect(p.onDelete).toHaveBeenCalledWith('v1'))
+
+    openSavedViewsPopover(document.body.createEl('button'), p)
+    action(rows()[1], 'Open with this view')?.click()
+    await vi.waitFor(() => expect(p.onSetDefault).toHaveBeenCalledWith('v1'))
+
+    openSavedViewsPopover(document.body.createEl('button'), p)
+    action(rows()[2], 'Opens with this view')?.click()
+    await vi.waitFor(() => expect(p.onSetDefault).toHaveBeenCalledWith(null))
 
     openSavedViewsPopover(document.body.createEl('button'), p)
     document.body.findAll('.pm-saved-view-main')[0].click()
     expect(p.onSelect).toHaveBeenCalledWith(null)
   })
 
-  it('saves the current state under the typed name', async () => {
+  it('renames a view in place', async () => {
+    const p = props()
+    openSavedViewsPopover(document.body.createEl('button'), p)
+    action(rows()[1], 'Rename view')?.click()
+    const input = document.body.querySelector<HTMLInputElement>('.pm-saved-view-rename')
+    if (!input) throw new Error('no rename field')
+    expect(input.value).toBe('Mine')
+    input.value = 'Only mine'
+    input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
+    await vi.waitFor(() => expect(p.onRename).toHaveBeenCalledWith('v1', 'Only mine'))
+  })
+
+  it('reorders by dragging one view onto another', async () => {
+    const p = props()
+    openSavedViewsPopover(document.body.createEl('button'), p)
+    rows()[2].dispatchEvent(new Event('dragstart'))
+    rows()[1].dispatchEvent(new Event('drop'))
+    await vi.waitFor(() => expect(p.onReorder).toHaveBeenCalledWith(['v2', 'v1']))
+  })
+
+  it('saves the current state under the typed name, as the default when asked', async () => {
     const p = props()
     openSavedViewsPopover(document.body.createEl('button'), p)
     document.body.querySelector<HTMLButtonElement>('.pm-saved-views-foot button')?.click()
-    const input = document.body.querySelector<HTMLInputElement>('.pm-saved-views-foot input')
-    if (!input) throw new Error('no name field')
+    expect(document.body.find('.pm-saved-views-storage')?.textContent).toBe('Kept in the note of Alpha.')
+    const input = document.body.querySelector<HTMLInputElement>('.pm-saved-views-foot input.pm-pop-field')
+    const star = document.body.querySelector<HTMLInputElement>('.pm-saved-views-check input')
+    if (!input || !star) throw new Error('no save form')
     input.value = 'Urgent only'
+    star.checked = true
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
-    await vi.waitFor(() => expect(p.onSave).toHaveBeenCalledWith('Urgent only'))
+    await vi.waitFor(() => expect(p.onSave).toHaveBeenCalledWith('Urgent only', true))
   })
 
   it('refuses to save while nothing differs from the defaults', () => {
-    openSavedViewsPopover(document.body.createEl('button'), { ...props(), canSave: false })
+    openSavedViewsPopover(document.body.createEl('button'), props({ canSave: false }))
     expect(document.body.querySelector<HTMLButtonElement>('.pm-saved-views-foot button')?.disabled).toBe(true)
   })
 })
 
 describe('sort popover', () => {
-  it('changes the key and the direction in place', () => {
-    const sort = makeDefaultSort()
+  const fields: SortField[] = [
+    { id: 'title', label: 'Task' },
+    { id: 'status', label: 'Status', ends: ['To Do', 'Cancelled'] },
+    { id: 'due', label: 'Due' }
+  ]
+  const open = (sort: SortRule[], onReset = vi.fn<() => void>()) => {
     const onChange = vi.fn<() => void>()
-    openSortPopover(document.body.createEl('button'), {
-      fields: [
-        { id: 'title', label: 'Task' },
-        { id: 'status', label: 'Status' }
-      ],
-      sort,
-      onChange
-    })
-    document.body.findAll('.pm-pop-list .pm-pop-item')[0].click()
-    expect(sort.sortKey).toBe('title')
-    document.body.findAll('.pm-sort-dir button')[1].click()
-    expect(sort.sortDir).toBe('desc')
+    openSortPopover(document.body.createEl('button'), { fields, sort, onChange, onReset })
+    return onChange
+  }
+  const selects = (cls: string): HTMLSelectElement[] =>
+    Array.from(document.body.querySelectorAll<HTMLSelectElement>(`select.${cls}`))
+
+  it('adds keys up to the limit and names directions by field', () => {
+    const sort: SortRule[] = [{ key: 'status', dir: 'asc' }]
+    const onChange = open(sort)
+    const add = (): void => document.body.querySelector<HTMLButtonElement>('.pm-sort-add')?.click()
+    add()
+    add()
+    expect(sort.map((rule) => rule.key)).toEqual(['status', 'title', 'due'])
+    expect(document.body.querySelector<HTMLButtonElement>('.pm-sort-add')?.disabled).toBe(true)
+    expect(document.body.find('.pm-sort-pop-count')?.textContent).toBe('3 of 3')
+    expect(Array.from(selects('pm-sort-dir')[2].options).map((o) => o.text)).toEqual(['Earliest first', 'Latest first'])
+    expect(Array.from(selects('pm-sort-dir')[0].options).map((o) => o.text)).toEqual(['To Do first', 'Cancelled first'])
     expect(onChange).toHaveBeenCalledTimes(2)
+  })
+
+  it('changes the field and the direction of a key, and removes one', () => {
+    const sort: SortRule[] = [
+      { key: 'status', dir: 'asc' },
+      { key: 'title', dir: 'asc' }
+    ]
+    open(sort)
+    const field = selects('pm-sort-field')[1]
+    expect(Array.from(field.options).map((o) => o.value)).toEqual(['title', 'due'])
+    field.value = 'due'
+    field.dispatchEvent(new Event('change'))
+    const dir = selects('pm-sort-dir')[0]
+    dir.value = 'desc'
+    dir.dispatchEvent(new Event('change'))
+    expect(sort).toEqual([
+      { key: 'status', dir: 'desc' },
+      { key: 'due', dir: 'asc' }
+    ])
+    document.body.querySelector<HTMLButtonElement>('.pm-sort-remove')?.click()
+    expect(sort).toEqual([{ key: 'due', dir: 'asc' }])
+  })
+
+  it('moves a key to another rank by dragging it', () => {
+    const sort: SortRule[] = [
+      { key: 'status', dir: 'asc' },
+      { key: 'title', dir: 'asc' }
+    ]
+    open(sort)
+    const rows = document.body.findAll('.pm-sort-row')
+    rows[1].dispatchEvent(new Event('dragstart'))
+    rows[0].dispatchEvent(new Event('drop'))
+    expect(sort.map((rule) => rule.key)).toEqual(['title', 'status'])
+  })
+
+  it('resets through the view', () => {
+    const onReset = vi.fn<() => void>()
+    open([], onReset)
+    expect(document.body.find('.pm-sort-pop .pm-pop-empty')).not.toBeNull()
+    document.body.querySelector<HTMLButtonElement>('.pm-sort-pop-reset')?.click()
+    expect(onReset).toHaveBeenCalled()
   })
 })
 
