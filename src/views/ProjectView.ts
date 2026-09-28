@@ -5,7 +5,9 @@ import {
   type ViewMode,
   type FilterState,
   type SavedView,
+  type SortOrder,
   makeDefaultFilter,
+  makeDefaultSort,
   makeId,
   truncateTitle,
   t
@@ -22,7 +24,6 @@ import {
 import { safeAsync, ChipButton, ViewSwitcher, ProjectHeader, renderGlyph, makeActivatable } from '@dotpm/ui'
 import type { SubView } from './SubView'
 import { TableView } from './table/TableView'
-import type { TableViewState } from './table/TableView'
 import type { ExportViewState } from '../export/snapshot'
 import { GanttView } from './gantt/GanttView'
 import { KanbanView } from './KanbanView'
@@ -50,8 +51,8 @@ export class ProjectView extends ItemView {
   currentView: ViewMode
   filter: FilterState = makeDefaultFilter()
   activeSavedViewId: string | null = null
+  sort: SortOrder = makeDefaultSort()
   private subview: SubView | null = null
-  private savedTableViewState: TableViewState | null = null
   private toolbarEl!: HTMLElement
   private headerEl!: HTMLElement
   private bodyEl!: HTMLElement
@@ -86,12 +87,10 @@ export class ProjectView extends ItemView {
 
   /** The mode, filter and sort a reader of an export starts from. */
   exportState(): ExportViewState {
-    const table = this.subview instanceof TableView ? this.subview.getViewState() : this.savedTableViewState
     return {
       mode: this.currentView,
       filter: { ...this.filter },
-      sortKey: table?.sortKey ?? 'title',
-      sortDir: table?.sortDir ?? 'asc'
+      ...this.sort
     }
   }
   getIcon(): string {
@@ -227,9 +226,11 @@ export class ProjectView extends ItemView {
     if (saved) {
       this.filter = saved.filter
       this.activeSavedViewId = saved.activeSavedViewId
+      this.sort = { sortKey: saved.sortKey, sortDir: saved.sortDir }
     } else {
       this.filter = makeDefaultFilter()
       this.activeSavedViewId = null
+      this.sort = makeDefaultSort()
     }
   }
 
@@ -237,7 +238,8 @@ export class ProjectView extends ItemView {
     if (!this.projectScope) return
     this.plugin.settings.projectFilters[this.projectScope.key] = {
       filter: this.filter,
-      activeSavedViewId: this.activeSavedViewId
+      activeSavedViewId: this.activeSavedViewId,
+      ...this.sort
     }
     await this.plugin.saveSettings()
   }
@@ -322,12 +324,10 @@ export class ProjectView extends ItemView {
       if (!sv) return
       Object.assign(this.filter, sv.filter)
       this.activeSavedViewId = sv.id
+      this.sort = { sortKey: sv.sortKey, sortDir: sv.sortDir }
       if (sv.viewMode && sv.viewMode !== this.currentView) {
         this.currentView = sv.viewMode
         this.renderProjectToolbar()
-      }
-      if (this.subview instanceof TableView) {
-        this.savedTableViewState = { sortKey: sv.sortKey as TableViewState['sortKey'], sortDir: sv.sortDir }
       }
     }
     void this.persistFilter()
@@ -337,14 +337,11 @@ export class ProjectView extends ItemView {
 
   private async handleSavedViewSave(name: string): Promise<void> {
     if (!this.projectScope) return
-    const sortMeta =
-      this.subview instanceof TableView ? this.subview.getViewState() : { sortKey: 'status', sortDir: 'asc' as const }
     const sv: SavedView = {
       id: makeId(),
       name,
       filter: { ...this.filter },
-      sortKey: sortMeta.sortKey,
-      sortDir: sortMeta.sortDir,
+      ...this.sort,
       viewMode: this.currentView
     }
     this.activeSavedViewId = sv.id
@@ -359,11 +356,8 @@ export class ProjectView extends ItemView {
     if (!sv) return
     sv.filter = { ...this.filter }
     sv.viewMode = this.currentView
-    if (this.subview instanceof TableView) {
-      const ts = this.subview.getViewState()
-      sv.sortKey = ts.sortKey
-      sv.sortDir = ts.sortDir
-    }
+    sv.sortKey = this.sort.sortKey
+    sv.sortDir = this.sort.sortDir
     await this.persistSavedViews(views)
     this.header?.refresh()
   }
@@ -520,13 +514,8 @@ export class ProjectView extends ItemView {
     }
 
     let savedTableScrollTop: number | null = null
-    if (this.subview instanceof TableView) {
-      this.savedTableViewState = this.subview.getViewState()
-      if (this.currentView === 'table') {
-        savedTableScrollTop = this.subview.getScrollTop()
-      }
-    } else if (this.currentView !== 'table') {
-      this.savedTableViewState = null
+    if (this.currentView === 'table' && this.subview instanceof TableView) {
+      savedTableScrollTop = this.subview.getScrollTop()
     }
 
     this.subview?.destroy?.()
@@ -541,8 +530,9 @@ export class ProjectView extends ItemView {
           this.plugin,
           () => this.refreshProject(),
           this.filter,
-          this.keyScope,
-          this.savedTableViewState ?? undefined
+          this.sort,
+          safeAsync(() => this.persistFilter()),
+          this.keyScope
         )
         if (savedTableScrollTop !== null) table.setPendingScrollTop(savedTableScrollTop)
         this.subview = table

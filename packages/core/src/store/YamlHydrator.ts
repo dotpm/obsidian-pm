@@ -13,8 +13,10 @@ import {
   CUSTOM_FIELD_TYPES,
   DEFAULT_PALETTE_COLOR,
   DEFAULT_PROJECT_COLOR,
+  makeDefaultSort,
   makeTask,
-  PRIORITY_ICON_SETS
+  PRIORITY_ICON_SETS,
+  SORT_KEYS
 } from '../types'
 import { readColor } from '../utils'
 import { t } from '../i18n'
@@ -58,6 +60,7 @@ export function customFieldList(raw: unknown): CustomFieldDef[] {
 
 export function hydrateSavedViews(raw: unknown[]): SavedView[] {
   if (!Array.isArray(raw)) return []
+  const defaultSort = makeDefaultSort()
   return raw
     .filter((r) => r && typeof r === 'object')
     .map((r) => {
@@ -78,8 +81,8 @@ export function hydrateSavedViews(raw: unknown[]): SavedView[] {
           dueDateFilter: (filter.dueDateFilter as string as SavedView['filter']['dueDateFilter']) ?? 'any',
           showArchived: (filter.showArchived as boolean) ?? false
         },
-        sortKey: (v.sortKey as string) ?? 'status',
-        sortDir: (v.sortDir as 'asc' | 'desc') ?? 'asc',
+        sortKey: SORT_KEYS.find((key) => key === v.sortKey) ?? defaultSort.sortKey,
+        sortDir: v.sortDir === 'asc' || v.sortDir === 'desc' ? v.sortDir : defaultSort.sortDir,
         ...(validViewMode ? { viewMode: validViewMode } : {})
       }
     })

@@ -3,18 +3,11 @@ import {
   type TaskPriority,
   type StatusConfig,
   type PriorityConfig,
+  type SortOrder,
   displayName,
   locale,
   statusSortOrder
 } from '@dotpm/core'
-
-export type SortKey = 'title' | 'status' | 'priority' | 'due' | 'assignees' | 'progress'
-export type SortDir = 'asc' | 'desc'
-
-export interface SortOrder {
-  sortKey: SortKey
-  sortDir: SortDir
-}
 
 export function compareTask(
   a: Task,

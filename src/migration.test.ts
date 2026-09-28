@@ -5,7 +5,7 @@ import { makeFakeApp } from '#test/fakeVault'
 import { migrateProjectLayout, migrateTaskRefs } from './migration'
 import type PMPlugin from './main'
 import { ProjectStore, VaultIndex } from './store'
-import { DEFAULT_SETTINGS, makeDefaultFilter, type PMSettings } from '@dotpm/core'
+import { DEFAULT_SETTINGS, makeDefaultFilter, makeDefaultSort, type PMSettings } from '@dotpm/core'
 
 const expectDefined = <T>(value: T | null | undefined): T => {
   if (value == null) throw new Error('expected value to be defined')
@@ -81,7 +81,11 @@ describe('migrateProjectLayout', () => {
 
   it('carries the filters, saved views and collapsed state over to the new path', async () => {
     const { plugin, settings } = await legacyVault([])
-    settings.projectFilters['project:Projects/Roadmap.md'] = { filter: makeDefaultFilter(), activeSavedViewId: null }
+    settings.projectFilters['project:Projects/Roadmap.md'] = {
+      filter: makeDefaultFilter(),
+      activeSavedViewId: null,
+      ...makeDefaultSort()
+    }
     settings.scopeViews['subtree:Projects/Roadmap.md'] = []
     settings.collapsedTasks['Projects/Roadmap.md'] = ['t1']
     settings.collapsedProjects.push('Projects/Roadmap.md')

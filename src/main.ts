@@ -5,6 +5,7 @@ import {
   defaultPriorities,
   defaultStatuses,
   makeDefaultFilter,
+  makeDefaultSort,
   type PMSettings,
   type Project,
   type Task,
@@ -430,6 +431,13 @@ export default class PMPlugin extends Plugin {
       migrated = true
     }
 
+    // Sort was held by the table alone and forgotten when the view closed.
+    for (const entry of Object.values(this.settings.projectFilters)) {
+      if (entry.sortKey) continue
+      Object.assign(entry, makeDefaultSort())
+      migrated = true
+    }
+
     for (const s of this.settings.statuses) {
       if (s.complete === undefined) {
         s.complete = s.id === 'done' || s.id === 'cancelled'
@@ -734,7 +742,8 @@ export default class PMPlugin extends Plugin {
     }
     this.settings.projectFilters[scopeKey({ kind: 'vault' })] = {
       filter: { ...makeDefaultFilter(), assignees: [person] },
-      activeSavedViewId: null
+      activeSavedViewId: null,
+      ...makeDefaultSort()
     }
     await this.saveSettings()
     await this.router.openScope({ kind: 'vault' })

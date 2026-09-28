@@ -9,6 +9,7 @@ export type GanttWeekLabel = 'weekNumber' | 'dateRange' | 'both'
 export type ViewMode = 'table' | 'gantt' | 'kanban'
 export type LineBorders = 'none' | 'horizontal' | 'vertical' | 'both'
 export type DueDateFilter = 'any' | 'overdue' | 'this-week' | 'this-month' | 'no-date'
+export type SortDir = 'asc' | 'desc'
 export type DueUrgency = 'normal' | 'near' | 'overdue'
 export type TaskType = 'task' | 'milestone' | 'subtask'
 
@@ -34,6 +35,14 @@ export const CUSTOM_FIELD_TYPES = [
   'checkbox',
   'url'
 ] as const
+
+export const SORT_KEYS = ['title', 'status', 'priority', 'due', 'assignees', 'progress'] as const
+export type SortKey = (typeof SORT_KEYS)[number]
+
+export interface SortOrder {
+  sortKey: SortKey
+  sortDir: SortDir
+}
 
 export interface CustomFieldDef {
   id: string
@@ -118,16 +127,14 @@ export interface FilterState {
   showArchived: boolean
 }
 
-export interface SavedView {
+export interface SavedView extends SortOrder {
   id: string
   name: string
   filter: FilterState
-  sortKey: string
-  sortDir: 'asc' | 'desc'
   viewMode?: ViewMode
 }
 
-export interface PerProjectFilter {
+export interface PerProjectFilter extends SortOrder {
   filter: FilterState
   activeSavedViewId: string | null
 }
@@ -398,6 +405,10 @@ export function makeProject(title: string, filePath: string): Project {
     savedViews: [],
     taskIndex: new Map()
   }
+}
+
+export function makeDefaultSort(): SortOrder {
+  return { sortKey: 'status', sortDir: 'asc' }
 }
 
 export function makeDefaultFilter(): FilterState {

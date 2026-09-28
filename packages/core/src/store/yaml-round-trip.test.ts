@@ -248,6 +248,12 @@ describe('project round-trip', () => {
     expect(project.savedViews).toEqual([view])
   })
 
+  it('falls back to the default sort when a saved view holds an unknown one', () => {
+    const fm = { savedViews: [{ id: 'v1', name: 'Odd', sortKey: 'estimate', sortDir: 'sideways' }] }
+    const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
+    expect(project.savedViews[0]).toMatchObject({ sortKey: 'status', sortDir: 'asc' })
+  })
+
   it('records taskIds in the frontmatter', () => {
     const p = makeProject('P', 'Projects/P.md')
     p.tasks = [makeTask({ id: 't-1' }), makeTask({ id: 't-2' })]

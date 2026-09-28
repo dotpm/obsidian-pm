@@ -1,7 +1,7 @@
 import '@dotpm/ui/dom-shim'
 import { domPlatform } from '@dotpm/ui/dom-platform'
 import { isSnapshot, tasksFromResources, type Snapshot } from '@dotpm/api'
-import { type ViewMode, locale, setDateFormat, setLocale, t, tn } from '@dotpm/core'
+import { type SortKey, type ViewMode, locale, setDateFormat, setLocale, t, tn } from '@dotpm/core'
 import {
   renderSnapshotGantt,
   renderSnapshotKanban,
@@ -10,7 +10,6 @@ import {
   svgEl,
   tableRows,
   ViewSwitcher,
-  type SortKey,
   type ViewModel
 } from '@dotpm/ui'
 

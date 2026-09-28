@@ -1,6 +1,7 @@
 import {
   type CustomFieldDef,
   type FlatTask,
+  type SortKey,
   applyTaskFilterFlat,
   dueUrgency,
   flattenTasks,
@@ -34,7 +35,7 @@ import {
   projectOf,
   type ViewModel
 } from './model'
-import { compareTask, type SortKey } from './tableSort'
+import { compareTask } from './tableSort'
 
 interface TreeRow extends FlatTask {
   guides: boolean[]

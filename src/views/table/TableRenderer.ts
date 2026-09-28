@@ -1,6 +1,8 @@
 import type PMPlugin from '#main'
 import {
   type FilterState,
+  type SortKey,
+  type SortOrder,
   type LineBorders,
   type PriorityConfig,
   type PriorityIconSet,
@@ -13,12 +15,10 @@ import {
   t
 } from '@dotpm/core'
 import { personKeyer, type ProjectScope } from '#store'
-import { renderAddButton, childTreeGuides, compareTask, type SortDir, type SortKey } from '@dotpm/ui'
+import { renderAddButton, childTreeGuides, compareTask } from '@dotpm/ui'
 import { openTaskModal } from '#ui/ModalFactory'
 import { openAddTask } from '../addTask'
 import { renderTaskRow, updateSelectedRow, updateSelectAllCheckbox } from './TableRow'
-
-export type { SortKey, SortDir }
 
 /** A display row plus what the tree connectors need to know about its siblings. */
 export interface TableTreeRow extends FlatTask {
@@ -28,8 +28,7 @@ export interface TableTreeRow extends FlatTask {
 }
 
 export interface TableState {
-  sortKey: SortKey
-  sortDir: SortDir
+  sort: SortOrder
   filter: FilterState
   selectedTaskId: string | null
   selectedTaskIds: Set<string>
@@ -63,6 +62,7 @@ export interface TableContext {
   onRefresh: () => Promise<void>
   onSelectionChange: () => void
   onBulkDelete: () => void
+  onSortChange: () => void
 }
 
 export function renderTable(ctx: TableContext): void {
@@ -114,9 +114,9 @@ export function renderTable(ctx: TableContext): void {
   const paintSortIndicators = () => {
     for (const { key, th } of sortableHeaders) {
       th.querySelector('.pm-sort-indicator')?.remove()
-      if (ctx.state.sortKey === key) {
+      if (ctx.state.sort.sortKey === key) {
         th.createSpan({
-          text: ctx.state.sortDir === 'asc' ? ' \u2191' : ' \u2193',
+          text: ctx.state.sort.sortDir === 'asc' ? ' \u2191' : ' \u2193',
           cls: 'pm-sort-indicator'
         })
       }
@@ -133,14 +133,16 @@ export function renderTable(ctx: TableContext): void {
       th.createSpan({ text: col.label })
       sortableHeaders.push({ key: col.key, th })
       th.addEventListener('click', () => {
-        if (ctx.state.sortKey === col.key) {
-          ctx.state.sortDir = ctx.state.sortDir === 'asc' ? 'desc' : 'asc'
+        const { sort } = ctx.state
+        if (sort.sortKey === col.key) {
+          sort.sortDir = sort.sortDir === 'asc' ? 'desc' : 'asc'
         } else {
-          ctx.state.sortKey = col.key as SortKey
-          ctx.state.sortDir = 'asc'
+          sort.sortKey = col.key as SortKey
+          sort.sortDir = 'asc'
         }
         paintSortIndicators()
         refreshTableBody(ctx)
+        ctx.onSortChange()
       })
     } else {
       th.setText(col.label)
@@ -213,7 +215,7 @@ function fillTableBody(ctx: TableContext): void {
     list.push(f)
   }
   for (const list of childrenByParent.values()) {
-    list.sort((a, b) => compareTask(a.task, b.task, ctx.state, ctx.statuses, ctx.priorities))
+    list.sort((a, b) => compareTask(a.task, b.task, ctx.state.sort, ctx.statuses, ctx.priorities))
   }
 
   const sorted: TableTreeRow[] = []

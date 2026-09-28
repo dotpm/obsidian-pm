@@ -1,21 +1,16 @@
 import { Notice, type KeymapEventHandler, type Scope } from 'obsidian'
 import { confirmDialog } from '#ui/ModalFactory'
 import type PMPlugin from '#main'
-import { t, tn, type FilterState, type Project } from '@dotpm/core'
+import { t, tn, type FilterState, type Project, type SortOrder } from '@dotpm/core'
 import type { ProjectScope } from '#store'
 import { safeAsync } from '@dotpm/ui'
 import type { SubView } from '../SubView'
 import { collapsedTaskIds } from '../collapse'
 import { renderTable, refreshTableBody, handleTableKeyDown, ROW_HEIGHT_ESTIMATE } from './TableRenderer'
-import type { SortKey, SortDir, TableState } from './TableRenderer'
+import type { TableState } from './TableRenderer'
 import { updateSelectAllCheckbox } from './TableRow'
 import { renderBulkActionBar } from './BulkActionBar'
 import type { BulkAction } from './BulkActionBar'
-
-export interface TableViewState {
-  sortKey: SortKey
-  sortDir: SortDir
-}
 
 const TABLE_KEYS = ['Escape', 'ArrowDown', 'ArrowUp', 'j', 'k', 'Enter', 'e', 'Delete', 'Backspace']
 
@@ -30,12 +25,12 @@ export class TableView implements SubView {
     private plugin: PMPlugin,
     private onRefresh: () => Promise<void>,
     filter: FilterState,
-    private keyScope: Scope,
-    initialState?: TableViewState
+    sort: SortOrder,
+    private onSortChange: () => void,
+    private keyScope: Scope
   ) {
     this.state = {
-      sortKey: initialState?.sortKey ?? 'status',
-      sortDir: initialState?.sortDir ?? 'asc',
+      sort,
       filter,
       selectedTaskId: null,
       selectedTaskIds: new Set(),
@@ -64,13 +59,6 @@ export class TableView implements SubView {
 
   setPendingScrollTop(top: number): void {
     this.pendingScrollTop = top
-  }
-
-  getViewState(): TableViewState {
-    return {
-      sortKey: this.state.sortKey,
-      sortDir: this.state.sortDir
-    }
   }
 
   render(): void {
@@ -239,7 +227,8 @@ export class TableView implements SubView {
         updateSelectAllCheckbox(this.state)
         this.updateBulkBar()
       },
-      onBulkDelete: safeAsync(() => this.handleBulkAction({ type: 'delete' }))
+      onBulkDelete: safeAsync(() => this.handleBulkAction({ type: 'delete' })),
+      onSortChange: this.onSortChange
     }
   }
 }

@@ -2,6 +2,7 @@ import { getIcon } from 'obsidian'
 import {
   type FilterState,
   type Project,
+  type SortOrder,
   type ViewMode,
   flattenTasks,
   locale,
@@ -17,15 +18,12 @@ import {
   type Snapshot,
   type SnapshotProject
 } from '@dotpm/api'
-import type { SortDir, SortKey } from '@dotpm/ui'
 import type PMPlugin from '#main'
 import { personColor, type ProjectScope } from '#store'
 
-export interface ExportViewState {
+export interface ExportViewState extends SortOrder {
   mode: ViewMode
   filter: FilterState
-  sortKey: SortKey
-  sortDir: SortDir
 }
 
 /** Icons the page chrome and the composites ask for by name, whatever the data holds. */
