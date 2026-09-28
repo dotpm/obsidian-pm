@@ -84,7 +84,7 @@ describe('migrateProjectLayout', () => {
     settings.projectFilters['project:Projects/Roadmap.md'] = {
       filter: makeDefaultFilter(),
       activeSavedViewId: null,
-      ...makeDefaultSort(),
+      sort: makeDefaultSort(),
       ganttGranularity: 'week'
     }
     settings.scopeViews['subtree:Projects/Roadmap.md'] = []

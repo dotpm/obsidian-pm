@@ -1,5 +1,6 @@
 import { type Task, dueUrgency, flattenTasks, getPriorityConfig, matchesQuery, totalLoggedHours } from '@dotpm/core'
 import { KanbanColumn, type KanbanCardData } from '../composites/KanbanColumn'
+import { compareTasks } from './tableSort'
 import { renderProjectChip } from '../composites/projectChip'
 import {
   allTasks,
@@ -55,6 +56,7 @@ export function renderSnapshotKanban(container: HTMLElement, model: ViewModel): 
   for (const status of config.statuses) {
     const cards = candidates
       .filter((task) => task.status === status.id && matchesQuery(task, query, ctx))
+      .sort((a, b) => compareTasks(a, b, model.sort, config.statuses, config.priorities))
       .map((task) => cardData(model, task))
     new KanbanColumn(board, {
       status,

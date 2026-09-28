@@ -6,6 +6,7 @@ import {
   today,
   DEFAULT_SETTINGS,
   makeDefaultFilter,
+  makeDefaultSort,
   makeTask,
   type PMSettings,
   type Project,
@@ -187,7 +188,7 @@ describe('ProjectStore project metadata patch', () => {
     const { store, app } = newStore()
     const project = await store.createProject('Patch', 'Projects')
     await addNamed(store, project, 'Card')
-    project.savedViews = [{ id: 'v1', name: 'Mine', filter: makeDefaultFilter(), sortKey: 'status', sortDir: 'asc' }]
+    project.savedViews = [{ id: 'v1', name: 'Mine', filter: makeDefaultFilter(), sort: makeDefaultSort() }]
     await store.saveProject(project)
 
     await store.updateProject(project, { title: 'Renamed', color: '#123456' })

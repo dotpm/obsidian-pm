@@ -8,6 +8,7 @@ import type {
   Project,
   ProjectConfig,
   SavedView,
+  SortRule,
   StatusConfig,
   Task,
   ViewMode
@@ -19,6 +20,7 @@ import {
   FILTER_OPS,
   GANTT_GRANULARITIES,
   makeDefaultSort,
+  MAX_SORT_RULES,
   makeTask,
   PRIORITY_ICON_SETS,
   SORT_KEYS
@@ -111,9 +113,29 @@ export function hydrateFilter(raw: unknown): FilterState {
   return filter
 }
 
+/**
+ * Reads a sort list from `record.sort`. A view saved before sorts had several keys held
+ * one `sortKey` / `sortDir` pair instead, which becomes a list of one.
+ */
+export function hydrateSort(record: Record<string, unknown>): SortRule[] {
+  if (Array.isArray(record.sort)) {
+    const rules: SortRule[] = []
+    for (const entry of record.sort) {
+      if (!entry || typeof entry !== 'object') continue
+      const r = entry as Record<string, unknown>
+      const key = SORT_KEYS.find((k) => k === r.key)
+      if (!key || rules.some((rule) => rule.key === key)) continue
+      rules.push({ key, dir: r.dir === 'desc' ? 'desc' : 'asc' })
+    }
+    return rules.slice(0, MAX_SORT_RULES)
+  }
+  const key = SORT_KEYS.find((k) => k === record.sortKey)
+  if (!key) return makeDefaultSort()
+  return [{ key, dir: record.sortDir === 'desc' ? 'desc' : 'asc' }]
+}
+
 export function hydrateSavedViews(raw: unknown[]): SavedView[] {
   if (!Array.isArray(raw)) return []
-  const defaultSort = makeDefaultSort()
   return raw
     .filter((r) => r && typeof r === 'object')
     .map((r) => {
@@ -126,10 +148,10 @@ export function hydrateSavedViews(raw: unknown[]): SavedView[] {
         id: (v.id as string) ?? '',
         name: (v.name as string) ?? t('common.untitled'),
         filter: hydrateFilter(v.filter),
-        sortKey: SORT_KEYS.find((key) => key === v.sortKey) ?? defaultSort.sortKey,
-        sortDir: v.sortDir === 'asc' || v.sortDir === 'desc' ? v.sortDir : defaultSort.sortDir,
+        sort: hydrateSort(v),
         ...(validViewMode ? { viewMode: validViewMode } : {}),
-        ...(granularity ? { ganttGranularity: granularity } : {})
+        ...(granularity ? { ganttGranularity: granularity } : {}),
+        ...(v.isDefault === true ? { isDefault: true } : {})
       }
     })
 }

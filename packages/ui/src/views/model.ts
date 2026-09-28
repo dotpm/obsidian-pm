@@ -9,7 +9,7 @@ import {
   type PriorityConfig,
   type PriorityIconSet,
   type ResolvedProjectConfig,
-  type SortOrder,
+  type SortRule,
   type StatusConfig,
   type Task,
   displayName,
@@ -41,7 +41,8 @@ export interface ViewSettings {
  * Everything the read-only views need, resolved by whoever holds the data: the plugin
  * from a scope, a page from a snapshot. Projects come primary first.
  */
-export interface ViewModel extends SortOrder {
+export interface ViewModel {
+  sort: SortRule[]
   projects: ViewProject[]
   settings: ViewSettings
   filter: FilterState

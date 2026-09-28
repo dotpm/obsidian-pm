@@ -78,8 +78,7 @@ function model(overrides: Partial<ViewModel> = {}): ViewModel {
       ganttGranularity: 'week'
     },
     filter: makeDefaultFilter(),
-    sortKey: 'title',
-    sortDir: 'asc',
+    sort: [{ key: 'title', dir: 'asc' }],
     personColors: {},
     ...overrides
   }
@@ -137,7 +136,7 @@ describe('snapshot table', () => {
 })
 
 describe('snapshot kanban', () => {
-  it('puts each task in its status column', () => {
+  it('puts each task in its status column, in the order the view sorts by', () => {
     const host = document.body.createDiv()
     renderSnapshotKanban(host, model())
     const columns = host.querySelectorAll('.pm-kanban-col')
@@ -145,7 +144,7 @@ describe('snapshot kanban', () => {
     const byColumn = Array.from(columns).map((col) =>
       Array.from(col.querySelectorAll('.pm-kanban-card')).map((card) => (card as HTMLElement).dataset.taskId)
     )
-    expect(byColumn[0]).toEqual(['a', 'm'])
+    expect(byColumn[0]).toEqual(['m', 'a'])
     expect(byColumn.flat()).toContain('b')
     expect(byColumn.flat()).not.toContain('c')
   })

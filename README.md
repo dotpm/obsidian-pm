@@ -95,7 +95,8 @@ One column per status. Dragging a card to another column changes its status. Car
 - One view over a project, its subtree, a folder or the whole vault
 - Archive a project that is done or no longer relevant; its sub-projects go with it
 - Filters on any field, custom fields included: is, is not, contains, between, date buckets and ranges
-- Saved views: named filter and sort combinations
+- Saved views: named filter and sort combinations, one of them starred as the view a project opens with
+- Sort by up to three keys in the table and on the board
 - Bulk edit from the table
 - People notes for assignees, with a per-person task list and an avatar color set by the note's `color` property
 

@@ -2,7 +2,8 @@ import type PMPlugin from '#main'
 import {
   type TaskQuery,
   type SortKey,
-  type SortOrder,
+  type SortRule,
+  MAX_SORT_RULES,
   type LineBorders,
   type PriorityConfig,
   type PriorityIconSet,
@@ -15,7 +16,7 @@ import {
   t
 } from '@dotpm/core'
 import { personKeyer, type ProjectScope } from '#store'
-import { renderAddButton, childTreeGuides, compareTask } from '@dotpm/ui'
+import { renderAddButton, childTreeGuides, compareTasks } from '@dotpm/ui'
 import { openTaskModal } from '#ui/ModalFactory'
 import { openAddTask } from '../addTask'
 import { renderTaskRow, updateSelectedRow, updateSelectAllCheckbox } from './TableRow'
@@ -28,7 +29,7 @@ export interface TableTreeRow extends FlatTask {
 }
 
 export interface TableState {
-  sort: SortOrder
+  sort: SortRule[]
   query: TaskQuery
   selectedTaskId: string | null
   selectedTaskIds: Set<string>
@@ -114,12 +115,14 @@ export function renderTable(ctx: TableContext): void {
   const paintSortIndicators = () => {
     for (const { key, th } of sortableHeaders) {
       th.querySelector('.pm-sort-indicator')?.remove()
-      if (ctx.state.sort.sortKey === key) {
-        th.createSpan({
-          text: ctx.state.sort.sortDir === 'asc' ? ' \u2191' : ' \u2193',
-          cls: 'pm-sort-indicator'
-        })
-      }
+      const { sort } = ctx.state
+      const rank = sort.findIndex((rule) => rule.key === key)
+      if (rank < 0) continue
+      const indicator = th.createSpan({
+        text: sort[rank].dir === 'asc' ? ' \u2191' : ' \u2193',
+        cls: 'pm-sort-indicator'
+      })
+      if (sort.length > 1) indicator.createEl('sup', { text: String(rank + 1) })
     }
   }
 
@@ -132,13 +135,17 @@ export function renderTable(ctx: TableContext): void {
       th.setAttribute('aria-label', `Sort by ${col.label}`)
       th.createSpan({ text: col.label })
       sortableHeaders.push({ key: col.key, th })
-      th.addEventListener('click', () => {
+      th.addEventListener('click', (e) => {
+        const key = col.key as SortKey
         const { sort } = ctx.state
-        if (sort.sortKey === col.key) {
-          sort.sortDir = sort.sortDir === 'asc' ? 'desc' : 'asc'
+        const at = sort.findIndex((rule) => rule.key === key)
+        if (e.shiftKey) {
+          if (at >= 0) sort[at] = { key, dir: sort[at].dir === 'asc' ? 'desc' : 'asc' }
+          else if (sort.length < MAX_SORT_RULES) sort.push({ key, dir: 'asc' })
         } else {
-          sort.sortKey = col.key as SortKey
-          sort.sortDir = 'asc'
+          const dir = at === 0 && sort[0].dir === 'asc' ? 'desc' : 'asc'
+          const rest = sort.filter((rule, i) => i > 0 && rule.key !== key)
+          sort.splice(0, sort.length, { key, dir }, ...rest)
         }
         paintSortIndicators()
         refreshTableBody(ctx)
@@ -215,7 +222,7 @@ function fillTableBody(ctx: TableContext): void {
     list.push(f)
   }
   for (const list of childrenByParent.values()) {
-    list.sort((a, b) => compareTask(a.task, b.task, ctx.state.sort, ctx.statuses, ctx.priorities))
+    list.sort((a, b) => compareTasks(a.task, b.task, ctx.state.sort, ctx.statuses, ctx.priorities))
   }
 
   const sorted: TableTreeRow[] = []

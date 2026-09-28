@@ -1,4 +1,12 @@
-import type { FilterState, GanttGranularity, GanttWeekLabel, LineBorders, PriorityIconSet, ViewMode } from '@dotpm/core'
+import type {
+  FilterState,
+  SortRule,
+  GanttGranularity,
+  GanttWeekLabel,
+  LineBorders,
+  PriorityIconSet,
+  ViewMode
+} from '@dotpm/core'
 import type { ProjectResource, TaskResource } from './contract'
 
 export const SNAPSHOT_FORMAT = 'dotpm-snapshot'
@@ -15,8 +23,8 @@ export interface SnapshotView {
   mode: ViewMode
   /** Read through `hydrateFilter`: a version 1 page holds the older facet shape. */
   filter: FilterState
-  sortKey: string
-  sortDir: 'asc' | 'desc'
+  /** Read through `hydrateSort`: a version 1 page holds one `sortKey` / `sortDir` pair. */
+  sort: SortRule[]
   ganttGranularity: GanttGranularity
 }
 

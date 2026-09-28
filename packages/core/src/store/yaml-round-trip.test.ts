@@ -225,7 +225,7 @@ describe('project round-trip', () => {
     expect(project.description).toBe('From the note')
   })
 
-  it('preserves saved views with filter, sortKey, and sortDir', () => {
+  it('preserves saved views with their filter, sort, mode, scale and star', () => {
     const p = makeProject('P', 'Projects/P.md')
     const view: SavedView = {
       id: 'v1',
@@ -240,8 +240,11 @@ describe('project round-trip', () => {
         ],
         showArchived: true
       },
-      sortKey: 'due',
-      sortDir: 'desc',
+      sort: [
+        { key: 'due', dir: 'desc' },
+        { key: 'title', dir: 'asc' }
+      ],
+      isDefault: true,
       viewMode: 'gantt',
       ganttGranularity: 'month'
     }
@@ -254,7 +257,37 @@ describe('project round-trip', () => {
   it('falls back to the default sort when a saved view holds an unknown one', () => {
     const fm = { savedViews: [{ id: 'v1', name: 'Odd', sortKey: 'estimate', sortDir: 'sideways' }] }
     const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
-    expect(project.savedViews[0]).toMatchObject({ sortKey: 'status', sortDir: 'asc' })
+    expect(project.savedViews[0].sort).toEqual([{ key: 'status', dir: 'asc' }])
+  })
+
+  it('reads a single sort key from before sorts had several', () => {
+    const fm = { savedViews: [{ id: 'v1', name: 'Old', sortKey: 'due', sortDir: 'desc' }] }
+    const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
+    expect(project.savedViews[0].sort).toEqual([{ key: 'due', dir: 'desc' }])
+  })
+
+  it('keeps up to three distinct known sort keys, and an empty sort as empty', () => {
+    const sort = [
+      { key: 'due', dir: 'desc' },
+      { key: 'due', dir: 'asc' },
+      { key: 'estimate', dir: 'asc' },
+      { key: 'title', dir: 'sideways' },
+      { key: 'status' },
+      { key: 'progress', dir: 'desc' }
+    ]
+    const fm = {
+      savedViews: [
+        { id: 'v1', name: 'Many', sort },
+        { id: 'v2', name: 'None', sort: [] }
+      ]
+    }
+    const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
+    expect(project.savedViews[0].sort).toEqual([
+      { key: 'due', dir: 'desc' },
+      { key: 'title', dir: 'asc' },
+      { key: 'status', dir: 'asc' }
+    ])
+    expect(project.savedViews[1].sort).toEqual([])
   })
 
   it('reads a saved view from before conditions as the conditions it meant', () => {

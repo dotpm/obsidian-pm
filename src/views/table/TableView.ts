@@ -1,7 +1,7 @@
 import { Notice, type KeymapEventHandler, type Scope } from 'obsidian'
 import { confirmDialog } from '#ui/ModalFactory'
 import type PMPlugin from '#main'
-import { t, tn, type TaskQuery, type Project, type SortOrder } from '@dotpm/core'
+import { t, tn, type TaskQuery, type Project, type SortRule } from '@dotpm/core'
 import type { ProjectScope } from '#store'
 import { safeAsync } from '@dotpm/ui'
 import type { SubView } from '../SubView'
@@ -25,7 +25,7 @@ export class TableView implements SubView {
     private plugin: PMPlugin,
     private onRefresh: () => Promise<void>,
     query: TaskQuery,
-    sort: SortOrder,
+    sort: SortRule[],
     private onSortChange: () => void,
     private keyScope: Scope
   ) {
