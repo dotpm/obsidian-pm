@@ -2,6 +2,7 @@ import {
   type CustomFieldDef,
   type FilterContext,
   type FilterState,
+  type GroupState,
   type TaskQuery,
   type GanttGranularity,
   type GanttWeekLabel,
@@ -17,6 +18,7 @@ import {
   mergeById
 } from '@dotpm/core'
 import type { AvatarPerson } from '../primitives/AvatarStack'
+import type { FilterSetup } from '../composites/ViewHeader/filterPopover'
 
 export interface ViewProject {
   id: string
@@ -43,6 +45,7 @@ export interface ViewSettings {
  */
 export interface ViewModel {
   sort: SortRule[]
+  group: GroupState
   projects: ViewProject[]
   settings: ViewSettings
   filter: FilterState
@@ -99,5 +102,18 @@ export function filterContextOf(model: ViewModel): FilterContext {
     statuses: mergedConfig(model).statuses,
     customFields: customFieldColumns(model),
     projectOf: (task) => projectOf(model, task.id)?.id
+  }
+}
+
+/** How the page names the values a board groups by: every task, the palettes, and the projects when there are several. */
+export function filterSetupOf(model: ViewModel): FilterSetup {
+  const config = mergedConfig(model)
+  return {
+    filter: model.filter,
+    tasks: flattenTasks(allTasks(model)).map((flat) => flat.task),
+    ctx: filterContextOf(model),
+    priorities: config.priorities,
+    priorityIcons: config.priorityIcons,
+    projects: isMulti(model) ? model.projects.map((p) => ({ id: p.id, title: p.title, color: p.color })) : []
   }
 }

@@ -1,11 +1,13 @@
 import { type Task, dueUrgency, flattenTasks, getPriorityConfig, matchesQuery, totalLoggedHours } from '@dotpm/core'
 import { KanbanColumn, type KanbanCardData } from '../composites/KanbanColumn'
 import { compareTasks } from './tableSort'
+import { boardColumns } from './boardColumns'
 import { renderProjectChip } from '../composites/projectChip'
 import {
   allTasks,
   configOf,
   filterContextOf,
+  filterSetupOf,
   isMulti,
   mergedConfig,
   personOf,
@@ -43,7 +45,7 @@ function cardData(model: ViewModel, task: Task): KanbanCardData {
   }
 }
 
-/** The board without drag, menus or editing: one column per status, cards in tree order. */
+/** The board without drag, menus or editing: the columns the view grouped by, cards in the order it sorted. */
 export function renderSnapshotKanban(container: HTMLElement, model: ViewModel): HTMLElement {
   const config = mergedConfig(model)
   container.addClass('pm-kanban-view')
@@ -53,14 +55,13 @@ export function renderSnapshotKanban(container: HTMLElement, model: ViewModel): 
     : allTasks(model)
   const query = queryOf(model)
   const ctx = filterContextOf(model)
-  for (const status of config.statuses) {
-    const cards = candidates
-      .filter((task) => task.status === status.id && matchesQuery(task, query, ctx))
-      .sort((a, b) => compareTasks(a, b, model.sort, config.statuses, config.priorities))
-      .map((task) => cardData(model, task))
+  const tasks = candidates
+    .filter((task) => matchesQuery(task, query, ctx))
+    .sort((a, b) => compareTasks(a, b, model.sort, config.statuses, config.priorities))
+  for (const column of boardColumns(filterSetupOf(model), model.group, tasks).filter((c) => !c.hidden)) {
     new KanbanColumn(board, {
-      status,
-      cards,
+      column,
+      cards: column.tasks.map((task) => cardData(model, task)),
       onCardClick: noop,
       onCardContextMenu: noop,
       onCardDragStart: noop,

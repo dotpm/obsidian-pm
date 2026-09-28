@@ -20,6 +20,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Table column headers can now add another sort key with Shift-click
 - Saved views can now be renamed, reordered, and starred as the view to open with
 - Added Ctrl+S (Cmd+S on macOS) to save changes to the current saved view
+- Boards can now put their columns by priority, assignee, tag, type, project, or a custom field
+- Board columns can now be reordered and hidden, and empty columns left out
 - Person notes can now set their avatar color with a `color` property
 
 ### Changed

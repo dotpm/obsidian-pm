@@ -1,6 +1,6 @@
 import type { App } from 'obsidian'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { DEFAULT_SETTINGS, makeDefaultFilter, makeTask, type PMSettings } from '@dotpm/core'
+import { DEFAULT_SETTINGS, makeDefaultFilter, makeDefaultGroup, makeTask, type PMSettings } from '@dotpm/core'
 import { isSnapshot, type Snapshot } from '@dotpm/api'
 import { makeFakeApp } from '#test/fakeVault'
 import type PMPlugin from '#main'
@@ -45,6 +45,7 @@ describe('buildSnapshot', () => {
       mode: 'gantt',
       filter: { ...makeDefaultFilter(), conditions: [{ field: 'status', op: 'any', value: ['todo'] }] },
       sort: [{ key: 'due', dir: 'desc' }],
+      group: { field: 'priority' },
       ganttGranularity: 'month'
     })
     expect(isSnapshot(snapshot)).toBe(true)
@@ -53,6 +54,7 @@ describe('buildSnapshot', () => {
     expect(snapshot.view).toMatchObject({
       mode: 'gantt',
       sort: [{ key: 'due', dir: 'desc' }],
+      group: { field: 'priority' },
       ganttGranularity: 'month'
     })
     expect(snapshot.view.filter.conditions).toEqual([{ field: 'status', op: 'any', value: ['todo'] }])
@@ -79,6 +81,7 @@ describe('buildSnapshot', () => {
       mode: 'table',
       filter: makeDefaultFilter(),
       sort: [{ key: 'title', dir: 'asc' }],
+      group: makeDefaultGroup(),
       ganttGranularity: 'week'
     })
     expect(snapshot.personColors).toEqual({ '[[Jane Doe]]': '#c47070' })

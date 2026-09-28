@@ -6,6 +6,7 @@ export class ChipButton {
   private iconEl: HTMLElement | null = null
   private labelEl: HTMLElement
   private badgeEl: HTMLElement | null = null
+  private detailEl: HTMLElement | null = null
   private chevronEl: HTMLElement | null = null
 
   constructor(parentEl: HTMLElement) {
@@ -38,6 +39,19 @@ export class ChipButton {
     }
     this.badgeEl ??= this.el.createSpan('pm-chip-btn-badge')
     this.badgeEl.setText(text)
+    this.order()
+    return this
+  }
+
+  /** Faint text after the label, for a state worth seeing at rest ("2 hidden"). Empty removes it. */
+  setDetail(text: string): this {
+    if (!text) {
+      this.detailEl?.remove()
+      this.detailEl = null
+      return this
+    }
+    this.detailEl ??= this.el.createSpan('pm-chip-btn-detail')
+    this.detailEl.setText(text)
     this.order()
     return this
   }
@@ -93,7 +107,7 @@ export class ChipButton {
   }
 
   private order(): void {
-    for (const part of [this.iconEl, this.labelEl, this.badgeEl, this.chevronEl]) {
+    for (const part of [this.iconEl, this.labelEl, this.detailEl, this.badgeEl, this.chevronEl]) {
       if (part) this.el.appendChild(part)
     }
   }

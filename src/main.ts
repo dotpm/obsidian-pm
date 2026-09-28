@@ -5,6 +5,7 @@ import {
   defaultPriorities,
   defaultStatuses,
   makeDefaultFilter,
+  makeDefaultGroup,
   makeDefaultSort,
   hydrateFilter,
   hydrateSort,
@@ -446,6 +447,10 @@ export default class PMPlugin extends Plugin {
         Reflect.deleteProperty(entry, 'sortDir')
         migrated = true
       }
+      if (!entry.group) {
+        entry.group = makeDefaultGroup()
+        migrated = true
+      }
       if (!entry.ganttGranularity) {
         entry.ganttGranularity = this.settings.ganttGranularity
         migrated = true
@@ -771,6 +776,7 @@ export default class PMPlugin extends Plugin {
       filter: { ...makeDefaultFilter(), conditions: [{ field: 'assignee', op: 'any', value: [person] }] },
       activeSavedViewId: null,
       sort: makeDefaultSort(),
+      group: makeDefaultGroup(),
       ganttGranularity: this.settings.ganttGranularity
     }
     await this.saveSettings()

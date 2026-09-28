@@ -336,6 +336,27 @@ describe('project round-trip', () => {
     expect(project.savedViews[0].filter.conditions).toEqual([{ field: 'tag', op: 'empty' }])
   })
 
+  it('reads a saved grouping and drops what it cannot use', () => {
+    const group = {
+      field: 'priority',
+      hideEmpty: true,
+      columns: { priority: { order: ['low', 7, 'high'], hidden: ['low'] }, status: 'x', tag: {} }
+    }
+    const fm = {
+      savedViews: [
+        { id: 'v1', name: 'G', group },
+        { id: 'v2', name: 'None' }
+      ]
+    }
+    const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
+    expect(project.savedViews[0].group).toEqual({
+      field: 'priority',
+      hideEmpty: true,
+      columns: { priority: { order: ['low', 'high'], hidden: ['low'] } }
+    })
+    expect(project.savedViews[1].group).toBeUndefined()
+  })
+
   it('drops a timeline scale it does not know', () => {
     const fm = { savedViews: [{ id: 'v1', name: 'Odd', ganttGranularity: 'decade' }] }
     const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')

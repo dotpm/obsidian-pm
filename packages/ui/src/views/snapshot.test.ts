@@ -4,6 +4,7 @@ import {
   DEFAULT_PRIORITIES,
   DEFAULT_STATUSES,
   makeDefaultFilter,
+  makeDefaultGroup,
   makeTask,
   stringToColor,
   type ResolvedProjectConfig
@@ -79,6 +80,7 @@ function model(overrides: Partial<ViewModel> = {}): ViewModel {
     },
     filter: makeDefaultFilter(),
     sort: [{ key: 'title', dir: 'asc' }],
+    group: makeDefaultGroup(),
     personColors: {},
     ...overrides
   }
@@ -147,6 +149,15 @@ describe('snapshot kanban', () => {
     expect(byColumn[0]).toEqual(['m', 'a'])
     expect(byColumn.flat()).toContain('b')
     expect(byColumn.flat()).not.toContain('c')
+  })
+})
+
+describe('snapshot kanban grouping', () => {
+  it('draws the columns of the field the view grouped by, leaving hidden ones out', () => {
+    const host = document.body.createDiv()
+    renderSnapshotKanban(host, model({ group: { field: 'type', columns: { type: { hidden: ['subtask'] } } } }))
+    const columns = Array.from(host.querySelectorAll<HTMLElement>('.pm-kanban-col')).map((col) => col.dataset.column)
+    expect(columns).toEqual(['task', 'milestone'])
   })
 })
 

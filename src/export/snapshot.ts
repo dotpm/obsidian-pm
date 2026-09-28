@@ -4,6 +4,7 @@ import {
   type GanttGranularity,
   type Project,
   type SortRule,
+  type GroupState,
   type ViewMode,
   flattenTasks,
   locale,
@@ -25,6 +26,7 @@ import { personColor, type ProjectScope } from '#store'
 export interface ExportViewState {
   mode: ViewMode
   sort: SortRule[]
+  group: GroupState
   filter: FilterState
   ganttGranularity: GanttGranularity
 }
@@ -132,6 +134,7 @@ export async function buildSnapshot(plugin: PMPlugin, scope: ProjectScope, view:
       mode: view.mode,
       filter: { ...view.filter },
       sort: view.sort,
+      group: view.group,
       ganttGranularity: view.ganttGranularity
     },
     settings: {
