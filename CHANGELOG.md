@@ -15,12 +15,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Project notes now open on their project page instead of in Obsidian's editor
+- The table now remembers its sort order after the view is closed and reopened
 
 ### Fixed
 
 - Fixed a task note opened with "Open as note" never opening in the task editor again
 - Fixed projects, statuses, and priorities with an invalid color breaking the color picker
 - Fixed tasks failing to save or losing their description after renaming their project ([#359](https://github.com/dotpm/obsidian-pm/issues/359))
+- Fixed saved views losing their sort when saved, updated, or opened outside the table
 
 ## [2.5.2] - 2026-09-21
 

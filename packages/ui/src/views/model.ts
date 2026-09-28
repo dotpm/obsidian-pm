@@ -7,6 +7,7 @@ import {
   type PriorityConfig,
   type PriorityIconSet,
   type ResolvedProjectConfig,
+  type SortOrder,
   type StatusConfig,
   type Task,
   displayName,
@@ -14,7 +15,6 @@ import {
   mergeById
 } from '@dotpm/core'
 import type { AvatarPerson } from '../primitives/AvatarStack'
-import type { SortDir, SortKey } from './tableSort'
 
 export interface ViewProject {
   id: string
@@ -39,12 +39,10 @@ export interface ViewSettings {
  * Everything the read-only views need, resolved by whoever holds the data: the plugin
  * from a scope, a page from a snapshot. Projects come primary first.
  */
-export interface ViewModel {
+export interface ViewModel extends SortOrder {
   projects: ViewProject[]
   settings: ViewSettings
   filter: FilterState
-  sortKey: SortKey
-  sortDir: SortDir
   /** A person value, as stored, to the color its note sets. */
   personColors: Record<string, string>
 }
