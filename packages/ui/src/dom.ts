@@ -1,5 +1,5 @@
 import { t } from '@dotpm/core'
-import { activeDocument, showNotice } from './platform'
+import { activeDocument, showNotice, type PlatformMenu } from './platform'
 
 const SVG_NS = 'http://www.w3.org/2000/svg'
 
@@ -47,4 +47,10 @@ export function safeAsync<A extends unknown[]>(fn: (...args: A) => Promise<void>
       }
     })()
   }
+}
+
+/** Opens a menu under a button rather than at the pointer, so keyboard activation places it too. */
+export function showMenuBelow(menu: PlatformMenu, anchor: HTMLElement): void {
+  const rect = anchor.getBoundingClientRect()
+  menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 })
 }

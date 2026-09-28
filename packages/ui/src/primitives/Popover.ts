@@ -93,6 +93,7 @@ export class Popover {
   close(): void {
     if (!this.opened) return
     this.opened = false
+    const hadFocus = this.el.contains(this.doc.activeElement)
     this.anchor.setAttribute('aria-expanded', 'false')
     this.doc.removeEventListener('mousedown', this.onOutsideDown, true)
     this.doc.removeEventListener('keydown', this.onKeyDown, true)
@@ -100,6 +101,7 @@ export class Popover {
     this.win.removeEventListener('resize', this.reposition)
     this.el.remove()
     this.container = null
+    if (hadFocus) this.anchor.focus()
     this.onCloseCb?.()
   }
 

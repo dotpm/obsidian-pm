@@ -84,7 +84,8 @@ describe('migrateProjectLayout', () => {
     settings.projectFilters['project:Projects/Roadmap.md'] = {
       filter: makeDefaultFilter(),
       activeSavedViewId: null,
-      ...makeDefaultSort()
+      ...makeDefaultSort(),
+      ganttGranularity: 'week'
     }
     settings.scopeViews['subtree:Projects/Roadmap.md'] = []
     settings.collapsedTasks['Projects/Roadmap.md'] = ['t1']

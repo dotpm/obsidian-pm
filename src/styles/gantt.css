@@ -15,9 +15,6 @@
   background: var(--background-primary);
   flex-wrap: wrap;
 }
-.pm-gantt-sep {
-  flex: 1;
-}
 
 .pm-gantt-body {
   display: flex;

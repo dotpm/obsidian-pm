@@ -1,4 +1,4 @@
-import { ButtonComponent, type Scope } from 'obsidian'
+import type { Scope } from 'obsidian'
 import type PMPlugin from '#main'
 import {
   type Task,
@@ -14,7 +14,6 @@ import {
 import { personKeyer, type ProjectScope } from '#store'
 import {
   renderAddButton,
-  SegmentedControl,
   svgEl,
   type TimelineCfg,
   buildTimelineConfig,
@@ -26,7 +25,7 @@ import {
 } from '@dotpm/ui'
 import { openAddTask } from '../addTask'
 import type { SubView } from '../SubView'
-import { collapsedTaskIds, setAllCollapsed } from '../collapse'
+import { collapsedTaskIds } from '../collapse'
 import { makeDragState } from './GanttDragHandler'
 import type { DragState } from './GanttDragHandler'
 import { makeLinkState, cancelLink } from './GanttLinkHandler'
@@ -69,6 +68,7 @@ export class GanttView implements SubView {
     private plugin: PMPlugin,
     private onRefresh: () => Promise<void>,
     private filter: FilterState,
+    private granularity: GanttGranularity,
     private keyScope: Scope
   ) {}
 
@@ -102,38 +102,9 @@ export class GanttView implements SubView {
     const activeTasks = this.getVisibleTasks()
     this.collapsedIds = collapsedTaskIds(this.plugin.settings, this.scope.projects)
     this.flatTasks = flattenTasks(activeTasks, this.collapsedIds).filter((f) => f.visible || f.depth === 0)
-    this.cfg = buildTimelineConfig(activeTasks, this.plugin.settings.ganttGranularity)
+    this.cfg = buildTimelineConfig(activeTasks, this.granularity)
 
-    this.renderGranularityControls()
     this.renderGantt()
-  }
-
-  private renderGranularityControls(): void {
-    const bar = this.container.createDiv('pm-gantt-controls')
-    const levels: GanttGranularity[] = ['day', 'week', 'month', 'quarter', 'year']
-    const labels: Record<GanttGranularity, string> = {
-      day: t('granularity.day'),
-      week: t('granularity.week'),
-      month: t('granularity.month'),
-      quarter: t('granularity.quarter'),
-      year: t('granularity.year')
-    }
-
-    new SegmentedControl<GanttGranularity>(bar, {
-      options: levels.map((level) => ({ id: level, label: labels[level] })),
-      active: this.plugin.settings.ganttGranularity,
-      onChange: (level) => {
-        this.plugin.settings.ganttGranularity = level
-        void this.plugin.saveSettings()
-        this.render()
-      }
-    })
-
-    bar.createSpan({ cls: 'pm-gantt-sep' })
-    new ButtonComponent(bar).setButtonText(t('gantt.today')).onClick(() => this.scrollToToday())
-
-    new ButtonComponent(bar).setButtonText(t('gantt.expandAll')).onClick(() => this.setAllCollapsed(false))
-    new ButtonComponent(bar).setButtonText(t('gantt.collapseAll')).onClick(() => this.setAllCollapsed(true))
   }
 
   private renderGantt(): void {
@@ -329,16 +300,10 @@ export class GanttView implements SubView {
     )
   }
 
-  private scrollToToday(): void {
+  scrollToToday(): void {
     if (!this.scrollEl) return
     const x = dateToX(this.cfg, today())
     const center = x - this.scrollEl.clientWidth / 2
     this.scrollEl.scrollLeft = Math.max(0, center)
-  }
-
-  private setAllCollapsed(collapsed: boolean): void {
-    setAllCollapsed(this.plugin.settings, this.scope.projects, collapsed)
-    void this.plugin.saveSettings()
-    this.render()
   }
 }

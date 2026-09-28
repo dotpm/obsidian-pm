@@ -240,7 +240,9 @@ describe('project round-trip', () => {
         showArchived: false
       },
       sortKey: 'due',
-      sortDir: 'desc'
+      sortDir: 'desc',
+      viewMode: 'gantt',
+      ganttGranularity: 'month'
     }
     p.savedViews = [view]
 
@@ -252,6 +254,12 @@ describe('project round-trip', () => {
     const fm = { savedViews: [{ id: 'v1', name: 'Odd', sortKey: 'estimate', sortDir: 'sideways' }] }
     const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
     expect(project.savedViews[0]).toMatchObject({ sortKey: 'status', sortDir: 'asc' })
+  })
+
+  it('drops a timeline scale it does not know', () => {
+    const fm = { savedViews: [{ id: 'v1', name: 'Odd', ganttGranularity: 'decade' }] }
+    const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
+    expect(project.savedViews[0].ganttGranularity).toBeUndefined()
   })
 
   it('records taskIds in the frontmatter', () => {
