@@ -9,13 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added "Open as note" to the project overview and the project toolbar
+- Added "Open as note" to the project overview and the "More options" menu of the task views
+- Added parent project links and a project switcher to the top of the task views
+- Added "Expand all" and "Collapse all" to the table
 - Person notes can now set their avatar color with a `color` property
 
 ### Changed
 
 - Project notes now open on their project page instead of in Obsidian's editor
 - The table now remembers its sort order after the view is closed and reopened
+- Redesigned the top of the task views into one row with a separate filter bar
+- Saved views now open from one menu instead of a row of buttons
+- Renamed the Gantt view to Timeline
+- The timeline scale is now kept per view and in saved views
 
 ### Fixed
 

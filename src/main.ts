@@ -431,11 +431,16 @@ export default class PMPlugin extends Plugin {
       migrated = true
     }
 
-    // Sort was held by the table alone and forgotten when the view closed.
+    // Sort was held by the table alone, and the timeline scale was one setting for every view.
     for (const entry of Object.values(this.settings.projectFilters)) {
-      if (entry.sortKey) continue
-      Object.assign(entry, makeDefaultSort())
-      migrated = true
+      if (!entry.sortKey) {
+        Object.assign(entry, makeDefaultSort())
+        migrated = true
+      }
+      if (!entry.ganttGranularity) {
+        entry.ganttGranularity = this.settings.ganttGranularity
+        migrated = true
+      }
     }
 
     for (const s of this.settings.statuses) {
@@ -743,7 +748,8 @@ export default class PMPlugin extends Plugin {
     this.settings.projectFilters[scopeKey({ kind: 'vault' })] = {
       filter: { ...makeDefaultFilter(), assignees: [person] },
       activeSavedViewId: null,
-      ...makeDefaultSort()
+      ...makeDefaultSort(),
+      ganttGranularity: this.settings.ganttGranularity
     }
     await this.saveSettings()
     await this.router.openScope({ kind: 'vault' })

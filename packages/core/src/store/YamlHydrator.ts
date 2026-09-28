@@ -13,6 +13,7 @@ import {
   CUSTOM_FIELD_TYPES,
   DEFAULT_PALETTE_COLOR,
   DEFAULT_PROJECT_COLOR,
+  GANTT_GRANULARITIES,
   makeDefaultSort,
   makeTask,
   PRIORITY_ICON_SETS,
@@ -69,6 +70,7 @@ export function hydrateSavedViews(raw: unknown[]): SavedView[] {
       const viewMode = v.viewMode
       const validViewMode: ViewMode | undefined =
         viewMode === 'table' || viewMode === 'gantt' || viewMode === 'kanban' ? viewMode : undefined
+      const granularity = GANTT_GRANULARITIES.find((g) => g === v.ganttGranularity)
       return {
         id: (v.id as string) ?? '',
         name: (v.name as string) ?? t('common.untitled'),
@@ -83,7 +85,8 @@ export function hydrateSavedViews(raw: unknown[]): SavedView[] {
         },
         sortKey: SORT_KEYS.find((key) => key === v.sortKey) ?? defaultSort.sortKey,
         sortDir: v.sortDir === 'asc' || v.sortDir === 'desc' ? v.sortDir : defaultSort.sortDir,
-        ...(validViewMode ? { viewMode: validViewMode } : {})
+        ...(validViewMode ? { viewMode: validViewMode } : {}),
+        ...(granularity ? { ganttGranularity: granularity } : {})
       }
     })
 }

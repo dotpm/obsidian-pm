@@ -7,6 +7,7 @@ export type TaskPriority = string
 export type GanttGranularity = 'day' | 'week' | 'month' | 'quarter' | 'year'
 export type GanttWeekLabel = 'weekNumber' | 'dateRange' | 'both'
 export type ViewMode = 'table' | 'gantt' | 'kanban'
+export const GANTT_GRANULARITIES: GanttGranularity[] = ['day', 'week', 'month', 'quarter', 'year']
 export type LineBorders = 'none' | 'horizontal' | 'vertical' | 'both'
 export type DueDateFilter = 'any' | 'overdue' | 'this-week' | 'this-month' | 'no-date'
 export type SortDir = 'asc' | 'desc'
@@ -132,11 +133,13 @@ export interface SavedView extends SortOrder {
   name: string
   filter: FilterState
   viewMode?: ViewMode
+  ganttGranularity?: GanttGranularity
 }
 
 export interface PerProjectFilter extends SortOrder {
   filter: FilterState
   activeSavedViewId: string | null
+  ganttGranularity: GanttGranularity
 }
 
 export interface StatusConfig {

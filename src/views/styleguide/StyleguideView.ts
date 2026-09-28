@@ -8,9 +8,9 @@ import {
   DEFAULT_STATUSES,
   PRIORITY_ICON_SETS,
   priorityIconSetLabels,
+  makeDefaultFilter,
   makeTask,
-  displayName,
-  priorityIcon
+  displayName
 } from '@dotpm/core'
 import {
   renderDueChip,
@@ -48,7 +48,6 @@ import {
   renderMultiSelect,
   renderSelectControl,
   renderPropRow,
-  renderFilterDropdown,
   Avatar,
   AvatarStack,
   type AvatarPerson,
@@ -56,16 +55,22 @@ import {
   Checkbox,
   CollapseToggle,
   EmptyState,
+  FilterBar,
+  FilterChip,
   IconButton,
   ChipButton,
   Popover,
   ProgressBar,
   SegmentedControl,
+  SplitButton,
   ViewSwitcher,
   renderPriorityBadge,
   renderStatusBadge,
   renderStatusDot,
-  safeAsync
+  safeAsync,
+  renderBreadcrumb,
+  SearchBox,
+  ViewHeader
 } from '@dotpm/ui'
 
 export const PM_STYLEGUIDE_VIEW_TYPE = 'pm-styleguide'
@@ -120,6 +125,8 @@ export class StyleguideView extends ItemView {
     this.renderCheckbox()
     this.renderEmptyState()
     this.renderSegmented()
+    this.renderSplitButton()
+    this.renderFilterChip()
     this.renderViewSwitcher()
     this.renderPopover()
     this.group('Shared widgets')
@@ -132,6 +139,7 @@ export class StyleguideView extends ItemView {
     this.renderCards()
     this.renderMetricStrip()
     this.renderMilestoneTimeline()
+    this.renderViewHeader()
     this.renderTable()
     return Promise.resolve()
   }
@@ -175,26 +183,12 @@ export class StyleguideView extends ItemView {
     new ChipButton(row).setLabel('Saved view')
     new ChipButton(row).setLabel('Active view').setActive(true)
     new ChipButton(row).setLabel('Due: 3').setShape('pill').setActive(true)
-    const filterRow = this.row(sec, 'renderFilterDropdown (options carry their palette icon)')
-    renderFilterDropdown(
-      filterRow,
-      'Status',
-      ['todo'],
-      DEFAULT_STATUSES.map((s) => ({ id: s.id, label: s.label, icon: s.icon })),
-      noop
-    )
-    renderFilterDropdown(
-      filterRow,
-      'Priority',
-      [],
-      FIVE_PRIORITIES.map((p) => ({
-        id: p.id,
-        label: p.label,
-        icon: p.icon,
-        namedIcon: priorityIcon(FIVE_PRIORITIES, p.id, 'chevrons')
-      })),
-      noop
-    )
+    const parts = this.row(sec, 'icon / badge / chevron / icon only / disabled')
+    new ChipButton(parts).setIcon('arrow-down-up').setLabel('Sort')
+    new ChipButton(parts).setIcon('list-filter').setLabel('Filter').setBadge('3').setActive(true)
+    new ChipButton(parts).setIcon('bookmark').setLabel('Sprint 14').setChevron(true)
+    new ChipButton(parts).setIcon('ellipsis').setLabel('').setAriaLabel('More options')
+    new ChipButton(parts).setLabel('Disabled').setDisabled(true)
   }
 
   private renderAvatars(): void {
@@ -277,6 +271,21 @@ export class StyleguideView extends ItemView {
       active: 'table',
       onChange: noop
     })
+  }
+
+  private renderSplitButton(): void {
+    const sec = this.section('SplitButton', 'split-button')
+    const row = this.row(sec, 'plain / with a menu')
+    new SplitButton(row).setIcon('plus').setLabel('Add task').onClick(noop)
+    new SplitButton(row).setIcon('plus').setLabel('Add task').onClick(noop).onMenu('More to add', noop)
+  }
+
+  private renderFilterChip(): void {
+    const sec = this.section('FilterChip', 'filter-chip')
+    const row = this.row(sec, 'one value / several values / no operator')
+    new FilterChip(row).setField('Status', 'circle-dot').setOperator('is').setValue('In progress').onRemove(noop)
+    new FilterChip(row).setField('Priority', 'flag').setOperator('is any of').setValue('High, Urgent').onRemove(noop)
+    new FilterChip(row).setField('Archived', 'archive').setOperator('').setValue('Included').onRemove(noop)
   }
 
   private renderPopover(): void {
@@ -641,6 +650,49 @@ export class StyleguideView extends ItemView {
       ],
       42
     )
+  }
+
+  private renderViewHeader(): void {
+    const sec = this.section('ViewHeader', 'view-header')
+    const host = this.row(sec, 'breadcrumb, saved view, query, options, actions, filter bar')
+    const header = new ViewHeader(host)
+    this.register(() => header.destroy())
+    renderBreadcrumb(header.context, {
+      icon: 'folder-kanban',
+      ancestors: [{ title: 'Acme', onOpen: noop }],
+      title: 'Website redesign',
+      onSwitch: noop,
+      switchLabel: 'Switch project',
+      foldLabel: 'Parent projects',
+      mode: { icon: 'table', label: 'Table', tooltip: 'View mode: Table', onOpen: noop }
+    })
+    new ChipButton(header.context).setIcon('layers').setLabel('').setAriaLabel('Scope')
+    new ChipButton(header.view).setIcon('bookmark').setLabel('Sprint 14').setChevron(true)
+    header.view.createSpan({ cls: 'pm-vh-count', text: '42 of 318' })
+    new SearchBox(header.query, {
+      value: '',
+      label: 'Search',
+      placeholder: 'Search tasks',
+      clearLabel: 'Clear',
+      onChange: noop
+    })
+    new ChipButton(header.query).setIcon('list-filter').setLabel('Filter').setBadge('2').setActive(true)
+    new ChipButton(header.query).setIcon('arrow-up-narrow-wide').setLabel('Priority').setActive(true)
+    new ChipButton(header.options).setIcon('chevrons-down-up').setLabel('').setAriaLabel('Collapse all')
+    new SplitButton(header.actions).setIcon('plus').setLabel('Add task').onClick(noop)
+    new ChipButton(header.actions).setIcon('ellipsis').setLabel('').setAriaLabel('More options')
+    new FilterBar(header.bar, {
+      filter: { ...makeDefaultFilter(), statuses: ['todo', 'in-progress'], dueDateFilter: 'this-week' },
+      statuses: DEFAULT_STATUSES,
+      priorities: DEFAULT_PRIORITIES,
+      priorityIcons: 'chevrons',
+      assignees: PEOPLE,
+      tags: ['design'],
+      summary: '42 of 318 shown',
+      onChange: noop,
+      onClose: noop
+    })
+    header.fit()
   }
 
   private renderTable(): void {

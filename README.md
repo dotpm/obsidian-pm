@@ -45,7 +45,7 @@ Needs Obsidian 1.13 or newer. Works on desktop and mobile.
 1. Click the timeline icon in the ribbon, or run **dotpm: Open projects pane**.
 2. Click **New project**, give it a name, and open it.
 3. Click **Add task**. Set a status, a due date, an assignee, whatever you need.
-4. Switch between **Table**, **Gantt** and **Kanban** at the top of the view.
+4. Switch between **Table**, **Timeline** and **Board** from the last part of the path at the top of the view.
 5. Look in your vault. There is a `Projects/Your project.md` note and a `Projects/Your project_tasks/` folder with one note per task.
 
 Already have notes you want as tasks? Run **dotpm: Import notes as tasks**. To turn an existing note into a project, add `pm-project: true` to its properties and run **dotpm: Open current file as project**.
@@ -58,13 +58,13 @@ Rows sort, filter and edit inline. A multi-row selection changes status, priorit
 
 <video src="https://github.com/user-attachments/assets/104bd993-d4c1-42e7-9d6a-ae46fd7ce6a8" autoplay loop muted playsinline width="600"></video>
 
-### Gantt
+### Timeline
 
-Dragging a bar reschedules the task, dragging its edge changes the duration, and dragging from one bar to another adds a dependency. The scale zooms from days to years. Milestones are diamonds and a line marks today.
+Dragging a bar reschedules the task, dragging its edge changes the duration, and dragging from one bar to another adds a dependency. The scale zooms from days to years and is kept per view. Milestones are diamonds and a line marks today.
 
 <video src="https://github.com/user-attachments/assets/916f7100-44ef-401c-abb3-e003a0f7720a" autoplay loop muted playsinline width="600"></video>
 
-### Kanban
+### Board
 
 One column per status. Dragging a card to another column changes its status. Cards show priority, assignees, tags and due date.
 

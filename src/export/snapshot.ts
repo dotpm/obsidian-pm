@@ -1,6 +1,7 @@
 import { getIcon } from 'obsidian'
 import {
   type FilterState,
+  type GanttGranularity,
   type Project,
   type SortOrder,
   type ViewMode,
@@ -24,6 +25,7 @@ import { personColor, type ProjectScope } from '#store'
 export interface ExportViewState extends SortOrder {
   mode: ViewMode
   filter: FilterState
+  ganttGranularity: GanttGranularity
 }
 
 /** Icons the page chrome and the composites ask for by name, whatever the data holds. */
@@ -130,7 +132,7 @@ export async function buildSnapshot(plugin: PMPlugin, scope: ProjectScope, view:
       filter: { ...view.filter },
       sortKey: view.sortKey,
       sortDir: view.sortDir,
-      ganttGranularity: plugin.settings.ganttGranularity
+      ganttGranularity: view.ganttGranularity
     },
     settings: {
       priorityIcons: config.priorityIcons,

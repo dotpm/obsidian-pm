@@ -45,12 +45,13 @@ describe('buildSnapshot', () => {
       mode: 'gantt',
       filter: { ...makeDefaultFilter(), statuses: ['todo'] },
       sortKey: 'due',
-      sortDir: 'desc'
+      sortDir: 'desc',
+      ganttGranularity: 'month'
     })
     expect(isSnapshot(snapshot)).toBe(true)
     expect(snapshot.title).toBe('Roadmap <b>')
     expect(snapshot.generator).toEqual({ name: 'dotpm', version: '9.9.9' })
-    expect(snapshot.view).toMatchObject({ mode: 'gantt', sortKey: 'due', sortDir: 'desc', ganttGranularity: 'week' })
+    expect(snapshot.view).toMatchObject({ mode: 'gantt', sortKey: 'due', sortDir: 'desc', ganttGranularity: 'month' })
     expect(snapshot.view.filter.statuses).toEqual(['todo'])
     expect(snapshot.projects.length).toBe(1)
     const [project] = snapshot.projects
@@ -75,7 +76,8 @@ describe('buildSnapshot', () => {
       mode: 'table',
       filter: makeDefaultFilter(),
       sortKey: 'title',
-      sortDir: 'asc'
+      sortDir: 'asc',
+      ganttGranularity: 'week'
     })
     expect(snapshot.personColors).toEqual({ '[[Jane Doe]]': '#c47070' })
   })

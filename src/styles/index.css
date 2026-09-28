@@ -1,5 +1,6 @@
 @import './variables.css';
 @import './chrome.css';
+@import './view-header.css';
 @import './table.css';
 @import './gantt.css';
 @import './kanban.css';
