@@ -82,6 +82,10 @@
   background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
   color: var(--text-accent);
 }
+.pm-vh button.pm-chip-btn--active:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 18%, transparent);
+  color: var(--text-accent);
+}
 .pm-vh button.pm-chip-btn--icon-only {
   width: 28px;
   padding: 0;
