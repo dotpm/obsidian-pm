@@ -38,6 +38,7 @@ function projectRef(id: string, path: string): ProjectRef {
     icon: '',
     color: '',
     teamMembers: [],
+    tags: [],
     customFields: [],
     parentPath: undefined,
     archived: false,

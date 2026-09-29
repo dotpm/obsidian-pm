@@ -1,9 +1,16 @@
-import { Menu, ButtonComponent } from 'obsidian'
+import { Menu } from 'obsidian'
 import type PMPlugin from '#main'
-import type { ProjectRef } from '#store'
-import { formatDateShort, dateUrgency, t, tn } from '@dotpm/core'
-import { safeAsync, ChipButton, EmptyState, ProjectRow, childTreeGuides } from '@dotpm/ui'
-import { openProjectCreate } from '#ui/ModalFactory'
+import { folderOf, projectFolderOf, type ProjectRef } from '#store'
+import {
+  type ProjectGroupBy,
+  type ProjectListGroup,
+  type ProjectListItem,
+  type ProjectListRow,
+  formatDateShort,
+  dateUrgency,
+  t
+} from '@dotpm/core'
+import { safeAsync, CollapseToggle, ProjectRow } from '@dotpm/ui'
 import { linkedRefs } from './linkedRefs'
 
 const columns = (): { label: string; cls?: string }[] => [
@@ -18,119 +25,104 @@ const columns = (): { label: string; cls?: string }[] => [
 
 export interface ProjectListContext {
   plugin: PMPlugin
-  toolbarEl: HTMLElement
   contentEl: HTMLElement
   openProject: (path: string) => Promise<void>
+  /** Draws the list again after a row changed something about it. */
+  redraw: () => void
 }
 
-export function renderProjectListToolbar(ctx: ProjectListContext): void {
-  ctx.toolbarEl.empty()
-  const left = ctx.toolbarEl.createDiv('pm-toolbar-left')
-  left.createEl('h2', { text: t('dashboard.title'), cls: 'pm-toolbar-title' })
-  const line = countLine(ctx)
-  if (line) left.createSpan({ cls: 'pm-project-list-count', text: line })
-
-  const { settings } = ctx.plugin
-  if (
-    settings.showArchivedProjects ||
-    ctx.plugin.index.projectRefs(true).length > ctx.plugin.index.projectRefs().length
-  ) {
-    new ChipButton(ctx.toolbarEl)
-      .setLabel(t('common.archived'))
-      .setActive(settings.showArchivedProjects)
-      .onClick(
-        safeAsync(async () => {
-          settings.showArchivedProjects = !settings.showArchivedProjects
-          await ctx.plugin.saveSettings()
-          renderProjectListToolbar(ctx)
-          renderProjectListContent(ctx)
-        })
-      )
-  }
-
-  new ButtonComponent(ctx.toolbarEl)
-    .setButtonText(t('list.newProject'))
-    .setCta()
-    .onClick(() => openProjectCreate(ctx.plugin))
-}
-
-function countLine(ctx: ProjectListContext): string {
-  const refs = ctx.plugin.index.projectRefs()
-  const archived = ctx.plugin.index.projectRefs(true).length - refs.length
-  if (refs.length === 0 && archived === 0) return ''
-  const behind = refs.filter((ref) => ctx.plugin.index.dueSummary(ref).overdue > 0).length
-  const bits = [tn('count.projects', refs.length)]
-  if (behind) bits.push(tn('list.behind', behind))
-  if (archived) bits.push(tn('list.archivedCount', archived))
-  return bits.join(' · ')
-}
-
-export function renderProjectListContent(ctx: ProjectListContext): void {
-  const showArchived = ctx.plugin.settings.showArchivedProjects
-  const roots = ctx.plugin.index.rootRefs(showArchived)
-  ctx.contentEl.empty()
-
-  if (roots.length === 0) {
-    if (!ctx.plugin.index.ready) {
-      new EmptyState(ctx.contentEl).setIcon('📋').setTitle(t('list.looking'))
-      return
+/** Every project the list covers, as trees, with the rolled-up counts a parent row shows. */
+export function projectListItems(plugin: PMPlugin): ProjectListItem[] {
+  const { index } = plugin
+  const showArchived = plugin.settings.showArchivedProjects
+  const itemOf = (ref: ProjectRef): ProjectListItem => {
+    const children = index.childRefs(ref.path, showArchived)
+    const { total, done } = children.length ? index.rollupCounts(ref) : index.counts(ref)
+    const { overdue, latestDue } = children.length ? index.rollupDueSummary(ref) : index.dueSummary(ref)
+    return {
+      path: ref.path,
+      title: ref.title,
+      folder: folderOf(projectFolderOf(plugin.app, ref.path) ?? ref.path),
+      tags: ref.tags,
+      done,
+      total,
+      overdue,
+      latestDue,
+      children: children.map(itemOf)
     }
-    if (ctx.plugin.index.projectRefs(true).length) {
-      new EmptyState(ctx.contentEl).setIcon('📋').setTitle(t('list.allArchived')).setBody(t('list.allArchivedBody'))
-      return
-    }
-    new EmptyState(ctx.contentEl)
-      .setIcon('📋')
-      .setTitle(t('list.empty'))
-      .setBody(t('list.emptyBody'))
-      .setAction(t('list.newProject'), () => openProjectCreate(ctx.plugin))
-    return
   }
+  return index.rootRefs(showArchived).map(itemOf)
+}
 
+/** The rows, each group under a heading row that collapses it; `collapsedGroups` is edited in place. */
+export function renderProjectTable(
+  ctx: ProjectListContext,
+  groups: ProjectListGroup[],
+  groupBy: ProjectGroupBy,
+  collapsedGroups: Set<string>
+): void {
   const wrapper = ctx.contentEl.createDiv('pm-table-wrapper')
   wrapper.setAttr('data-borders', ctx.plugin.settings.lineBorders)
   const table = wrapper.createEl('table', { cls: 'pm-table pm-project-table' })
   const headRow = table.createEl('thead').createEl('tr')
   for (const column of columns()) headRow.createEl('th', { text: column.label, cls: column.cls })
-  renderRows(ctx, table.createEl('tbody'), roots, [])
+  const tbody = table.createEl('tbody')
+  for (const group of groups) {
+    const collapsed = group.key !== null && collapsedGroups.has(group.key)
+    if (group.key !== null) {
+      const key = group.key
+      const row = tbody.createEl('tr', { cls: 'pm-project-group-row' })
+      const cell = row.createEl('td', { attr: { colspan: String(columns().length) } })
+      const inner = cell.createDiv('pm-project-group')
+      new CollapseToggle(inner, {
+        collapsed,
+        subject: groupLabel(groupBy, key),
+        onToggle: () => {
+          if (collapsed) collapsedGroups.delete(key)
+          else collapsedGroups.add(key)
+          ctx.redraw()
+        }
+      })
+      inner.createSpan({ cls: 'pm-project-group-label', text: groupLabel(groupBy, key) })
+      inner.createSpan({ cls: 'pm-project-group-count', text: String(group.count) })
+    }
+    if (!collapsed) for (const row of group.rows) renderRow(ctx, tbody, row)
+  }
 }
 
-function renderRows(ctx: ProjectListContext, tbody: HTMLElement, refs: ProjectRef[], trail: boolean[]): void {
-  const index = ctx.plugin.index
-  const showArchived = ctx.plugin.settings.showArchivedProjects
-  refs.forEach((ref, i) => {
-    const children = index.childRefs(ref.path, showArchived)
-    const collapsed = ctx.plugin.isProjectCollapsed(ref.path)
-    const { total, done } = children.length ? index.rollupCounts(ref) : index.counts(ref)
-    const { overdue, latestDue } = children.length ? index.rollupDueSummary(ref) : index.dueSummary(ref)
-    const isLastChild = i === refs.length - 1
+function groupLabel(groupBy: ProjectGroupBy, key: string): string {
+  if (groupBy === 'tag') return key ? `#${key}` : t('list.noTag')
+  return key ? `${key}/` : t('list.noFolder')
+}
 
-    new ProjectRow(tbody, {
-      title: ref.title,
-      icon: ref.icon,
-      color: ref.color,
-      depth: trail.length,
-      treeGuides: ctx.plugin.settings.showSubtreeConnections ? trail : null,
-      isLastChild,
-      childCount: children.length,
-      collapsed,
-      archived: index.isArchived(ref.path),
-      tasksDone: done,
-      tasksTotal: total,
-      overdue,
-      members: linkedRefs(ctx.plugin.app, ref.teamMembers, ref.path),
-      dueLabel: formatDateShort(latestDue),
-      dueUrgency: dateUrgency(latestDue, overdue > 0),
-      onToggleCollapsed: safeAsync(async () => {
-        await ctx.plugin.toggleProjectCollapsed(ref.path)
-        renderProjectListContent(ctx)
-      }),
-      onClick: safeAsync(() => ctx.openProject(ref.path)),
-      onContextMenu: (e) => openProjectContextMenu(ctx, ref, e),
-      onActions: (e) => openProjectContextMenu(ctx, ref, e)
-    })
-
-    if (children.length && !collapsed) renderRows(ctx, tbody, children, childTreeGuides(trail, isLastChild))
+function renderRow(ctx: ProjectListContext, tbody: HTMLElement, row: ProjectListRow): void {
+  const { index } = ctx.plugin
+  const { item } = row
+  const ref = index.projectRef(item.path)
+  if (!ref) return
+  new ProjectRow(tbody, {
+    title: ref.title,
+    icon: ref.icon,
+    color: ref.color,
+    depth: row.depth,
+    treeGuides: ctx.plugin.settings.showSubtreeConnections ? row.guides : null,
+    isLastChild: row.isLastChild,
+    childCount: row.childCount,
+    collapsed: ctx.plugin.isProjectCollapsed(item.path),
+    archived: index.isArchived(item.path),
+    tasksDone: item.done,
+    tasksTotal: item.total,
+    overdue: item.overdue,
+    members: linkedRefs(ctx.plugin.app, ref.teamMembers, ref.path),
+    dueLabel: formatDateShort(item.latestDue),
+    dueUrgency: dateUrgency(item.latestDue, item.overdue > 0),
+    onToggleCollapsed: safeAsync(async () => {
+      await ctx.plugin.toggleProjectCollapsed(item.path)
+      ctx.redraw()
+    }),
+    onClick: safeAsync(() => ctx.openProject(item.path)),
+    onContextMenu: (e) => openProjectContextMenu(ctx, ref, e),
+    onActions: (e) => openProjectContextMenu(ctx, ref, e)
   })
 }
 
@@ -198,7 +190,7 @@ function openProjectContextMenu(ctx: ProjectListContext, ref: ProjectRef, e: Mou
           const project = await ctx.plugin.store.loadProjectByPath(ref.path)
           if (!project) return
           await ctx.plugin.store.deleteProject(project)
-          renderProjectListContent(ctx)
+          ctx.redraw()
         })
       )
   )

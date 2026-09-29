@@ -26,6 +26,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Table columns can now be resized by dragging the edge of their header
 - The timeline can now zoom in and out, with the zoom buttons or Ctrl+scroll
 - The timeline can now leave out weekends and holidays, with holidays set per vault
+- The project list can now be searched, filtered by progress or tag, sorted, and grouped
+- Added saved views to the project list
 - Person notes can now set their avatar color with a `color` property
 
 ### Changed
@@ -34,6 +36,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Project notes now open on their project page instead of in Obsidian's editor
 - The table now remembers its sort order after the view is closed and reopened
 - Redesigned the top of the task views into one row with a separate filter bar
+- The project list now shares the header row of the task views
 - Saved views now open from one menu instead of a row of buttons
 - Renamed the Gantt view to Timeline
 - The timeline scale is now kept per view and in saved views

@@ -1,18 +1,19 @@
 import { setIcon, setTooltip } from '#platform'
 import { Popover } from '#primitives/Popover'
-import { type SortDir, type SortKey, type SortRule, MAX_SORT_RULES, t } from '@dotpm/core'
+import { type SortDir, type SortKey, MAX_SORT_RULES, t } from '@dotpm/core'
 
-export interface SortField {
-  id: SortKey
+/** A task sort key or a project list one (`ProjectSortKey`, a subset by name). */
+export interface SortField<K extends string = SortKey> {
+  id: K
   label: string
   /** The first and last entries of the list a status or priority sorts by. */
   ends?: [string, string]
 }
 
-export interface SortPopoverProps {
-  fields: SortField[]
-  /** Edited in place. Empty keeps the order the tasks are stored in. */
-  sort: SortRule[]
+export interface SortPopoverProps<K extends string = SortKey> {
+  fields: SortField<K>[]
+  /** Edited in place. Empty keeps the stored order. */
+  sort: { key: K; dir: SortDir }[]
   onChange: () => void
   /** Puts back the sort of the active view, or the default one. */
   onReset: () => void
@@ -22,12 +23,9 @@ export interface SortPopoverProps {
  * Direction words that fit what the field holds, so "Earliest first" rather than
  * "Ascending". A status or priority names the end of its list that comes first.
  */
-export function sortDirLabel(field: SortField, dir: SortDir): string {
+export function sortDirLabel<K extends string>(field: SortField<K>, dir: SortDir): string {
   const asc = dir === 'asc'
   switch (field.id) {
-    case 'title':
-    case 'assignees':
-      return asc ? t('sort.az') : t('sort.za')
     case 'due':
       return asc ? t('sort.earliest') : t('sort.latest')
     case 'progress':
@@ -37,6 +35,8 @@ export function sortDirLabel(field: SortField, dir: SortDir): string {
       const end = field.ends?.[asc ? 0 : 1]
       return end ? t('sort.firstNamed', { label: end }) : asc ? t('sort.az') : t('sort.za')
     }
+    default:
+      return asc ? t('sort.az') : t('sort.za')
   }
 }
 
@@ -44,7 +44,7 @@ export function sortDirLabel(field: SortField, dir: SortDir): string {
  * One row per sort key: a grip to drag it into another rank, the field, the direction,
  * and a remove button. Rows below the first break ties left by the ones above.
  */
-export function openSortPopover(anchor: HTMLElement, props: SortPopoverProps): Popover {
+export function openSortPopover<K extends string>(anchor: HTMLElement, props: SortPopoverProps<K>): Popover {
   const pop = new Popover({ anchor, width: 340 })
   const body = pop.contentEl.createDiv('pm-sort-pop')
   const { sort } = props
@@ -79,7 +79,8 @@ export function openSortPopover(anchor: HTMLElement, props: SortPopoverProps): P
         field.createEl('option', { value: option.id, text: option.label }).selected = option.id === rule.key
       }
       field.addEventListener('change', () => {
-        sort[index] = { key: field.value as SortKey, dir: rule.dir }
+        const picked = props.fields.find((option) => option.id === field.value)
+        if (picked) sort[index] = { key: picked.id, dir: rule.dir }
         changed()
       })
 
