@@ -17,9 +17,13 @@ export interface TuneItem {
  * row closes the list and opens that control anchored to the same button; a row with its
  * own control stays open. Sections are separated by a rule.
  */
-export function openTunePopover(anchor: HTMLElement, sections: TuneItem[][]): Popover {
-  const pop = new Popover({ anchor, align: 'right', width: 240 })
-  const body = pop.contentEl.createDiv('pm-tune-pop')
+export function renderTunePanel(
+  parent: HTMLElement,
+  sections: TuneItem[][],
+  close: () => void,
+  anchor: HTMLElement
+): void {
+  const body = parent.createDiv('pm-tune-pop')
   for (const items of sections.filter((section) => section.length)) {
     const list = body.createDiv('pm-pop-list pm-tune-section')
     for (const item of items) {
@@ -36,12 +40,18 @@ export function openTunePopover(anchor: HTMLElement, sections: TuneItem[][]): Po
         label: item.label,
         note: item.state,
         onPick: () => {
-          pop.close()
+          close()
           onOpen?.(anchor)
         }
       })
     }
   }
+}
+
+/** The Tune list in a popover under `anchor`, which each row's own control then opens at. */
+export function openTunePopover(anchor: HTMLElement, sections: TuneItem[][]): Popover {
+  const pop = new Popover({ anchor, align: 'right', width: 240 })
+  renderTunePanel(pop.contentEl, sections, () => pop.close(), anchor)
   pop.open()
   return pop
 }

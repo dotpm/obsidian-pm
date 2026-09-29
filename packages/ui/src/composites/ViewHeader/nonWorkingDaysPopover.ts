@@ -14,9 +14,8 @@ export interface NonWorkingDaysProps {
 }
 
 /** Whether the timeline leaves out weekends and holidays, and the holiday list itself. */
-export function openNonWorkingDaysPopover(anchor: HTMLElement, props: NonWorkingDaysProps): Popover {
-  const pop = new Popover({ anchor, width: 280 })
-  const body = pop.contentEl.createDiv('pm-days-pop')
+export function renderNonWorkingDaysPanel(parent: HTMLElement, props: NonWorkingDaysProps): void {
+  const body = parent.createDiv('pm-days-pop')
   const { days } = props
   let holidays = [...props.holidays]
   let list: HTMLElement
@@ -70,6 +69,12 @@ export function openNonWorkingDaysPopover(anchor: HTMLElement, props: NonWorking
   }
 
   render()
+}
+
+/** The non-working days panel in a popover under `anchor`. */
+export function openNonWorkingDaysPopover(anchor: HTMLElement, props: NonWorkingDaysProps): Popover {
+  const pop = new Popover({ anchor, width: 280 })
+  renderNonWorkingDaysPanel(pop.contentEl, props)
   pop.open()
   return pop
 }

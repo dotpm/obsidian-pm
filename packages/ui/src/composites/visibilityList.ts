@@ -1,4 +1,5 @@
 import { setIcon, setTooltip } from '#platform'
+import { IconButton } from '#primitives/IconButton'
 
 export interface VisibilityRow {
   id: string
@@ -50,10 +51,11 @@ export function renderVisibilityList(parent: HTMLElement, props: VisibilityListP
       if (props.lockedLabel) setTooltip(lock, props.lockedLabel)
     } else {
       const label = item.hidden ? props.showLabel : props.hideLabel
-      const eye = row.createEl('button', { cls: 'clickable-icon pm-vis-eye', attr: { 'aria-label': label } })
-      setIcon(eye, item.hidden ? 'eye-off' : 'eye')
-      setTooltip(eye, label)
-      eye.addEventListener('click', () => props.onToggle(item.id))
+      new IconButton(row)
+        .setIcon(item.hidden ? 'eye-off' : 'eye')
+        .setTooltip(label)
+        .onClick(() => props.onToggle(item.id))
+        .el.addClass('pm-vis-eye')
     }
 
     if (!draggable) continue

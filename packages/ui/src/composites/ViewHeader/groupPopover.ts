@@ -1,4 +1,5 @@
 import { Checkbox } from '#primitives/Checkbox'
+import { ChipButton } from '#primitives/ChipButton'
 import { Popover } from '#primitives/Popover'
 import { type GroupState, t } from '@dotpm/core'
 import { renderGlyph } from '../properties/optionList'
@@ -60,12 +61,14 @@ export function renderGroupPanel(parent: HTMLElement, props: GroupPopoverProps):
     const columns = props.columns()
     const head = body.createDiv('pm-group-head')
     head.createSpan({ cls: 'pm-pop-heading', text: t('header.columns') })
-    const showAll = head.createEl('button', { cls: 'pm-sort-pop-reset', text: t('header.showAll') })
-    showAll.disabled = !prefs().hidden?.length
-    showAll.addEventListener('click', () => {
-      delete prefs().hidden
-      changed()
-    })
+    new ChipButton(head)
+      .setVariant('flat')
+      .setLabel(t('header.showAll'))
+      .setDisabled(!prefs().hidden?.length)
+      .onClick(() => {
+        delete prefs().hidden
+        changed()
+      })
 
     renderVisibilityList(body, {
       rows: columns.map((column) => ({

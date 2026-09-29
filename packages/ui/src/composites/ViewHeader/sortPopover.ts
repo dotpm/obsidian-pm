@@ -1,6 +1,9 @@
-import { setIcon, setTooltip } from '#platform'
+import { setIcon } from '#platform'
+import { ChipButton } from '#primitives/ChipButton'
+import { IconButton } from '#primitives/IconButton'
 import { Popover } from '#primitives/Popover'
 import { type SortDir, type SortKey, MAX_SORT_RULES, t } from '@dotpm/core'
+import { renderOptionRow } from '../properties/optionList'
 
 /** A task sort key or a project list one (`ProjectSortKey`, a subset by name). */
 export interface SortField<K extends string = SortKey> {
@@ -58,11 +61,14 @@ export function renderSortPanel<K extends string>(parent: HTMLElement, props: So
     body.empty()
     const head = body.createDiv('pm-sort-pop-head')
     head.createSpan({ cls: 'pm-pop-heading', text: t('header.sortBy') })
-    const reset = head.createEl('button', { cls: 'pm-sort-pop-reset', text: t('header.resetSort') })
-    reset.addEventListener('click', () => {
-      props.onReset()
-      render()
-    })
+    new ChipButton(head)
+      .setVariant('flat')
+      .setLabel(t('header.resetSort'))
+      .onClick(() => {
+        props.onReset()
+        render()
+      })
+      .el.addClass('pm-sort-pop-reset')
 
     if (!sort.length) body.createDiv({ cls: 'pm-pop-empty', text: t('header.noSort') })
 
@@ -93,16 +99,14 @@ export function renderSortPanel<K extends string>(parent: HTMLElement, props: So
         changed()
       })
 
-      const remove = row.createEl('button', {
-        cls: 'clickable-icon pm-sort-remove',
-        attr: { 'aria-label': t('header.removeSortKey') }
-      })
-      setIcon(remove, 'x')
-      setTooltip(remove, t('header.removeSortKey'))
-      remove.addEventListener('click', () => {
-        sort.splice(index, 1)
-        changed()
-      })
+      new IconButton(row)
+        .setIcon('x')
+        .setTooltip(t('header.removeSortKey'))
+        .onClick(() => {
+          sort.splice(index, 1)
+          changed()
+        })
+        .el.addClass('pm-sort-remove')
 
       row.addEventListener('dragstart', () => {
         dragFrom = index
@@ -122,15 +126,18 @@ export function renderSortPanel<K extends string>(parent: HTMLElement, props: So
 
     const foot = body.createDiv('pm-sort-pop-foot')
     const unused = props.fields.find((option) => !sort.some((rule) => rule.key === option.id))
-    const add = foot.createEl('button', { cls: 'pm-pop-item pm-pop-item--accent pm-sort-add' })
-    setIcon(add.createSpan('pm-sort-add-icon'), 'plus')
-    add.createSpan({ cls: 'pm-pop-item-label', text: t('header.addSortKey') })
-    add.disabled = !unused || sort.length >= MAX_SORT_RULES
-    add.addEventListener('click', () => {
-      if (!unused) return
-      sort.push({ key: unused.id, dir: 'asc' })
-      changed()
+    const add = renderOptionRow(foot, {
+      label: t('header.addSortKey'),
+      icon: 'plus',
+      accent: true,
+      onPick: () => {
+        if (!unused) return
+        sort.push({ key: unused.id, dir: 'asc' })
+        changed()
+      }
     })
+    add.addClass('pm-sort-add')
+    add.disabled = !unused || sort.length >= MAX_SORT_RULES
     foot.createSpan({
       cls: 'pm-sort-pop-count',
       text: t('header.sortCount', { count: sort.length, max: MAX_SORT_RULES })

@@ -1,3 +1,5 @@
+import { createButton } from '#platform'
+import { ChipButton } from '#primitives/ChipButton'
 import { Popover } from '#primitives/Popover'
 
 export interface SheetTab {
@@ -23,35 +25,42 @@ export interface TuneSheetProps {
  * Fields), the panel, and a footer whose button closes the sheet and says what the view
  * now shows. Edits apply as they happen; the footer and the tab names follow them.
  */
-export function openTuneSheet(anchor: HTMLElement, props: TuneSheetProps): Popover {
-  const pop = new Popover({ anchor, align: 'right', width: 360 })
-  const root = pop.contentEl.createDiv('pm-tune-sheet')
+export function renderTuneSheetPanel(parent: HTMLElement, props: TuneSheetProps, close: () => void): void {
+  const root = parent.createDiv('pm-tune-sheet')
   const tabsEl = root.createDiv({ cls: 'pm-tune-sheet-tabs', attr: { role: 'tablist' } })
   const body = root.createDiv('pm-tune-sheet-body')
   const foot = root.createDiv('pm-tune-sheet-foot')
   const clear = props.clear
-  const clearBtn = clear ? foot.createEl('button', { cls: 'pm-tune-sheet-clear', text: clear.label }) : null
-  const done = foot.createEl('button', { cls: 'mod-cta pm-tune-sheet-done' })
+  const clearBtn = clear
+    ? createButton(foot)
+        .setButtonText(clear.label)
+        .onClick(() => {
+          clear.onClear()
+          show(active)
+        })
+    : null
+  clearBtn?.buttonEl.addClass('pm-tune-sheet-clear')
+  const done = createButton(foot).setCta().onClick(close)
+  done.buttonEl.addClass('pm-tune-sheet-done')
   let active = props.tabs.some((tab) => tab.id === props.active) ? props.active : props.tabs[0]?.id
 
   const tabButtons = props.tabs.map((tab) => {
-    const button = tabsEl.createEl('button', { cls: 'pm-tune-sheet-tab', attr: { role: 'tab' } })
-    button.createSpan({ text: tab.label })
-    const badge = button.createSpan('pm-chip-btn-badge')
-    button.addEventListener('click', () => show(tab.id))
-    return { tab, button, badge }
+    const button = new ChipButton(tabsEl)
+      .setVariant('flat')
+      .setLabel(tab.label)
+      .onClick(() => show(tab.id))
+    button.el.addClass('pm-tune-sheet-tab')
+    button.el.setAttribute('role', 'tab')
+    return { tab, button }
   })
 
   const sync = (): void => {
-    for (const { tab, button, badge } of tabButtons) {
-      const text = tab.badge?.() ?? ''
-      badge.setText(text)
-      badge.toggleClass('pm-hidden', !text)
-      button.toggleClass('is-active', tab.id === active)
-      button.setAttribute('aria-selected', String(tab.id === active))
+    for (const { tab, button } of tabButtons) {
+      button.setBadge(tab.badge?.() ?? '').setActive(tab.id === active)
+      button.el.setAttribute('aria-selected', String(tab.id === active))
     }
-    clearBtn?.toggleClass('pm-hidden', !clear?.canClear())
-    done.setText(props.doneLabel())
+    clearBtn?.buttonEl.toggleClass('pm-hidden', !clear?.canClear())
+    done.setButtonText(props.doneLabel())
   }
 
   const show = (id: string | undefined): void => {
@@ -61,12 +70,13 @@ export function openTuneSheet(anchor: HTMLElement, props: TuneSheetProps): Popov
     sync()
   }
 
-  clearBtn?.addEventListener('click', () => {
-    clear?.onClear()
-    show(active)
-  })
-  done.addEventListener('click', () => pop.close())
   show(active)
+}
+
+/** The sheet in a popover, which a phone draws as a bottom sheet. */
+export function openTuneSheet(anchor: HTMLElement, props: TuneSheetProps): Popover {
+  const pop = new Popover({ anchor, align: 'right', width: 360 })
+  renderTuneSheetPanel(pop.contentEl, props, () => pop.close())
   pop.open()
   return pop
 }

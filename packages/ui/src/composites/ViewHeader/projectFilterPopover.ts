@@ -1,3 +1,4 @@
+import { ChipButton } from '#primitives/ChipButton'
 import { Popover } from '#primitives/Popover'
 import { type ProjectListFilter, type ProjectProgress, PROJECT_PROGRESS, countProjectFilters, t } from '@dotpm/core'
 import { renderOptionRow } from '../properties/optionList'
@@ -39,13 +40,15 @@ export function renderProjectFilterPanel(parent: HTMLElement, props: ProjectFilt
     body.empty()
     const head = body.createDiv('pm-sort-pop-head')
     head.createSpan({ cls: 'pm-pop-heading', text: t('columns.progress') })
-    const clear = head.createEl('button', { cls: 'pm-sort-pop-reset', text: t('filter.clearAll') })
-    clear.disabled = countProjectFilters(filter) === 0
-    clear.addEventListener('click', () => {
-      filter.tags = undefined
-      filter.progress = undefined
-      changed()
-    })
+    new ChipButton(head)
+      .setVariant('flat')
+      .setLabel(t('filter.clearAll'))
+      .setDisabled(countProjectFilters(filter) === 0)
+      .onClick(() => {
+        filter.tags = undefined
+        filter.progress = undefined
+        changed()
+      })
     for (const stage of PROJECT_PROGRESS) {
       renderOptionRow(body, {
         label: progressLabel(stage),
