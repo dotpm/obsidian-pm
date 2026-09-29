@@ -13,6 +13,8 @@ import {
   type ProjectListFilter,
   type ViewFields
 } from '@dotpm/core'
+import { setPlatform } from '#platform'
+import { domPlatform } from '../../dom-platform'
 import { ChipButton } from '#primitives/ChipButton'
 import { SplitButton } from '#primitives/SplitButton'
 import { renderBreadcrumb } from './Breadcrumb'
@@ -27,6 +29,7 @@ import type { BoardColumn } from '../../views/boardColumns'
 import { openSearchPopover, SearchBox } from './SearchBox'
 import { openSortPopover, type SortField } from './sortPopover'
 import type { TuneItem } from './tunePopover'
+import { openTuneSheet, type TuneSheetProps } from './tuneSheet'
 import { ViewHeader } from './ViewHeader'
 
 function noop(): void {}
@@ -773,6 +776,94 @@ describe('ViewHeader', () => {
     rows[0].click()
     expect(onOpen).toHaveBeenCalledWith(header.tune.el)
     expect(document.body.find('.pm-tune-pop')).toBeNull()
+    header.destroy()
+  })
+})
+
+describe('tune sheet', () => {
+  function sheetProps(state: { filters: number; shown: number }): TuneSheetProps {
+    return {
+      tabs: [
+        {
+          id: 'filter',
+          label: 'Filter',
+          badge: () => (state.filters ? String(state.filters) : ''),
+          render: (parent, changed) => {
+            const add = parent.createEl('button', { cls: 'add-filter', text: 'Add' })
+            add.addEventListener('click', () => {
+              state.filters++
+              state.shown -= 10
+              changed()
+            })
+          }
+        },
+        { id: 'sort', label: 'Sort', render: (parent) => parent.createDiv({ cls: 'sort-panel' }) }
+      ],
+      clear: {
+        label: 'Clear all',
+        canClear: () => state.filters > 0,
+        onClear: () => {
+          state.filters = 0
+          state.shown = 42
+        }
+      },
+      doneLabel: () => `Show ${state.shown} tasks`
+    }
+  }
+
+  const done = (): string | null | undefined => document.body.find('.pm-tune-sheet-done')?.textContent
+  const clear = (): HTMLElement | null => document.body.find('.pm-tune-sheet-clear')
+
+  it('follows each edit in the tab badge, Clear all and the closing button', () => {
+    const state = { filters: 0, shown: 42 }
+    openTuneSheet(document.body.createDiv(), sheetProps(state))
+    expect(done()).toBe('Show 42 tasks')
+    expect(clear()?.hasClass('pm-hidden')).toBe(true)
+    document.body.find('.add-filter')?.click()
+    expect(done()).toBe('Show 32 tasks')
+    expect(document.body.find('.pm-tune-sheet-tab.is-active .pm-chip-btn-badge')?.textContent).toBe('1')
+    expect(clear()?.hasClass('pm-hidden')).toBe(false)
+    clear()?.click()
+    expect(done()).toBe('Show 42 tasks')
+    expect(clear()?.hasClass('pm-hidden')).toBe(true)
+  })
+
+  it('switches panels by tab and closes from its button', () => {
+    openTuneSheet(document.body.createDiv(), sheetProps({ filters: 0, shown: 42 }))
+    document.body.findAll('.pm-tune-sheet-tab')[1].click()
+    expect(document.body.find('.sort-panel')).not.toBeNull()
+    expect(document.body.find('.add-filter')).toBeNull()
+    expect(document.body.find('.pm-tune-sheet-tab.is-active')?.getAttribute('aria-selected')).toBe('true')
+    document.body.find('.pm-tune-sheet-done')?.click()
+    expect(document.body.find('.pm-tune-sheet')).toBeNull()
+  })
+})
+
+describe('ViewHeader on a phone', () => {
+  afterEach(() => setPlatform(domPlatform))
+
+  it('lays out as two rows without measuring, and opens the sheet and the More menu', () => {
+    setPlatform({ ...domPlatform, isPhone: () => true })
+    const sheet = vi.fn<() => TuneSheetProps>(() => ({ tabs: [], doneLabel: () => 'Show 3 tasks' }))
+    const build = vi.fn<(menu: unknown, anchor: HTMLElement) => void>()
+    const header = new ViewHeader(document.body)
+      .setTuneItems(() => [])
+      .setTuneSheet(sheet)
+      .setMoreMenu(build)
+    header.fit()
+    expect(header.el.hasClass('pm-vh--phone')).toBe(true)
+    expect(header.el.hasClass('pm-vh--icons')).toBe(false)
+    header.tune.el.click()
+    expect(sheet).toHaveBeenCalled()
+    expect(document.body.find('.pm-pop--sheet .pm-tune-sheet')).not.toBeNull()
+    header.el.find('.pm-vh-more button')?.click()
+    expect(build).toHaveBeenCalledWith(expect.anything(), header.el.find('.pm-vh-more button'))
+    header.destroy()
+  })
+
+  it('has no More button off a phone', () => {
+    const header = new ViewHeader(document.body).setMoreMenu(noop)
+    expect(header.el.find('.pm-vh-more')).toBeNull()
     header.destroy()
   })
 })

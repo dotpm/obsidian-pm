@@ -195,14 +195,13 @@ function countFor(setup: FilterSetup, field: string, id: string): number {
  * applies at once: a condition joins the filter as soon as it narrows anything and leaves
  * it when its values are cleared.
  */
-export function openFilterPopover(
-  anchor: HTMLElement,
+export function renderFilterPanel(
+  parent: HTMLElement,
   setup: FilterSetup,
   onChange: () => void,
   start?: number | 'list'
-): Popover {
-  const pop = new Popover({ anchor, width: 300 })
-  const body = pop.contentEl.createDiv('pm-filter-pop')
+): void {
+  const body = parent.createDiv('pm-filter-pop')
   const { filter } = setup
 
   const showList = (): void => {
@@ -450,6 +449,17 @@ export function openFilterPopover(
   } else {
     showFields()
   }
+}
+
+/** The filter panel in a popover under `anchor`. */
+export function openFilterPopover(
+  anchor: HTMLElement,
+  setup: FilterSetup,
+  onChange: () => void,
+  start?: number | 'list'
+): Popover {
+  const pop = new Popover({ anchor, width: 300 })
+  renderFilterPanel(pop.contentEl, setup, onChange, start)
   pop.open()
   return pop
 }

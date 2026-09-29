@@ -18,9 +18,8 @@ export interface GroupPopoverProps {
  * What the board's columns stand for, and which of them show: the field, whether empty
  * columns hide, and the column list, dragged to reorder and toggled by its eye.
  */
-export function openGroupPopover(anchor: HTMLElement, props: GroupPopoverProps): Popover {
-  const pop = new Popover({ anchor, width: 300 })
-  const body = pop.contentEl.createDiv('pm-group-pop')
+export function renderGroupPanel(parent: HTMLElement, props: GroupPopoverProps): void {
+  const body = parent.createDiv('pm-group-pop')
   const { group } = props
 
   const prefs = () => {
@@ -92,6 +91,12 @@ export function openGroupPopover(anchor: HTMLElement, props: GroupPopoverProps):
   }
 
   render()
+}
+
+/** The group panel in a popover under `anchor`. */
+export function openGroupPopover(anchor: HTMLElement, props: GroupPopoverProps): Popover {
+  const pop = new Popover({ anchor, width: 300 })
+  renderGroupPanel(pop.contentEl, props)
   pop.open()
   return pop
 }

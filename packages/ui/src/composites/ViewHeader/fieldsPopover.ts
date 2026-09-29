@@ -35,9 +35,8 @@ const tabs = (): { id: ViewMode; label: string }[] => [
  * table's columns (with their widths), what a board card carries, and the text beside a
  * timeline bar.
  */
-export function openFieldsPopover(anchor: HTMLElement, props: FieldsPopoverProps): Popover {
-  const pop = new Popover({ anchor, width: 320 })
-  const root = pop.contentEl.createDiv('pm-fields-pop')
+export function renderFieldsPanel(parent: HTMLElement, props: FieldsPopoverProps): void {
+  const root = parent.createDiv('pm-fields-pop')
   const { fields, catalog } = props
   let mode = props.mode
 
@@ -125,6 +124,12 @@ export function openFieldsPopover(anchor: HTMLElement, props: FieldsPopoverProps
   }
 
   render()
+}
+
+/** The fields panel in a popover under `anchor`. */
+export function openFieldsPopover(anchor: HTMLElement, props: FieldsPopoverProps): Popover {
+  const pop = new Popover({ anchor, width: 320 })
+  renderFieldsPanel(pop.contentEl, props)
   pop.open()
   return pop
 }

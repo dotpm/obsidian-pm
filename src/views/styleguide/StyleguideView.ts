@@ -3,6 +3,7 @@ import type PMPlugin from '#main'
 import {
   type PriorityConfig,
   type PriorityIconSet,
+  type SortRule,
   type Task,
   DEFAULT_PRIORITIES,
   DEFAULT_STATUSES,
@@ -71,6 +72,8 @@ import {
   safeAsync,
   renderBreadcrumb,
   renderVisibilityList,
+  openTuneSheet,
+  renderSortPanel,
   SearchBox,
   ViewHeader
 } from '@dotpm/ui'
@@ -680,6 +683,37 @@ export class StyleguideView extends ItemView {
     const narrow = this.row(sec, '300px: query and options folded into Tune, filters folded into a count')
     narrow.addClass('pm-sg-narrow')
     this.mountViewHeader(narrow)
+
+    const sheetRow = this.row(sec, "the phone's Tune sheet: a tab per panel, edits apply live, the button closes it")
+    const open = new ButtonComponent(sheetRow).setButtonText('Open view options sheet')
+    open.onClick(() => {
+      const sort: SortRule[] = [{ key: 'priority', dir: 'desc' }]
+      let shown = 42
+      openTuneSheet(open.buttonEl, {
+        tabs: [
+          {
+            id: 'sort',
+            label: 'Sort',
+            badge: () => (sort.length > 1 ? String(sort.length) : ''),
+            render: (parent, changed) =>
+              renderSortPanel(parent, {
+                fields: [
+                  { id: 'priority', label: 'Priority' },
+                  { id: 'due', label: 'Due date' }
+                ],
+                sort,
+                onChange: () => {
+                  shown = 42 - sort.length
+                  changed()
+                },
+                onReset: changed
+              })
+          },
+          { id: 'fields', label: 'Fields', render: (parent) => parent.createDiv({ text: 'The Fields panel.' }) }
+        ],
+        doneLabel: () => `Show ${shown} tasks`
+      })
+    })
   }
 
   private mountViewHeader(host: HTMLElement): void {

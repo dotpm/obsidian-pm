@@ -19,9 +19,8 @@ const progressLabel = (stage: ProjectProgress): string =>
   })[stage]
 
 /** The project list's filter: a checklist of progress stages and one of tags, each with its project count. */
-export function openProjectFilterPopover(anchor: HTMLElement, props: ProjectFilterProps): Popover {
-  const pop = new Popover({ anchor, width: 260 })
-  const body = pop.contentEl.createDiv('pm-project-filter')
+export function renderProjectFilterPanel(parent: HTMLElement, props: ProjectFilterProps): void {
+  const body = parent.createDiv('pm-project-filter')
   const { filter } = props
 
   /** `list` with `value` added, or taken out when it was there; undefined once empty. */
@@ -75,6 +74,12 @@ export function openProjectFilterPopover(anchor: HTMLElement, props: ProjectFilt
   }
 
   render()
+}
+
+/** The project filter panel in a popover under `anchor`. */
+export function openProjectFilterPopover(anchor: HTMLElement, props: ProjectFilterProps): Popover {
+  const pop = new Popover({ anchor, width: 260 })
+  renderProjectFilterPanel(pop.contentEl, props)
   pop.open()
   return pop
 }
