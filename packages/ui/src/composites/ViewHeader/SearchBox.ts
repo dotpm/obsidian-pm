@@ -1,4 +1,5 @@
 import { setIcon, setTooltip } from '#platform'
+import { Popover } from '#primitives/Popover'
 
 export interface SearchBoxProps {
   value: string
@@ -68,9 +69,31 @@ export class SearchBox {
     this.sync()
   }
 
+  /** Shows a query changed elsewhere, without reporting it back. */
+  setValue(value: string): void {
+    if (this.input.value === value) return
+    this.input.value = value
+    this.sync()
+  }
+
+  focus(): void {
+    this.el.addClass('is-open')
+    this.input.focus()
+  }
+
   private sync(): void {
     const hasValue = this.input.value.length > 0
     this.el.toggleClass('has-value', hasValue)
     this.el.toggleClass('is-open', hasValue || this.input.matches(':focus'))
   }
+}
+
+/** The same field in a popover, for a header folded too narrow to hold it. */
+export function openSearchPopover(anchor: HTMLElement, props: SearchBoxProps): Popover {
+  const pop = new Popover({ anchor, align: 'right', width: 260 })
+  const box = new SearchBox(pop.contentEl, props)
+  box.el.addClass('pm-search-box--pop')
+  pop.open()
+  box.focus()
+  return pop
 }

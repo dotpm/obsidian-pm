@@ -55,6 +55,7 @@ import {
   FilterBar,
   openProjectSwitcher,
   openSavedViewsPopover,
+  openSearchPopover,
   openSortPopover,
   renderBreadcrumb,
   safeAsync,
@@ -62,8 +63,11 @@ import {
   showMenuBelow,
   SplitButton,
   ViewHeader,
+  type SearchBoxProps,
   type SortField,
-  type SwitcherProject
+  type StepperProps,
+  type SwitcherProject,
+  type TuneItem
 } from '@dotpm/ui'
 import type { SubView } from './SubView'
 import { TableView } from './table/TableView'
@@ -139,6 +143,7 @@ export class ProjectView extends ItemView {
   private emptyEl!: HTMLElement
   private header: ViewHeader | null = null
   private filterBar: FilterBar | null = null
+  private searchBox: SearchBox | null = null
   private queryBarOpen = false
   private savedViewButton: ChipButton | null = null
   private countEl: HTMLElement | null = null
@@ -494,6 +499,7 @@ export class ProjectView extends ItemView {
     this.renderQuerySlot(header.query)
     this.renderOptionsSlot(header.options, scope)
     this.renderActionsSlot(header.actions)
+    header.setTuneItems(() => this.tuneItems())
     this.renderFilterBar()
     this.syncHeader()
   }
@@ -518,6 +524,8 @@ export class ProjectView extends ItemView {
     this.syncFilterEmpty(counts)
     const filters = countActiveFilters(this.query.filter)
     this.filterButton?.setBadge(filters ? String(filters) : '').setActive(filters > 0)
+    this.searchBox?.setValue(this.query.text)
+    this.header?.tune.setBadge(filters ? String(filters) : '').setActive(isQueryActive(this.query))
     if (this.groupButton) {
       const setup = this.groupSetup()
       const hidden = this.boardColumnsNow().filter((column) => column.hidden).length
@@ -526,25 +534,22 @@ export class ProjectView extends ItemView {
         .setDetail(hidden ? tn('header.hiddenCount', hidden) : '')
         .setActive(this.group.field !== makeDefaultGroup().field)
     }
-    if (this.fieldsButton && this.projectScope) {
-      const changed = this.fields[this.currentView] !== undefined
-      // Counted against the defaults, so fields a mode never shows unless asked don't read as hidden.
-      const catalog = this.projectScope.fieldCatalog()
-      const shown = shownFields(this.fields, this.currentView, catalog)
-      const hidden = shownFields({}, this.currentView, catalog).filter((id) => !shown.includes(id)).length
-      this.fieldsButton.setDetail(changed && hidden ? tn('header.hiddenCount', hidden) : '').setActive(changed)
+    if (this.fieldsButton) {
+      const hidden = this.hiddenFieldCount()
+      this.fieldsButton
+        .setDetail(hidden ? tn('header.hiddenCount', hidden) : '')
+        .setActive(this.fields[this.currentView] !== undefined)
     }
     this.zoomStepper?.setValue(`${this.zoom}%`, this.zoom <= MIN_ZOOM, this.zoom >= MAX_ZOOM)
     this.daysButton?.setActive(!!this.nonWorkingDays.weekends || !!this.nonWorkingDays.holidays)
     if (this.sortButton) {
       const [first] = this.sort
-      const isDefault = sameValue(this.sort, makeDefaultSort())
-      const field = first ? sortFields().find((f) => f.id === first.key) : undefined
+      const { label, more } = this.sortSummary()
       this.sortButton
-        .setLabel(isDefault || !field ? t('header.sort') : field.label)
+        .setLabel(label || t('header.sort'))
         .setIcon(!first ? 'arrow-down-up' : first.dir === 'asc' ? 'arrow-up-narrow-wide' : 'arrow-down-wide-narrow')
-        .setBadge(!isDefault && this.sort.length > 1 ? `+${this.sort.length - 1}` : '')
-        .setActive(!isDefault)
+        .setBadge(more)
+        .setActive(!!label)
     }
     this.header?.fit()
   }
@@ -767,7 +772,35 @@ export class ProjectView extends ItemView {
   }
 
   private renderQuerySlot(parent: HTMLElement): void {
-    new SearchBox(parent, {
+    this.searchBox = new SearchBox(parent, this.searchProps())
+    this.filterButton = new ChipButton(parent)
+      .setIcon('list-filter')
+      .setLabel(t('header.filter'))
+      .setAriaLabel(t('header.filter'))
+      .onClick(() => this.openFilter())
+    this.sortButton = null
+    this.groupButton = null
+    this.fieldsButton = null
+    if (this.currentView !== 'gantt') {
+      const sortButton = new ChipButton(parent).setAriaLabel(t('header.sort'))
+      sortButton.onClick(() => this.openSort(sortButton.el))
+      this.sortButton = sortButton
+    }
+    if (this.currentView === 'kanban') {
+      const groupButton = new ChipButton(parent).setIcon('group').setAriaLabel(t('header.group'))
+      groupButton.onClick(() => this.openGroup(groupButton.el))
+      this.groupButton = groupButton
+    }
+    const fieldsButton = new ChipButton(parent)
+      .setIcon('columns-3')
+      .setLabel(t('header.fields'))
+      .setAriaLabel(t('header.fields'))
+    fieldsButton.onClick(() => this.openFields(fieldsButton.el))
+    this.fieldsButton = fieldsButton
+  }
+
+  private searchProps(): SearchBoxProps {
+    return {
       value: this.query.text,
       label: t('header.search'),
       placeholder: t('taskForm.searchTasks'),
@@ -777,65 +810,152 @@ export class ProjectView extends ItemView {
         this.syncHeader()
         this.refreshSubview()
       }
-    })
-    this.filterButton = new ChipButton(parent)
-      .setIcon('list-filter')
-      .setLabel(t('header.filter'))
-      .setAriaLabel(t('header.filter'))
-      .onClick(() => {
-        this.queryBarOpen = true
-        if (!this.filterBar) this.renderFilterBar()
-        this.filterBar?.openPicker()
-      })
-    this.sortButton = null
-    this.groupButton = null
-    this.fieldsButton = null
-    if (this.currentView === 'gantt') {
-      this.renderFieldsButton(parent)
-      return
     }
-    const sortButton = new ChipButton(parent).setAriaLabel(t('header.sort'))
+  }
+
+  private openFilter(): void {
+    this.queryBarOpen = true
+    if (!this.filterBar) this.renderFilterBar()
+    this.filterBar?.openPicker()
+  }
+
+  private openSort(anchor: HTMLElement): void {
     const sorted = (): void => {
       this.syncHeader()
       this.refreshSubview()
       void this.persistFilter()
     }
-    sortButton.onClick(() => {
-      openSortPopover(sortButton.el, {
-        fields: sortFields(this.projectScope?.config),
-        sort: this.sort,
-        onChange: sorted,
-        onReset: () => {
-          this.sort.splice(0, this.sort.length, ...structuredClone(this.activeView()?.sort ?? makeDefaultSort()))
-          sorted()
-        }
-      })
+    openSortPopover(anchor, {
+      fields: sortFields(this.projectScope?.config),
+      sort: this.sort,
+      onChange: sorted,
+      onReset: () => {
+        this.sort.splice(0, this.sort.length, ...structuredClone(this.activeView()?.sort ?? makeDefaultSort()))
+        sorted()
+      }
     })
-    this.sortButton = sortButton
-    if (this.currentView === 'kanban') {
-      const groupButton = new ChipButton(parent).setIcon('group').setAriaLabel(t('header.group'))
-      groupButton.onClick(() => this.openGroup(groupButton.el))
-      this.groupButton = groupButton
-    }
-    this.renderFieldsButton(parent)
   }
 
-  private renderFieldsButton(parent: HTMLElement): void {
-    const button = new ChipButton(parent)
-      .setIcon('columns-3')
-      .setLabel(t('header.fields'))
-      .setAriaLabel(t('header.fields'))
-    button.onClick(() => {
-      const scope = this.projectScope
-      if (!scope) return
-      openFieldsPopover(button.el, {
-        mode: this.currentView,
-        fields: this.fields,
-        catalog: scope.fieldCatalog(),
-        onChange: () => this.handleFieldsChange()
-      })
+  private openFields(anchor: HTMLElement): void {
+    const scope = this.projectScope
+    if (!scope) return
+    openFieldsPopover(anchor, {
+      mode: this.currentView,
+      fields: this.fields,
+      catalog: scope.fieldCatalog(),
+      onChange: () => this.handleFieldsChange()
     })
-    this.fieldsButton = button
+  }
+
+  /** The sort button's words: the first key's field and how many keys follow it, or nothing at the default. */
+  private sortSummary(): { label: string; more: string } {
+    const [first] = this.sort
+    const field = first ? sortFields().find((f) => f.id === first.key) : undefined
+    if (sameValue(this.sort, makeDefaultSort()) || !field) return { label: '', more: '' }
+    return { label: field.label, more: this.sort.length > 1 ? `+${this.sort.length - 1}` : '' }
+  }
+
+  /** How many of the mode's default fields are hidden, counted only once the mode's fields were changed. */
+  private hiddenFieldCount(): number {
+    const scope = this.projectScope
+    if (!scope || this.fields[this.currentView] === undefined) return 0
+    // Counted against the defaults, so fields a mode never shows unless asked don't read as hidden.
+    const catalog = scope.fieldCatalog()
+    const shown = shownFields(this.fields, this.currentView, catalog)
+    return shownFields({}, this.currentView, catalog).filter((id) => !shown.includes(id)).length
+  }
+
+  /** The query and option controls as the Tune button lists them in a narrow header. */
+  private tuneItems(): TuneItem[][] {
+    const scope = this.projectScope
+    const primary = scope?.primary
+    if (!scope || !primary) return []
+    const mode: TuneItem = {
+      icon: MODE_ICONS[this.currentView],
+      label: t('header.mode'),
+      state: modeLabel(this.currentView),
+      onOpen: (anchor) => this.showModeMenu(anchor, scope, primary)
+    }
+    const filters = countActiveFilters(this.query.filter)
+    const sort = this.sortSummary()
+    const hidden = this.hiddenFieldCount()
+    const query: TuneItem[] = [
+      {
+        icon: 'search',
+        label: t('header.search'),
+        state: this.query.text.trim(),
+        onOpen: (anchor) => openSearchPopover(anchor, this.searchProps())
+      },
+      {
+        icon: 'list-filter',
+        label: t('header.filter'),
+        state: filters ? String(filters) : '',
+        onOpen: () => this.openFilter()
+      }
+    ]
+    if (this.currentView !== 'gantt') {
+      query.push({
+        icon: 'arrow-down-up',
+        label: t('header.sort'),
+        state: `${sort.label} ${sort.more}`.trim(),
+        onOpen: (anchor) => this.openSort(anchor)
+      })
+    }
+    if (this.currentView === 'kanban') {
+      const setup = this.groupSetup()
+      query.push({
+        icon: 'group',
+        label: t('header.group'),
+        state: setup ? filterFieldLabel(this.group.field, setup.ctx.customFields) : '',
+        onOpen: (anchor) => this.openGroup(anchor)
+      })
+    }
+    query.push({
+      icon: 'columns-3',
+      label: t('header.fields'),
+      state: hidden ? tn('header.hiddenCount', hidden) : '',
+      onOpen: (anchor) => this.openFields(anchor)
+    })
+    const options: TuneItem[] = []
+    if (this.currentView === 'gantt') {
+      options.push(
+        { icon: 'calendar-check', label: t('gantt.today'), onOpen: () => this.scrollToToday() },
+        {
+          icon: 'calendar-range',
+          label: t('header.scale'),
+          state: granularityLabel(this.granularity),
+          onOpen: (anchor) => this.openScaleMenu(anchor)
+        },
+        {
+          icon: 'zoom-in',
+          label: t('timeline.zoom'),
+          control: (parent) => {
+            const stepper = new Stepper(
+              parent,
+              this.zoomProps(() => sync())
+            )
+            const sync = (): void => {
+              stepper.setValue(`${this.zoom}%`, this.zoom <= MIN_ZOOM, this.zoom >= MAX_ZOOM)
+            }
+            sync()
+          }
+        },
+        {
+          icon: 'calendar-off',
+          label: t('timeline.nonWorkingDays'),
+          onOpen: (anchor) => this.openNonWorkingDays(anchor)
+        }
+      )
+    }
+    if (this.currentView !== 'kanban') {
+      const anyCollapsed = collapsedTaskIds(this.plugin.settings, scope.projects).size > 0
+      options.push({
+        icon: anyCollapsed ? 'chevrons-up-down' : 'chevrons-down-up',
+        label: anyCollapsed ? t('gantt.expandAll') : t('gantt.collapseAll'),
+        onOpen: () => this.toggleCollapseAll(scope, anyCollapsed)
+      })
+    }
+    return [[mode], query, options]
   }
 
   /** Rebuilt rather than refreshed, so the table keeps its scroll position while its columns change. */
@@ -876,59 +996,30 @@ export class ProjectView extends ItemView {
   }
 
   private renderOptionsSlot(parent: HTMLElement, scope: ProjectScope): void {
+    this.zoomStepper = null
+    this.daysButton = null
     if (this.currentView === 'gantt') {
       new ChipButton(parent)
         .setIcon('calendar-check')
         .setLabel(t('gantt.today'))
         .setAriaLabel(t('gantt.today'))
-        .onClick(() => {
-          if (this.subview instanceof GanttView) this.subview.scrollToToday()
-        })
+        .onClick(() => this.scrollToToday())
       const scale = new ChipButton(parent)
         .setLabel(granularityLabel(this.granularity))
         .setChevron(true)
         .setAriaLabel(t('header.scale'))
-      scale.onClick(() => {
-        const menu = new Menu()
-        for (const granularity of GANTT_GRANULARITIES) {
-          menu.addItem((item) =>
-            item
-              .setTitle(granularityLabel(granularity))
-              .setChecked(granularity === this.granularity)
-              .onClick(() => this.setGranularity(granularity))
-          )
-        }
-        showMenuBelow(menu, scale.el)
-      })
-      this.zoomStepper = new Stepper(parent, {
-        decreaseLabel: t('timeline.zoomOut'),
-        increaseLabel: t('timeline.zoomIn'),
-        resetLabel: t('timeline.resetZoom'),
-        onDecrease: () => this.setZoom(stepZoom(this.zoom, -1)),
-        onIncrease: () => this.setZoom(stepZoom(this.zoom, 1)),
-        onReset: () => this.setZoom(100)
-      })
+      scale.onClick(() => this.openScaleMenu(scale.el))
+      this.zoomStepper = new Stepper(
+        parent,
+        this.zoomProps(() => {})
+      )
       const days = new ChipButton(parent)
         .setIcon('calendar-off')
         .setLabel('')
         .setAriaLabel(t('timeline.nonWorkingDays'))
         .setTooltip(t('timeline.nonWorkingDays'))
-      days.onClick(() =>
-        openNonWorkingDaysPopover(days.el, {
-          days: this.nonWorkingDays,
-          holidays: this.plugin.settings.holidays,
-          onChange: () => this.handleTimelineAxisChange(),
-          onHolidaysChange: safeAsync(async (holidays: string[]) => {
-            this.plugin.settings.holidays = holidays
-            await this.plugin.saveSettings()
-            if (this.nonWorkingDays.holidays) this.renderCurrentView()
-          })
-        })
-      )
+      days.onClick(() => this.openNonWorkingDays(days.el))
       this.daysButton = days
-    } else {
-      this.zoomStepper = null
-      this.daysButton = null
     }
     if (this.currentView === 'kanban') return
     const anyCollapsed = collapsedTaskIds(this.plugin.settings, scope.projects).size > 0
@@ -938,12 +1029,60 @@ export class ProjectView extends ItemView {
       .setLabel('')
       .setAriaLabel(label)
       .setTooltip(label)
-      .onClick(() => {
-        setAllCollapsed(this.plugin.settings, scope.projects, !anyCollapsed)
-        void this.plugin.saveSettings()
-        this.renderHeader()
-        this.refreshSubview()
+      .onClick(() => this.toggleCollapseAll(scope, anyCollapsed))
+  }
+
+  private scrollToToday(): void {
+    if (this.subview instanceof GanttView) this.subview.scrollToToday()
+  }
+
+  private openScaleMenu(anchor: HTMLElement): void {
+    const menu = new Menu()
+    for (const granularity of GANTT_GRANULARITIES) {
+      menu.addItem((item) =>
+        item
+          .setTitle(granularityLabel(granularity))
+          .setChecked(granularity === this.granularity)
+          .onClick(() => this.setGranularity(granularity))
+      )
+    }
+    showMenuBelow(menu, anchor)
+  }
+
+  /** The zoom stepper's handlers; `onZoom` runs after each step, for a stepper the header doesn't keep current. */
+  private zoomProps(onZoom: () => void): StepperProps {
+    const zoomTo = (zoom: number): void => {
+      this.setZoom(zoom)
+      onZoom()
+    }
+    return {
+      decreaseLabel: t('timeline.zoomOut'),
+      increaseLabel: t('timeline.zoomIn'),
+      resetLabel: t('timeline.resetZoom'),
+      onDecrease: () => zoomTo(stepZoom(this.zoom, -1)),
+      onIncrease: () => zoomTo(stepZoom(this.zoom, 1)),
+      onReset: () => zoomTo(100)
+    }
+  }
+
+  private openNonWorkingDays(anchor: HTMLElement): void {
+    openNonWorkingDaysPopover(anchor, {
+      days: this.nonWorkingDays,
+      holidays: this.plugin.settings.holidays,
+      onChange: () => this.handleTimelineAxisChange(),
+      onHolidaysChange: safeAsync(async (holidays: string[]) => {
+        this.plugin.settings.holidays = holidays
+        await this.plugin.saveSettings()
+        if (this.nonWorkingDays.holidays) this.renderCurrentView()
       })
+    })
+  }
+
+  private toggleCollapseAll(scope: ProjectScope, anyCollapsed: boolean): void {
+    setAllCollapsed(this.plugin.settings, scope.projects, !anyCollapsed)
+    void this.plugin.saveSettings()
+    this.renderHeader()
+    this.refreshSubview()
   }
 
   /** Zoom is per device, so it is kept in this vault's local storage rather than in the view. */

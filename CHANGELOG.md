@@ -43,6 +43,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Board cards now follow the sort order of the view
 - Changing a saved view now marks it unsaved instead of switching back to all tasks
 - Search text is no longer saved with a view. Saved views that searched now filter by title.
+- In a narrow pane, the header now folds its controls into "View options" and filters into a count
 
 ### Removed
 

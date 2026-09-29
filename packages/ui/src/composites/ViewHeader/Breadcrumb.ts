@@ -29,8 +29,9 @@ export interface BreadcrumbProps {
 
 /**
  * Where the reader is and how they are looking at it: the ancestors, the current title,
- * and the view mode as the last crumb. Under `.pm-vh--terse` the mode keeps only its icon,
- * and under `.pm-vh--folded` the ancestors collapse into one button that lists them in a menu.
+ * and the view mode as the last crumb. Under `.pm-vh--terse` the mode keeps only its icon and
+ * under `.pm-vh--bare` it goes, and under `.pm-vh--folded` the ancestors collapse into one
+ * button that lists them in a menu.
  */
 export function renderBreadcrumb(parent: HTMLElement, props: BreadcrumbProps): HTMLElement {
   const nav = parent.createEl('nav', { cls: 'pm-crumbs' })
@@ -76,7 +77,7 @@ export function renderBreadcrumb(parent: HTMLElement, props: BreadcrumbProps): H
 
   if (props.mode) {
     const mode = props.mode
-    appendSeparator(nav)
+    appendSeparator(nav, 'pm-crumb-mode-sep')
     const crumb = nav.createEl('button', { cls: 'pm-crumb pm-crumb--mode', attr: { 'aria-label': mode.tooltip } })
     setIcon(crumb.createSpan('pm-crumb-icon'), mode.icon)
     crumb.createSpan({ cls: 'pm-crumb-mode-label', text: mode.label })

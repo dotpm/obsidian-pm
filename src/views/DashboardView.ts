@@ -23,6 +23,7 @@ import {
   EmptyState,
   openProjectFilterPopover,
   openSavedViewsPopover,
+  openSearchPopover,
   openSortPopover,
   renderBreadcrumb,
   safeAsync,
@@ -30,7 +31,9 @@ import {
   showMenuBelow,
   SplitButton,
   ViewHeader,
-  type SortField
+  type SearchBoxProps,
+  type SortField,
+  type TuneItem
 } from '@dotpm/ui'
 import { openProjectCreate } from '#ui/ModalFactory'
 import { projectListItems, renderProjectTable, type ProjectListContext } from './ProjectListRenderer'
@@ -51,6 +54,7 @@ export class DashboardView extends ItemView {
   private headerEl!: HTMLElement
   private bodyEl!: HTMLElement
   private header: ViewHeader | null = null
+  private searchBox: SearchBox | null = null
   private reloadDebounceTimer: number | null = null
   /** Search text lives as long as this view and is never saved. */
   private text = ''
@@ -145,6 +149,7 @@ export class DashboardView extends ItemView {
     })
     this.renderViewSlot(header.view)
     this.renderQuerySlot(header.query)
+    header.setTuneItems(() => this.tuneItems())
     new SplitButton(header.actions)
       .setIcon('plus')
       .setLabel(t('header.newProject'))
@@ -166,7 +171,21 @@ export class DashboardView extends ItemView {
   }
 
   private renderQuerySlot(parent: HTMLElement): void {
-    new SearchBox(parent, {
+    this.searchBox = new SearchBox(parent, this.searchProps())
+    const filter = new ChipButton(parent).setIcon('list-filter').setLabel(t('header.filter'))
+    filter.setAriaLabel(t('header.filter')).onClick(() => this.openFilter(filter.el))
+    this.filterButton = filter
+    this.archivedButton = new ChipButton(parent).setLabel(t('common.archived')).onClick(() => this.toggleArchived())
+    const sort = new ChipButton(parent).setAriaLabel(t('header.sort'))
+    sort.onClick(() => this.openSort(sort.el))
+    this.sortButton = sort
+    const group = new ChipButton(parent).setIcon('group').setAriaLabel(t('header.groupBy'))
+    group.onClick(() => this.openGroupMenu(group.el))
+    this.groupButton = group
+  }
+
+  private searchProps(): SearchBoxProps {
+    return {
       value: this.text,
       label: t('header.search'),
       placeholder: t('header.search'),
@@ -175,61 +194,106 @@ export class DashboardView extends ItemView {
         this.text = value
         this.renderList()
       }
+    }
+  }
+
+  private openFilter(anchor: HTMLElement): void {
+    const all = allProjectItems(this.items)
+    const progress: Record<ProjectProgress, number> = { 'not-started': 0, 'in-progress': 0, complete: 0 }
+    for (const item of all) progress[projectProgress(item)]++
+    openProjectFilterPopover(anchor, {
+      filter: this.state.filter,
+      progress,
+      tags: projectTagCounts(this.items),
+      onChange: () => this.changed()
     })
-    const filter = new ChipButton(parent).setIcon('list-filter').setLabel(t('header.filter'))
-    filter.setAriaLabel(t('header.filter')).onClick(() => {
-      const all = allProjectItems(this.items)
-      const progress: Record<ProjectProgress, number> = { 'not-started': 0, 'in-progress': 0, complete: 0 }
-      for (const item of all) progress[projectProgress(item)]++
-      openProjectFilterPopover(filter.el, {
-        filter: this.state.filter,
-        progress,
-        tags: projectTagCounts(this.items),
-        onChange: () => this.changed()
-      })
-    })
-    this.filterButton = filter
+  }
 
-    this.archivedButton = new ChipButton(parent).setLabel(t('common.archived')).onClick(
-      safeAsync(async () => {
-        this.plugin.settings.showArchivedProjects = !this.plugin.settings.showArchivedProjects
-        await this.plugin.saveSettings()
-        this.renderList()
-      })
-    )
+  private toggleArchived(): void {
+    safeAsync(async () => {
+      this.plugin.settings.showArchivedProjects = !this.plugin.settings.showArchivedProjects
+      await this.plugin.saveSettings()
+      this.renderList()
+    })()
+  }
 
-    const sort = new ChipButton(parent).setAriaLabel(t('header.sort'))
-    sort.onClick(() =>
-      openSortPopover(sort.el, {
-        fields: sortFields(),
-        sort: this.state.sort,
-        onChange: () => this.changed(),
-        onReset: () => {
-          const { sort } = this.state
-          sort.splice(0, sort.length, ...structuredClone(this.activeView()?.sort ?? []))
-          this.changed()
-        }
-      })
-    )
-    this.sortButton = sort
-
-    const group = new ChipButton(parent).setIcon('group').setAriaLabel(t('header.groupBy'))
-    group.onClick(() => {
-      const menu = new Menu()
-      for (const option of ['none', 'folder', 'tag'] as const) {
-        menu.addItem((item) =>
-          item
-            .setTitle(groupLabel(option))
-            .setChecked(this.state.group === option)
-            .onClick(() => {
-              this.state.group = option
-              this.changed()
-            })
-        )
+  private openSort(anchor: HTMLElement): void {
+    openSortPopover(anchor, {
+      fields: sortFields(),
+      sort: this.state.sort,
+      onChange: () => this.changed(),
+      onReset: () => {
+        const { sort } = this.state
+        sort.splice(0, sort.length, ...structuredClone(this.activeView()?.sort ?? []))
+        this.changed()
       }
-      showMenuBelow(menu, group.el)
     })
-    this.groupButton = group
+  }
+
+  private openGroupMenu(anchor: HTMLElement): void {
+    const menu = new Menu()
+    for (const option of ['none', 'folder', 'tag'] as const) {
+      menu.addItem((item) =>
+        item
+          .setTitle(groupLabel(option))
+          .setChecked(this.state.group === option)
+          .onClick(() => {
+            this.state.group = option
+            this.changed()
+          })
+      )
+    }
+    showMenuBelow(menu, anchor)
+  }
+
+  private sortLabel(): string {
+    const [first] = this.state.sort
+    const field = first ? sortFields().find((f) => f.id === first.key) : undefined
+    if (!field) return ''
+    return this.state.sort.length > 1 ? `${field.label} +${this.state.sort.length - 1}` : field.label
+  }
+
+  /** The query controls as the Tune button lists them in a narrow header. */
+  private tuneItems(): TuneItem[][] {
+    const { settings, index } = this.plugin
+    const filters = countProjectFilters(this.state.filter)
+    const items: TuneItem[] = [
+      {
+        icon: 'search',
+        label: t('header.search'),
+        state: this.text.trim(),
+        onOpen: (anchor) => openSearchPopover(anchor, this.searchProps())
+      },
+      {
+        icon: 'list-filter',
+        label: t('header.filter'),
+        state: filters ? String(filters) : '',
+        onOpen: (anchor) => this.openFilter(anchor)
+      }
+    ]
+    if (index.projectRefs(true).length > index.projectRefs().length || settings.showArchivedProjects) {
+      items.push({
+        icon: settings.showArchivedProjects ? 'eye' : 'eye-off',
+        label: t('common.archived'),
+        state: settings.showArchivedProjects ? t('filter.included') : '',
+        onOpen: () => this.toggleArchived()
+      })
+    }
+    items.push(
+      {
+        icon: 'arrow-down-up',
+        label: t('header.sort'),
+        state: this.sortLabel(),
+        onOpen: (anchor) => this.openSort(anchor)
+      },
+      {
+        icon: 'group',
+        label: t('header.groupBy'),
+        state: groupLabel(this.state.group),
+        onOpen: (anchor) => this.openGroupMenu(anchor)
+      }
+    )
+    return [items]
   }
 
   /** The list changed shape: redraw it and keep the change. */
@@ -306,6 +370,10 @@ export class DashboardView extends ItemView {
     )
     const filters = countProjectFilters(this.state.filter)
     this.filterButton?.setBadge(filters ? String(filters) : '').setActive(filters > 0)
+    this.searchBox?.setValue(this.text)
+    this.header?.tune
+      .setBadge(filters ? String(filters) : '')
+      .setActive(isProjectQueryActive(this.state.filter, this.text))
     const hasArchived = index.projectRefs(true).length > index.projectRefs().length
     this.archivedButton?.setActive(settings.showArchivedProjects)
     this.archivedButton?.el.toggleClass('pm-hidden', !hasArchived && !settings.showArchivedProjects)

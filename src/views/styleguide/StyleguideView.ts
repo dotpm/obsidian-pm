@@ -676,7 +676,13 @@ export class StyleguideView extends ItemView {
 
   private renderViewHeader(): void {
     const sec = this.section('ViewHeader', 'view-header')
-    const host = this.row(sec, 'breadcrumb, saved view, query, options, actions, filter bar')
+    this.mountViewHeader(this.row(sec, 'breadcrumb, saved view, query, options, actions, filter bar'))
+    const narrow = this.row(sec, '300px: query and options folded into Tune, filters folded into a count')
+    narrow.addClass('pm-sg-narrow')
+    this.mountViewHeader(narrow)
+  }
+
+  private mountViewHeader(host: HTMLElement): void {
     const header = new ViewHeader(host)
     this.register(() => header.destroy())
     renderBreadcrumb(header.context, {
@@ -703,6 +709,17 @@ export class StyleguideView extends ItemView {
     new ChipButton(header.query).setIcon('columns-3').setLabel('Fields').setDetail('3 hidden').setActive(true)
     new ChipButton(header.options).setIcon('chevrons-down-up').setLabel('').setAriaLabel('Collapse all')
     new SplitButton(header.actions).setIcon('plus').setLabel('Add task').onClick(noop)
+    header.tune.setBadge('4').setActive(true)
+    header.setTuneItems(() => [
+      [{ icon: 'table', label: 'View mode', state: 'Table', onOpen: noop }],
+      [
+        { icon: 'search', label: 'Search', onOpen: noop },
+        { icon: 'list-filter', label: 'Filter', state: '4', onOpen: noop },
+        { icon: 'arrow-down-up', label: 'Sort', state: 'Priority', onOpen: noop },
+        { icon: 'columns-3', label: 'Fields', state: '3 hidden', onOpen: noop }
+      ],
+      [{ icon: 'chevrons-down-up', label: 'Collapse all', onOpen: noop }]
+    ])
     new FilterBar(header.bar, {
       filter: {
         ...makeDefaultFilter(),
