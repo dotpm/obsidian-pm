@@ -2,6 +2,7 @@ import type {
   CustomFieldDef,
   DateBucket,
   FilterCondition,
+  FilterOp,
   FilterState,
   FieldList,
   GroupColumns,
@@ -74,10 +75,12 @@ export function customFieldList(raw: unknown): CustomFieldDef[] {
 
 const DATE_BUCKETS: DateBucket[] = ['overdue', 'today', 'this-week', 'this-month']
 
-function conditionValue(raw: unknown): FilterCondition['value'] {
+/** A `between` keeps both of its ends in place, an open end included. */
+function conditionValue(raw: unknown, op: FilterOp): FilterCondition['value'] {
   if (typeof raw === 'string') return raw
   if (!Array.isArray(raw)) return undefined
   if (raw.length && raw.every((v) => typeof v === 'number' && Number.isFinite(v))) return raw as number[]
+  if (op === 'between') return raw.map((v) => (typeof v === 'string' ? v : ''))
   return stringList(raw)
 }
 
@@ -95,7 +98,7 @@ export function hydrateFilter(raw: unknown): FilterState {
       if (typeof c.field !== 'string' || !c.field) continue
       const op = FILTER_OPS.find((known) => known === c.op)
       if (!op) continue
-      const value = conditionValue(c.value)
+      const value = conditionValue(c.value, op)
       filter.conditions.push(value === undefined ? { field: c.field, op } : { field: c.field, op, value })
     }
     return filter
