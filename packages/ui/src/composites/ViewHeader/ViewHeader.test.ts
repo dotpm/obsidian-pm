@@ -369,6 +369,14 @@ describe('saved views popover', () => {
     await vi.waitFor(() => expect(p.onReorder).toHaveBeenCalledWith(['v2', 'v1']))
   })
 
+  it('moves a view down onto the one below it', async () => {
+    const p = props()
+    openSavedViewsPopover(document.body.createEl('button'), p)
+    rows()[1].dispatchEvent(new Event('dragstart'))
+    rows()[2].dispatchEvent(new Event('drop'))
+    await vi.waitFor(() => expect(p.onReorder).toHaveBeenCalledWith(['v2', 'v1']))
+  })
+
   it('saves the current state under the typed name, as the default when asked', async () => {
     const p = props()
     openSavedViewsPopover(document.body.createEl('button'), p)
@@ -448,6 +456,19 @@ describe('sort popover', () => {
     rows[1].dispatchEvent(new Event('dragstart'))
     rows[0].dispatchEvent(new Event('drop'))
     expect(sort.map((rule) => rule.key)).toEqual(['title', 'status'])
+  })
+
+  it('moves a key down to the last rank', () => {
+    const sort: SortRule[] = [
+      { key: 'status', dir: 'asc' },
+      { key: 'title', dir: 'asc' },
+      { key: 'due', dir: 'desc' }
+    ]
+    open(sort)
+    const rows = document.body.findAll('.pm-sort-row')
+    rows[0].dispatchEvent(new Event('dragstart'))
+    rows[2].dispatchEvent(new Event('drop'))
+    expect(sort.map((rule) => rule.key)).toEqual(['title', 'due', 'status'])
   })
 
   it('resets through the view', () => {

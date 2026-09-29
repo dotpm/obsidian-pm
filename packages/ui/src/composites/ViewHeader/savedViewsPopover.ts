@@ -1,5 +1,5 @@
 import { createButton, setTooltip } from '#platform'
-import { safeAsync } from '#dom'
+import { makeReorderable, safeAsync } from '#dom'
 import { Checkbox } from '#primitives/Checkbox'
 import { IconButton } from '#primitives/IconButton'
 import { Popover } from '#primitives/Popover'
@@ -101,7 +101,6 @@ export function renderSavedViewsPanel(parent: HTMLElement, props: SavedViewsProp
         })
       : null
   const list = body.createDiv('pm-pop-list')
-  let dragFrom: string | null = null
 
   const beginRename = (main: HTMLButtonElement, view: SavedViewItem): void => {
     const input = createEl('input', { cls: 'pm-pop-field pm-saved-view-rename', value: view.name })
@@ -157,6 +156,7 @@ export function renderSavedViewsPanel(parent: HTMLElement, props: SavedViewsProp
       const all = renderRow(list, t('header.allTasks'), props.activeId === null, undefined, () => props.onSelect(null))
       all.row.createSpan({ cls: 'pm-saved-view-note', text: t('header.builtIn') })
     }
+    const rows: { el: HTMLElement; id: string }[] = []
     for (const view of props.views.filter((v) => !query || v.name.toLowerCase().includes(query))) {
       const { row, main } = renderRow(list, view.name, props.activeId === view.id, view.modeIcon, () =>
         props.onSelect(view.id)
@@ -170,24 +170,9 @@ export function renderSavedViewsPanel(parent: HTMLElement, props: SavedViewsProp
       rowAction(row, 'pencil', t('header.rename'), () => beginRename(main, view))
       rowAction(row, 'trash-2', t('header.deleteView'), () => run(() => props.onDelete(view.id)))
 
-      if (query) continue
-      row.setAttribute('draggable', 'true')
-      row.addEventListener('dragstart', () => {
-        dragFrom = view.id
-        row.addClass('is-dragging')
-      })
-      row.addEventListener('dragend', () => row.removeClass('is-dragging'))
-      row.addEventListener('dragover', (e) => e.preventDefault())
-      row.addEventListener('drop', (e) => {
-        e.preventDefault()
-        const from = dragFrom
-        dragFrom = null
-        if (!from || from === view.id) return
-        const ids = props.views.map((v) => v.id).filter((id) => id !== from)
-        ids.splice(ids.indexOf(view.id), 0, from)
-        run(() => props.onReorder(ids))
-      })
+      rows.push({ el: row, id: view.id })
     }
+    if (!query) makeReorderable(rows, (ids) => run(() => props.onReorder(ids)))
     if (!props.views.length) list.createDiv({ cls: 'pm-pop-empty', text: t('header.noViewsHint') })
   }
 
