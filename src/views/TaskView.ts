@@ -1,7 +1,7 @@
-import { ItemView, Scope, WorkspaceLeaf } from 'obsidian'
+import { ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
-import { type Task, flattenTasks, truncateTitle, t } from '@dotpm/core'
-import { EmptyState } from '@dotpm/ui'
+import { type Task, flattenTasks, t } from '@dotpm/core'
+import { EmptyState, safeAsync } from '@dotpm/ui'
 import { TaskEditor } from '#modals/TaskEditor'
 
 export const PM_TASK_VIEW_TYPE = 'pm-task'
@@ -34,10 +34,23 @@ export class TaskView extends ItemView {
     return PM_TASK_VIEW_TYPE
   }
   getDisplayText(): string {
-    return truncateTitle(this.taskTitle, 10)
+    return this.taskTitle
   }
   getIcon(): string {
     return 'square-check-big'
+  }
+
+  onPaneMenu(menu: Menu, source: string): void {
+    super.onPaneMenu(menu, source)
+    const { filePath } = this.state
+    if (!filePath || !this.editor) return
+    menu.addItem((item) =>
+      item
+        .setSection('open')
+        .setTitle(t('project.openAsNote'))
+        .setIcon('file-text')
+        .onClick(safeAsync(() => this.plugin.openAsMarkdown(filePath, this.leaf)))
+    )
   }
 
   async setState(state: TaskViewState, result: unknown): Promise<void> {

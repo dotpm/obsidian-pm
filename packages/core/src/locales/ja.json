@@ -229,7 +229,6 @@
   "header.lockedField": "常に表示",
   "header.makeDefault": "既定のビューにする",
   "header.mode": "表示モード",
-  "header.more": "その他のオプション",
   "header.moreToAdd": "その他を追加",
   "header.noSort": "タスクは保存されている順に表示されます。",
   "header.noViewsHint": "現在のフィルターと並べ替えをビューとして保存すると、あとからすぐに呼び出せます。",

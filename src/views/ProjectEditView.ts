@@ -1,4 +1,4 @@
-import { ButtonComponent, ItemView, WorkspaceLeaf } from 'obsidian'
+import { ButtonComponent, Menu, ItemView, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
 import {
   type CustomFieldDef,
@@ -14,7 +14,6 @@ import {
   collectAllAssignees,
   flattenTasks,
   mergeById,
-  truncateTitle,
   t,
   tn
 } from '@dotpm/core'
@@ -58,10 +57,37 @@ export class ProjectEditView extends ItemView {
     return PM_PROJECT_EDIT_VIEW_TYPE
   }
   getDisplayText(): string {
-    return truncateTitle(this.project?.title ?? t('common.project'), 10)
+    return this.project?.title ?? t('common.project')
   }
   getIcon(): string {
     return 'settings'
+  }
+
+  onPaneMenu(menu: Menu, source: string): void {
+    super.onPaneMenu(menu, source)
+    const project = this.project
+    if (!project) return
+    menu.addItem((item) =>
+      item
+        .setSection('open')
+        .setTitle(t('project.openOverview'))
+        .setIcon('gauge')
+        .onClick(safeAsync(() => this.plugin.router.openProjectOverview(project.filePath, this.leaf)))
+    )
+    menu.addItem((item) =>
+      item
+        .setSection('open')
+        .setTitle(t('project.openTasks'))
+        .setIcon('table')
+        .onClick(safeAsync(() => this.plugin.router.openScope({ kind: 'project', path: project.filePath }, this.leaf)))
+    )
+    menu.addItem((item) =>
+      item
+        .setSection('open')
+        .setTitle(t('project.openAsNote'))
+        .setIcon('file-text')
+        .onClick(safeAsync(() => this.plugin.openAsMarkdown(project.filePath, this.leaf)))
+    )
   }
 
   async setState(state: ProjectEditState, result: unknown): Promise<void> {
@@ -164,6 +190,7 @@ export class ProjectEditView extends ItemView {
           if (!title || title === project.title) return
           this.save({ title })
           this.render()
+          ;(this.leaf as WorkspaceLeaf & { updateHeader?: () => void }).updateHeader?.()
         }
       })
       return cell
