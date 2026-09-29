@@ -2,7 +2,16 @@ import { Notice, TFile } from 'obsidian'
 import type PMPlugin from './main'
 import type { ScopeSpec } from './store'
 import { isRefLink } from './store/refs'
-import { parseFrontmatter, isOldFormat, t, tn } from '@dotpm/core'
+import {
+  legacyBoardFields,
+  makeDefaultFilter,
+  makeDefaultGroup,
+  makeDefaultSort,
+  parseFrontmatter,
+  isOldFormat,
+  t,
+  tn
+} from '@dotpm/core'
 
 /** Rewrites projects whose tasks are embedded in frontmatter as one file per task. */
 export async function migrateProjects(plugin: PMPlugin): Promise<void> {
@@ -33,6 +42,54 @@ export async function migrateProjects(plugin: PMPlugin): Promise<void> {
   if (migrated > 0) {
     new Notice(tn('migration.migrated', migrated))
   }
+}
+
+const LEGACY_BOARD_KEYS = ['kanbanShowSubtasks', 'kanbanShowDescriptionPreview']
+
+/**
+ * Moves a project's own "Show subtasks" and "Show description preview" overrides into the
+ * board card fields of that project's view, then drops them from the note. A note without
+ * them is left alone, which is what makes a second run free.
+ */
+export async function migrateBoardCardConfig(plugin: PMPlugin): Promise<void> {
+  let changed = false
+  for (const path of plugin.index.projectPaths(true)) {
+    const config = frontmatterOf(plugin, path)?.config as Record<string, unknown> | undefined
+    if (!config || !LEGACY_BOARD_KEYS.some((key) => key in config)) continue
+    const file = plugin.app.vault.getAbstractFileByPath(path)
+    if (!(file instanceof TFile)) continue
+    const key = `project:${path}`
+    const entry = (plugin.settings.projectFilters[key] ??= {
+      filter: makeDefaultFilter(),
+      activeSavedViewId: null,
+      sort: makeDefaultSort(),
+      group: makeDefaultGroup(),
+      fields: {},
+      ganttGranularity: plugin.settings.ganttGranularity
+    })
+    // A key the note leaves out inherited the global setting, which loadSettings has already moved here.
+    const had = entry.fields.kanban?.visible ?? []
+    const own = (key: string, field: string): boolean =>
+      typeof config[key] === 'boolean' ? config[key] === true : had.includes(field)
+    const kanban = legacyBoardFields(
+      own('kanbanShowSubtasks', 'subtasks'),
+      own('kanbanShowDescriptionPreview', 'description')
+    ).kanban
+    if (kanban) entry.fields.kanban = kanban
+    else delete entry.fields.kanban
+    try {
+      await plugin.app.fileManager.processFrontMatter(file, (frontmatter: Record<string, unknown>) => {
+        const own = frontmatter.config as Record<string, unknown> | undefined
+        if (!own) return
+        for (const legacy of LEGACY_BOARD_KEYS) Reflect.deleteProperty(own, legacy)
+        if (!Object.keys(own).length) Reflect.deleteProperty(frontmatter, 'config')
+      })
+    } catch (e) {
+      console.error(`[PM] Failed to move the board settings out of "${path}":`, e)
+    }
+    changed = true
+  }
+  if (changed) await plugin.saveSettings()
 }
 
 const REF_KEYS = ['projectId', 'parentId', 'subtaskIds', 'dependencies', 'taskIds']

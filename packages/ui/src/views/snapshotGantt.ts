@@ -1,9 +1,18 @@
-import { type GanttGranularity, type Task, applyTaskFilterPromote, flattenTasks, today, t } from '@dotpm/core'
+import {
+  type GanttGranularity,
+  type Task,
+  applyTaskFilterPromote,
+  flattenTasks,
+  shownFields,
+  today,
+  t
+} from '@dotpm/core'
 import { svgEl } from '#dom'
 import { SegmentedControl } from '#primitives/SegmentedControl'
 import { renderProjectChip } from '../composites/projectChip'
 import { renderStatusDot } from '../StatusBadge'
 import {
+  barAsideText,
   barColor,
   drawDependencyArrows,
   drawMilestoneDiamond,
@@ -15,7 +24,17 @@ import type { GanttCanvas } from '../gantt/canvas'
 import { renderGridLines, renderTodayLine } from '../gantt/canvas'
 import { renderTimelineHeader } from '../gantt/header'
 import { HEADER_HEIGHT, LABEL_WIDTH, ROW_HEIGHT, buildTimelineConfig, dateToX } from '../gantt/TimelineConfig'
-import { allTasks, filterContextOf, isMulti, mergedConfig, projectOf, queryOf, type ViewModel } from './model'
+import {
+  allTasks,
+  customFieldColumns,
+  fieldCatalogOf,
+  filterContextOf,
+  isMulti,
+  mergedConfig,
+  projectOf,
+  queryOf,
+  type ViewModel
+} from './model'
 
 const granularities = (): { id: GanttGranularity; label: string }[] => [
   { id: 'day', label: t('granularity.day') },
@@ -49,7 +68,10 @@ function renderBody(container: HTMLElement, model: ViewModel, granularity: Gantt
   const tasks = visibleTasks(model)
   const rows = flattenTasks(tasks).map((f) => ({ task: f.task, depth: f.depth }))
   const cfg = buildTimelineConfig(tasks, granularity)
-  const statuses = mergedConfig(model).statuses
+  const config = mergedConfig(model)
+  const statuses = config.statuses
+  const labelFields = shownFields(model.fields, 'gantt', fieldCatalogOf(model)).filter((id) => id !== 'title')
+  const labelSource = { statuses, priorities: config.priorities, customFields: customFieldColumns(model) }
 
   const wrapper = container.createDiv('pm-gantt-wrapper')
   const leftPanel = wrapper.createDiv('pm-gantt-left')
@@ -84,7 +106,7 @@ function renderBody(container: HTMLElement, model: ViewModel, granularity: Gantt
     const color = barColor(canvas, statuses, task)
     drawRowHover(barsGroup, canvas, row)
     if (task.type === 'milestone') drawMilestoneDiamond(barsGroup, canvas, task, row, color)
-    else drawTaskBar(barsGroup, canvas, statuses, task, row, color)
+    else drawTaskBar(barsGroup, canvas, statuses, task, row, color, barAsideText(task, labelFields, labelSource))
   })
   drawDependencyArrows(canvas, rows)
   drawMilestoneLabels(canvas, statuses, rows)

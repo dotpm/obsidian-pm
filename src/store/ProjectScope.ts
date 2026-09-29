@@ -1,5 +1,6 @@
 import {
   type CustomFieldDef,
+  type FieldCatalog,
   type FilterContext,
   type FilterState,
   type PriorityConfig,
@@ -174,6 +175,11 @@ export class ProjectScope {
   customFields(): CustomFieldDef[] {
     if (!this.isMulti) return this.primary ? this.configOfProject(this.primary).customFields : []
     return unionById(this.projects.map((project) => this.configOfProject(project).customFields))
+  }
+
+  /** What decides which fields a table, board card or timeline label can show. */
+  fieldCatalog(): FieldCatalog {
+    return { customFields: this.customFields(), multi: this.isMulti }
   }
 
   /** What a filter condition needs to match the tasks in scope. */

@@ -46,6 +46,7 @@ describe('buildSnapshot', () => {
       filter: { ...makeDefaultFilter(), conditions: [{ field: 'status', op: 'any', value: ['todo'] }] },
       sort: [{ key: 'due', dir: 'desc' }],
       group: { field: 'priority' },
+      fields: { table: { visible: ['title', 'due'], widths: { due: 80 } } },
       ganttGranularity: 'month'
     })
     expect(isSnapshot(snapshot)).toBe(true)
@@ -55,6 +56,7 @@ describe('buildSnapshot', () => {
       mode: 'gantt',
       sort: [{ key: 'due', dir: 'desc' }],
       group: { field: 'priority' },
+      fields: { table: { visible: ['title', 'due'], widths: { due: 80 } } },
       ganttGranularity: 'month'
     })
     expect(snapshot.view.filter.conditions).toEqual([{ field: 'status', op: 'any', value: ['todo'] }])
@@ -82,6 +84,7 @@ describe('buildSnapshot', () => {
       filter: makeDefaultFilter(),
       sort: [{ key: 'title', dir: 'asc' }],
       group: makeDefaultGroup(),
+      fields: {},
       ganttGranularity: 'week'
     })
     expect(snapshot.personColors).toEqual({ '[[Jane Doe]]': '#c47070' })
@@ -110,7 +113,6 @@ describe('renderSnapshotHtml', () => {
       showTagColors: true,
       showSubtreeConnections: true,
       lineBorders: 'none',
-      kanbanShowSubtasks: false,
       ganttWeekLabel: 'weekNumber',
       dateFormat: ''
     }

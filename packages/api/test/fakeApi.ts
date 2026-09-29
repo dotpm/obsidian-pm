@@ -29,9 +29,7 @@ const CONFIG = {
   pullForwardOnEarlyFinish: false,
   autoArchiveDays: 0,
   showSubtreeConnections: true,
-  lineBorders: 'none' as const,
-  kanbanShowSubtasks: false,
-  kanbanShowDescriptionPreview: false
+  lineBorders: 'none' as const
 }
 
 /** An in-memory host for testing the transports: one project, tasks as a flat list. */

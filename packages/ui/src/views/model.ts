@@ -13,6 +13,8 @@ import {
   type SortRule,
   type StatusConfig,
   type Task,
+  type FieldCatalog,
+  type ViewFields,
   displayName,
   flattenTasks,
   mergeById
@@ -34,7 +36,6 @@ export interface ViewSettings {
   showTagColors: boolean
   showSubtreeConnections: boolean
   lineBorders: LineBorders
-  kanbanShowSubtasks: boolean
   ganttWeekLabel: GanttWeekLabel
   ganttGranularity: GanttGranularity
 }
@@ -46,6 +47,7 @@ export interface ViewSettings {
 export interface ViewModel {
   sort: SortRule[]
   group: GroupState
+  fields: ViewFields
   projects: ViewProject[]
   settings: ViewSettings
   filter: FilterState
@@ -90,6 +92,10 @@ export function mergedConfig(model: ViewModel): ResolvedProjectConfig {
 export function customFieldColumns(model: ViewModel): CustomFieldDef[] {
   if (!isMulti(model)) return model.projects[0].config.customFields
   return mergeById(model.projects.map((p) => p.config.customFields))
+}
+
+export function fieldCatalogOf(model: ViewModel): FieldCatalog {
+  return { customFields: customFieldColumns(model), multi: isMulti(model) }
 }
 
 /** A page has no search box, so its query is the filter the export started from. */

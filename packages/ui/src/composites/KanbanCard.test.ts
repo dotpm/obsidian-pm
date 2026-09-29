@@ -11,10 +11,12 @@ describe('KanbanCard outside Obsidian', () => {
     const host = document.body.createDiv()
     const onClick = vi.fn<() => void>()
     const card = new KanbanCard(host, {
+      fields: ['priority', 'tags', 'due', 'cf:sprint'],
       people: [],
       task: makeTask({ id: 't1', title: 'Write the spec', due: '2030-01-01', tags: ['docs'] }),
       priorityColor: 'red',
       parentTitle: 'Launch',
+      customValues: { 'cf:sprint': { name: 'Sprint', text: 'S1' } },
       loggedHours: 0,
       overdue: false,
       showTagColors: false,
@@ -27,8 +29,29 @@ describe('KanbanCard outside Obsidian', () => {
     expect(card.el.find('.pm-kanban-card-title')?.textContent).toBe('Write the spec')
     expect(card.el.find('.pm-kanban-card-parent')?.textContent).toBe('Launch')
     expect(card.el.find('.pm-kanban-card-priority-bar')).not.toBeNull()
+    expect(card.el.find('.pm-kanban-card-field')?.textContent).toBe('SprintS1')
     card.el.click()
     expect(onClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('leaves out the fields it is not given', () => {
+    const host = document.body.createDiv()
+    const card = new KanbanCard(host, {
+      fields: [],
+      people: [],
+      task: makeTask({ title: 'Bare', due: '2030-01-01', tags: ['docs'], progress: 50 }),
+      priorityColor: 'red',
+      loggedHours: 0,
+      overdue: false,
+      showTagColors: false,
+      onClick: noop,
+      onContextMenu: noop,
+      onDragStart: noop,
+      onDragEnd: noop
+    })
+    expect(card.el.find('.pm-kanban-card-priority-bar')).toBeNull()
+    expect(card.el.find('.pm-kanban-card-tags')).toBeNull()
+    expect(card.el.find('.pm-kanban-card-footer')).toBeNull()
   })
 })
 

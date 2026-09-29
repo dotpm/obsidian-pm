@@ -90,10 +90,6 @@ function serializeProjectConfig(config: ProjectConfig | undefined): Record<strin
   if (config.autoArchiveDays !== undefined) out.autoArchiveDays = config.autoArchiveDays
   if (config.showSubtreeConnections !== undefined) out.showSubtreeConnections = config.showSubtreeConnections
   if (config.lineBorders) out.lineBorders = config.lineBorders
-  if (config.kanbanShowSubtasks !== undefined) out.kanbanShowSubtasks = config.kanbanShowSubtasks
-  if (config.kanbanShowDescriptionPreview !== undefined) {
-    out.kanbanShowDescriptionPreview = config.kanbanShowDescriptionPreview
-  }
   return Object.keys(out).length ? out : null
 }
 

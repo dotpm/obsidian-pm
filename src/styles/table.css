@@ -115,6 +115,25 @@ button.pm-chip-btn--active:hover {
 .pm-table-th-sortable {
   cursor: pointer;
 }
+.pm-table thead th.pm-table-th-resizable {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pm-table-resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+}
+.pm-table-resize:hover,
+.pm-table-th-resizable.is-resizing .pm-table-resize {
+  background: var(--interactive-accent);
+}
+.pm-table-th-resizable.is-hiding {
+  opacity: 0.4;
+}
 .pm-table-th-sortable:hover {
   color: var(--text-normal);
 }

@@ -1,7 +1,7 @@
 import type PMPlugin from '#main'
 import type { StatusConfig, FlatTask } from '@dotpm/core'
 import type { ProjectScope } from '#store'
-import type { GanttCanvas } from '@dotpm/ui'
+import type { GanttCanvas, LabelSource } from '@dotpm/ui'
 import type { DragState } from './GanttDragHandler'
 import type { LinkState } from './GanttLinkHandler'
 
@@ -14,6 +14,9 @@ export interface RendererContext extends GanttCanvas {
   scope: ProjectScope
   /** Resolved once per render pass. */
   statuses: StatusConfig[]
+  /** The timeline label fields past the title, in order. */
+  labelFields: string[]
+  labelSource: LabelSource
   flatTasks: FlatTask[]
   drag: DragState
   link: LinkState

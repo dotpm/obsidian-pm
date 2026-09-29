@@ -45,3 +45,7 @@
 .pm-sg-row .pm-kanban-card {
   width: 280px;
 }
+
+.pm-sg-narrow {
+  width: 300px;
+}

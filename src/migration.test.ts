@@ -2,7 +2,7 @@ import type { App } from 'obsidian'
 import { TFile } from 'obsidian'
 import { describe, expect, it, vi } from 'vitest'
 import { makeFakeApp } from '#test/fakeVault'
-import { migrateProjectLayout, migrateTaskRefs } from './migration'
+import { migrateBoardCardConfig, migrateProjectLayout, migrateTaskRefs } from './migration'
 import type PMPlugin from './main'
 import { ProjectStore, VaultIndex } from './store'
 import { DEFAULT_SETTINGS, makeDefaultFilter, makeDefaultGroup, makeDefaultSort, type PMSettings } from '@dotpm/core'
@@ -86,6 +86,7 @@ describe('migrateProjectLayout', () => {
       activeSavedViewId: null,
       sort: makeDefaultSort(),
       group: makeDefaultGroup(),
+      fields: {},
       ganttGranularity: 'week'
     }
     settings.scopeViews['subtree:Projects/Roadmap.md'] = []
@@ -240,5 +241,60 @@ describe('migrateTaskRefs leaves the note itself alone', () => {
     expect(typed.vault.getMarkdownFiles().map((f) => f.path)).not.toContain(
       'Projects/Roadmap/_tasks/design-the-thing.md'
     )
+  })
+})
+
+describe('migrateBoardCardConfig', () => {
+  async function vaultWith(config: string[]): Promise<{ plugin: PMPlugin; app: App; settings: PMSettings }> {
+    const { app, vault } = makeFakeApp({ liveMetadataCache: true })
+    const typed = app as unknown as App
+    const note = ['---', 'pm-project: true', 'id: p1', 'title: Roadmap', 'config:', ...config, '---', ''].join('\n')
+    await vault.create('Projects/Roadmap/Roadmap.md', note)
+    const settings: PMSettings = structuredClone(DEFAULT_SETTINGS)
+    const index = new VaultIndex(typed, () => settings)
+    index.build()
+    const plugin = { app: typed, index, settings, saveSettings: async () => {} } as unknown as PMPlugin
+    return { plugin, app: typed, settings }
+  }
+
+  const frontmatter = (app: App): Record<string, unknown> | undefined => {
+    const file = app.vault.getAbstractFileByPath('Projects/Roadmap/Roadmap.md')
+    return file instanceof TFile ? app.metadataCache.getFileCache(file)?.frontmatter : undefined
+  }
+
+  it('moves the project overrides into its view and out of the note', async () => {
+    const { plugin, app, settings } = await vaultWith([
+      '  kanbanShowSubtasks: true',
+      '  kanbanShowDescriptionPreview: false',
+      '  autoSchedule: false'
+    ])
+    await migrateBoardCardConfig(plugin)
+    const visible = settings.projectFilters['project:Projects/Roadmap/Roadmap.md'].fields.kanban?.visible
+    expect(visible).toContain('subtasks')
+    expect(visible).not.toContain('description')
+    expect(frontmatter(app)?.config).toEqual({ autoSchedule: false })
+  })
+
+  it('keeps what the global setting gave a view for a key the note leaves out', async () => {
+    const { plugin, app, settings } = await vaultWith(['  kanbanShowSubtasks: false'])
+    settings.projectFilters['project:Projects/Roadmap/Roadmap.md'] = {
+      filter: makeDefaultFilter(),
+      activeSavedViewId: null,
+      sort: makeDefaultSort(),
+      group: makeDefaultGroup(),
+      fields: { kanban: { visible: ['priority', 'description', 'subtasks'] } },
+      ganttGranularity: 'week'
+    }
+    await migrateBoardCardConfig(plugin)
+    const visible = settings.projectFilters['project:Projects/Roadmap/Roadmap.md'].fields.kanban?.visible
+    expect(visible).toContain('description')
+    expect(visible).not.toContain('subtasks')
+    expect(frontmatter(app)?.config).toBeUndefined()
+  })
+
+  it('leaves a note without the old keys alone', async () => {
+    const { plugin, settings } = await vaultWith(['  autoSchedule: true'])
+    await migrateBoardCardConfig(plugin)
+    expect(settings.projectFilters).toEqual({})
   })
 })

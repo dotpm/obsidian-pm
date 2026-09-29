@@ -1,4 +1,16 @@
-import { type StatusConfig, type Task, displayName, getStatusConfig, parsePlainDate, t } from '@dotpm/core'
+import {
+  type CustomFieldDef,
+  type PriorityConfig,
+  type StatusConfig,
+  type Task,
+  displayName,
+  formatDateShort,
+  getPriorityConfig,
+  getStatusConfig,
+  parsePlainDate,
+  t
+} from '@dotpm/core'
+import { cardCustomValues } from '../views/boardCards'
 import { svgEl } from '#dom'
 import type { GanttCanvas } from './canvas'
 import { BAR_BORDER_RADIUS, BAR_PADDING, HEADER_HEIGHT, ROW_HEIGHT, dateToX } from './TimelineConfig'
@@ -38,14 +50,46 @@ export interface DrawnBar {
   height: number
 }
 
-/** The bar itself: fill, progress, recurrence mark, label and tooltip. Nothing interactive. */
+export interface LabelSource {
+  statuses: StatusConfig[]
+  priorities: PriorityConfig[]
+  customFields: CustomFieldDef[]
+}
+
+/** The label fields other than the title, as the text beside a bar. Empty when there are none or they hold nothing. */
+export function barAsideText(task: Task, fields: string[], source: LabelSource): string {
+  const custom = cardCustomValues(task, source.customFields, fields)
+  const parts = fields.map((field) => {
+    switch (field) {
+      case 'assignees':
+        return task.assignees.map(displayName).join(', ')
+      case 'progress':
+        return task.progress > 0 ? `${task.progress}%` : ''
+      case 'dates':
+        return [task.start, task.due].filter(Boolean).map(formatDateShort).join(' - ')
+      case 'status':
+        return getStatusConfig(source.statuses, task.status)?.label ?? task.status
+      case 'priority':
+        return getPriorityConfig(source.priorities, task.priority)?.label ?? task.priority
+      default:
+        return custom[field]?.text ?? ''
+    }
+  })
+  return parts.filter(Boolean).join(', ')
+}
+
+/**
+ * The bar itself: fill, progress, recurrence mark, label, the `aside` text past its end,
+ * and tooltip. Nothing interactive.
+ */
 export function drawTaskBar(
   g: SVGGElement,
   canvas: GanttCanvas,
   statuses: StatusConfig[],
   task: Task,
   row: number,
-  color: string
+  color: string,
+  aside = ''
 ): DrawnBar | null {
   const startDate = parsePlainDate(task.start)
   const endDate = parsePlainDate(task.due)
@@ -92,10 +136,17 @@ export function drawTaskBar(
     )
   }
 
+  let asideX = x + width + 6
   if (task.recurrence) {
     const icon = svgEl('text', { x: x + width + 4, y: y + height / 2 + 5, class: 'pm-gantt-bar-icon' })
     icon.textContent = t('chip.recurring')
     barGroup.appendChild(icon)
+    asideX += 20
+  }
+  if (aside) {
+    const text = svgEl('text', { x: asideX, y: y + height / 2, class: 'pm-gantt-bar-aside' })
+    text.textContent = aside
+    barGroup.appendChild(text)
   }
 
   if (width > 55) {
