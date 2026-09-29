@@ -14,6 +14,7 @@ import {
   type ViewFields
 } from '@dotpm/core'
 import { ChipButton } from '#primitives/ChipButton'
+import { SplitButton } from '#primitives/SplitButton'
 import { renderBreadcrumb } from './Breadcrumb'
 import { FilterBar } from './FilterBar'
 import { openFieldsPopover } from './fieldsPopover'
@@ -96,6 +97,16 @@ describe('ChipButton', () => {
     expect(button.el.hasClass('pm-chip-btn--icon-only')).toBe(true)
     button.setLabel('Filter')
     expect(button.el.hasClass('pm-chip-btn--icon-only')).toBe(false)
+  })
+})
+
+describe('SplitButton', () => {
+  it('hands the chevron to the menu handler, to open the menu under it', () => {
+    const onMenu = vi.fn<(anchor: HTMLElement) => void>()
+    const button = new SplitButton(document.body).setLabel('Add task').onMenu('More to add', onMenu)
+    const chevron = button.el.find('.pm-split-btn-menu')
+    chevron?.click()
+    expect(onMenu).toHaveBeenCalledWith(chevron)
   })
 })
 

@@ -33,7 +33,8 @@ export class SplitButton {
     return this
   }
 
-  onMenu(label: string, handler: (e: MouseEvent) => unknown): this {
+  /** Adds the chevron. `handler` gets the chevron, to open its menu under. */
+  onMenu(label: string, handler: (anchor: HTMLElement) => unknown): this {
     if (!this.menuButton) {
       this.menuButton = createButton(this.el).setCta()
       this.menuButton.buttonEl.addClass('pm-split-btn-menu')
@@ -41,7 +42,8 @@ export class SplitButton {
       this.el.addClass('pm-split-btn--split')
     }
     this.menuButton.buttonEl.setAttribute('aria-label', label)
-    this.menuButton.onClick(handler)
+    const button = this.menuButton.buttonEl
+    this.menuButton.onClick(() => handler(button))
     return this
   }
 }
