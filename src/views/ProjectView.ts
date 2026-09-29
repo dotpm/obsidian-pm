@@ -41,6 +41,7 @@ import {
 import {
   boardCandidates,
   boardColumns,
+  boardField,
   ChipButton,
   clampZoom,
   MAX_ZOOM,
@@ -544,10 +545,11 @@ export class ProjectView extends ItemView {
     if (this.groupButton) {
       const setup = this.groupSetup()
       const hidden = this.boardColumnsNow().filter((column) => column.hidden).length
+      const field = setup ? boardField(setup, this.group) : null
       this.groupButton
-        .setLabel(setup ? filterFieldLabel(this.group.field, setup.ctx.customFields) : t('header.group'))
+        .setLabel(setup && field ? filterFieldLabel(field, setup.ctx.customFields) : t('header.group'))
         .setDetail(hidden ? tn('header.hiddenCount', hidden) : '')
-        .setActive(this.group.field !== makeDefaultGroup().field)
+        .setActive(field !== null && field !== makeDefaultGroup().field)
     }
     if (this.fieldsButton) {
       const hidden = this.hiddenFieldCount()
@@ -938,7 +940,7 @@ export class ProjectView extends ItemView {
       query.push({
         icon: 'group',
         label: t('header.group'),
-        state: setup ? filterFieldLabel(this.group.field, setup.ctx.customFields) : '',
+        state: setup ? filterFieldLabel(boardField(setup, this.group), setup.ctx.customFields) : '',
         onOpen: (anchor) => this.openGroup(anchor)
       })
     }
@@ -1023,6 +1025,7 @@ export class ProjectView extends ItemView {
     return {
       fields: groupableFields(setup).map((id) => ({ id, label: filterFieldLabel(id, setup.ctx.customFields) })),
       group: this.group,
+      field: () => boardField(setup, this.group),
       columns: () => this.boardColumnsNow(),
       onChange: () => {
         this.syncHeader()

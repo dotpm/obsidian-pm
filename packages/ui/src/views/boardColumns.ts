@@ -1,4 +1,13 @@
-import { type GroupState, type Task, filterFieldLabel, filterKind, filterValue, t, valueKey } from '@dotpm/core'
+import {
+  type GroupState,
+  type Task,
+  filterFieldLabel,
+  filterKind,
+  filterValue,
+  makeDefaultGroup,
+  t,
+  valueKey
+} from '@dotpm/core'
 import { valueOptions, type FilterSetup } from '../composites/ViewHeader/filterPopover'
 
 export interface BoardColumn {
@@ -23,6 +32,11 @@ export function groupableFields(setup: FilterSetup): string[] {
   return [...builtins, ...custom]
 }
 
+/** The field the board groups by: the saved one while this scope offers it, the default otherwise. */
+export function boardField(setup: FilterSetup, group: GroupState): string {
+  return groupableFields(setup).includes(group.field) ? group.field : makeDefaultGroup().field
+}
+
 /** The values a task files under: one for a single-value field, each of them for a list. Empty when unset. */
 export function groupValues(task: Task, field: string, setup: FilterSetup): string[] {
   const value = filterValue(task, field, setup.ctx)
@@ -37,7 +51,7 @@ export function groupValues(task: Task, field: string, setup: FilterSetup): stri
  * popover can list them; `hideEmpty` flags empty ones the same way.
  */
 export function boardColumns(setup: FilterSetup, group: GroupState, tasks: Task[]): BoardColumn[] {
-  const { field } = group
+  const field = boardField(setup, group)
   const kind = filterKind(field, setup.ctx.customFields)
   const byKey = new Map<string, BoardColumn>()
   for (const option of valueOptions(setup, field)) {

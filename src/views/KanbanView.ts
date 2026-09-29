@@ -25,6 +25,7 @@ import {
   safeAsync,
   boardCandidates,
   boardColumns,
+  boardField,
   cardCustomValues,
   descriptionPreview,
   compareTasks,
@@ -209,7 +210,7 @@ export class KanbanView implements SubView {
 
   /** What moving a card from one column to another changes on its task. Null where a move means nothing. */
   private dropPatch(task: Task, from: string, to: string): Partial<Task> | null {
-    const { field } = this.group
+    const field = boardField(this.setup, this.group)
     const keyOf = (value: string): string => valueKey(field, value, this.filterContext)
     switch (field) {
       case 'status':

@@ -475,6 +475,7 @@ describe('group popover', () => {
         { id: 'priority', label: 'Priority' }
       ],
       group,
+      field: () => group.field,
       columns: () => columns(group),
       onChange
     })
