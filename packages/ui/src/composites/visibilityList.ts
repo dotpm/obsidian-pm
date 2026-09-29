@@ -1,4 +1,5 @@
 import { setIcon, setTooltip } from '#platform'
+import { makeReorderable } from '#dom'
 import { IconButton } from '#primitives/IconButton'
 
 export interface VisibilityRow {
@@ -30,12 +31,11 @@ export interface VisibilityListProps {
 /** Rows of grip, glyph, label, detail and eye: the list the Group and Fields popovers share. */
 export function renderVisibilityList(parent: HTMLElement, props: VisibilityListProps): HTMLElement {
   const list = parent.createDiv('pm-vis-list')
-  const movable = props.rows.filter((row) => !row.locked).map((row) => row.id)
-  let dragFrom: string | null = null
+  const movable: { el: HTMLElement; id: string }[] = []
 
   for (const item of props.rows) {
     const draggable = !item.locked && !!props.onReorder
-    const row = list.createDiv({ cls: 'pm-vis-row', attr: draggable ? { draggable: 'true' } : {} })
+    const row = list.createDiv('pm-vis-row')
     row.dataset.id = item.id
     row.toggleClass('is-hidden', item.hidden)
     row.toggleClass('is-quiet', !!item.quiet)
@@ -57,24 +57,10 @@ export function renderVisibilityList(parent: HTMLElement, props: VisibilityListP
         .onClick(() => props.onToggle(item.id))
         .el.addClass('pm-vis-eye')
     }
-
-    if (!draggable) continue
-    row.addEventListener('dragstart', () => {
-      dragFrom = item.id
-      row.addClass('is-dragging')
-    })
-    row.addEventListener('dragend', () => row.removeClass('is-dragging'))
-    row.addEventListener('dragover', (e) => e.preventDefault())
-    row.addEventListener('drop', (e) => {
-      e.preventDefault()
-      const from = dragFrom
-      dragFrom = null
-      if (from === null || from === item.id || !movable.includes(from)) return
-      const ids = movable.filter((id) => id !== from)
-      ids.splice(ids.indexOf(item.id), 0, from)
-      props.onReorder?.(ids)
-    })
+    if (draggable) movable.push({ el: row, id: item.id })
   }
+  const { onReorder } = props
+  if (onReorder) makeReorderable(movable, onReorder)
   return list
 }
 

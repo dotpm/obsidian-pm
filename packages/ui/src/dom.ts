@@ -36,6 +36,38 @@ export function makeActivatable(el: HTMLElement, open: () => void): void {
   })
 }
 
+/**
+ * Lets the rows be dragged into another order. A row dropped on another takes that row's
+ * place, so it lands after a row below it and before a row above it. `onReorder` gets every
+ * id in the new order; nothing is called when the order stays the same.
+ */
+export function makeReorderable<T extends string>(
+  rows: { el: HTMLElement; id: T }[],
+  onReorder: (ids: T[]) => void
+): void {
+  const ids = rows.map((row) => row.id)
+  let dragged: T | null = null
+  for (const { el, id } of rows) {
+    el.setAttr('draggable', 'true')
+    el.addEventListener('dragstart', (e) => {
+      dragged = id
+      e.dataTransfer?.setData('text/plain', id)
+      el.addClass('is-dragging')
+    })
+    el.addEventListener('dragend', () => el.removeClass('is-dragging'))
+    el.addEventListener('dragover', (e) => e.preventDefault())
+    el.addEventListener('drop', (e) => {
+      e.preventDefault()
+      const from = dragged
+      dragged = null
+      if (from === null || from === id || !ids.includes(from)) return
+      const next = ids.filter((other) => other !== from)
+      next.splice(ids.indexOf(id), 0, from)
+      onReorder(next)
+    })
+  }
+}
+
 export function safeAsync<A extends unknown[]>(fn: (...args: A) => Promise<void>): (...args: A) => void {
   return (...args: A) => {
     void (async () => {

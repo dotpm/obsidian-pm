@@ -1,4 +1,5 @@
 import { setIcon } from '#platform'
+import { makeReorderable } from '#dom'
 import { ChipButton } from '#primitives/ChipButton'
 import { IconButton } from '#primitives/IconButton'
 import { Popover } from '#primitives/Popover'
@@ -50,7 +51,6 @@ export function sortDirLabel<K extends string>(field: SortField<K>, dir: SortDir
 export function renderSortPanel<K extends string>(parent: HTMLElement, props: SortPopoverProps<K>): void {
   const body = parent.createDiv('pm-sort-pop')
   const { sort } = props
-  let dragFrom: number | null = null
 
   const changed = (): void => {
     render()
@@ -72,8 +72,10 @@ export function renderSortPanel<K extends string>(parent: HTMLElement, props: So
 
     if (!sort.length) body.createDiv({ cls: 'pm-pop-empty', text: t('header.noSort') })
 
+    const rows: { el: HTMLElement; id: K }[] = []
     sort.forEach((rule, index) => {
-      const row = body.createDiv({ cls: 'pm-sort-row', attr: { draggable: 'true' } })
+      const row = body.createDiv('pm-sort-row')
+      rows.push({ el: row, id: rule.key })
       const grip = row.createSpan('pm-sort-grip')
       setIcon(grip, 'grip-vertical')
       row.createSpan({ cls: 'pm-sort-rank', text: String(index + 1) })
@@ -107,21 +109,11 @@ export function renderSortPanel<K extends string>(parent: HTMLElement, props: So
           changed()
         })
         .el.addClass('pm-sort-remove')
-
-      row.addEventListener('dragstart', () => {
-        dragFrom = index
-        row.addClass('is-dragging')
-      })
-      row.addEventListener('dragend', () => row.removeClass('is-dragging'))
-      row.addEventListener('dragover', (e) => e.preventDefault())
-      row.addEventListener('drop', (e) => {
-        e.preventDefault()
-        if (dragFrom === null || dragFrom === index) return
-        const [moved] = sort.splice(dragFrom, 1)
-        sort.splice(index, 0, moved)
-        dragFrom = null
-        changed()
-      })
+    })
+    makeReorderable(rows, (keys) => {
+      const byKey = new Map(sort.map((rule) => [rule.key, rule]))
+      sort.splice(0, sort.length, ...keys.flatMap((key) => byKey.get(key) ?? []))
+      changed()
     })
 
     const foot = body.createDiv('pm-sort-pop-foot')
