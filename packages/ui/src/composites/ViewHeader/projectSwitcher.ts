@@ -1,5 +1,6 @@
 import { Popover } from '#primitives/Popover'
 import { t } from '@dotpm/core'
+import { renderPopSearch } from '../popoverParts'
 import { renderOptionRow } from '../properties/optionList'
 
 export interface SwitcherProject {
@@ -21,10 +22,7 @@ export interface ProjectSwitcherProps {
 
 /** The current project's parent, siblings and children, searchable, with a way out to every project. */
 export function renderProjectSwitcherPanel(parent: HTMLElement, props: ProjectSwitcherProps, close: () => void): void {
-  const search = parent.createEl('input', {
-    cls: 'pm-pop-field',
-    attr: { placeholder: t('header.goToProject'), spellcheck: 'false' }
-  })
+  const search = renderPopSearch(parent, t('header.goToProject'), () => renderList())
   const list = parent.createDiv('pm-pop-list')
   const renderList = () => {
     list.empty()
@@ -46,7 +44,6 @@ export function renderProjectSwitcherPanel(parent: HTMLElement, props: ProjectSw
       row.setCssProps({ '--pm-depth': String(query ? 0 : project.depth) })
     }
   }
-  search.addEventListener('input', renderList)
   renderList()
 
   renderOptionRow(parent, {
@@ -56,7 +53,7 @@ export function renderProjectSwitcherPanel(parent: HTMLElement, props: ProjectSw
       close()
       props.onAllProjects()
     }
-  }).addClass('pm-switcher-all')
+  }).addClass('pm-switcher-all', 'pm-pop-section')
 }
 
 /** The switcher in a popover under `anchor`, with its search field focused. */

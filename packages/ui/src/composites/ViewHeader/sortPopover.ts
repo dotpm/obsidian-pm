@@ -1,9 +1,9 @@
 import { setIcon } from '#platform'
 import { makeReorderable } from '#dom'
-import { ChipButton } from '#primitives/ChipButton'
 import { IconButton } from '#primitives/IconButton'
 import { Popover } from '#primitives/Popover'
 import { type SortDir, type SortKey, MAX_SORT_RULES, t } from '@dotpm/core'
+import { renderPopHead } from '../popoverParts'
 import { renderOptionRow } from '../properties/optionList'
 
 /** A task sort key or a project list one (`ProjectSortKey`, a subset by name). */
@@ -59,16 +59,16 @@ export function renderSortPanel<K extends string>(parent: HTMLElement, props: So
 
   const render = (): void => {
     body.empty()
-    const head = body.createDiv('pm-sort-pop-head')
-    head.createSpan({ cls: 'pm-pop-heading', text: t('header.sortBy') })
-    new ChipButton(head)
-      .setVariant('flat')
-      .setLabel(t('header.resetSort'))
-      .onClick(() => {
-        props.onReset()
-        render()
-      })
-      .el.addClass('pm-sort-pop-reset')
+    renderPopHead(body, {
+      title: t('header.sortBy'),
+      action: {
+        label: t('header.resetSort'),
+        onClick: () => {
+          props.onReset()
+          render()
+        }
+      }
+    })
 
     if (!sort.length) body.createDiv({ cls: 'pm-pop-empty', text: t('header.noSort') })
 
@@ -116,7 +116,7 @@ export function renderSortPanel<K extends string>(parent: HTMLElement, props: So
       changed()
     })
 
-    const foot = body.createDiv('pm-sort-pop-foot')
+    const foot = body.createDiv('pm-sort-pop-foot pm-pop-section')
     const unused = props.fields.find((option) => !sort.some((rule) => rule.key === option.id))
     const add = renderOptionRow(foot, {
       label: t('header.addSortKey'),

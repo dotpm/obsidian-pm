@@ -1,7 +1,7 @@
 import { Checkbox } from '#primitives/Checkbox'
-import { ChipButton } from '#primitives/ChipButton'
 import { Popover } from '#primitives/Popover'
 import { type GroupState, t } from '@dotpm/core'
+import { renderPopHead } from '../popoverParts'
 import { renderGlyph } from '../properties/optionList'
 import { renderVisibilityList } from '../visibilityList'
 import type { BoardColumn } from '../../views/boardColumns'
@@ -59,16 +59,18 @@ export function renderGroupPanel(parent: HTMLElement, props: GroupPopoverProps):
     })
 
     const columns = props.columns()
-    const head = body.createDiv('pm-group-head')
-    head.createSpan({ cls: 'pm-pop-heading', text: t('header.columns') })
-    new ChipButton(head)
-      .setVariant('flat')
-      .setLabel(t('header.showAll'))
-      .setDisabled(!prefs().hidden?.length)
-      .onClick(() => {
-        delete prefs().hidden
-        changed()
-      })
+    renderPopHead(body, {
+      title: t('header.columns'),
+      section: true,
+      action: {
+        label: t('header.showAll'),
+        disabled: !prefs().hidden?.length,
+        onClick: () => {
+          delete prefs().hidden
+          changed()
+        }
+      }
+    })
 
     renderVisibilityList(body, {
       rows: columns.map((column) => ({

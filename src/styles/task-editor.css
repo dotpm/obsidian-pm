@@ -235,6 +235,29 @@ button.pm-prop-add {
   font-weight: 600;
   color: var(--text-faint);
 }
+.pm-pop-section {
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+.pm-pop-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.pm-pop-head.pm-pop-section {
+  padding-top: 0;
+}
+.pm-pop-head--title {
+  justify-content: flex-start;
+  padding: 2px 4px 6px;
+  --icon-size: 14px;
+}
+.pm-pop-title {
+  font-size: var(--font-ui-small);
+  font-weight: 600;
+}
 button.pm-pop-item {
   display: flex;
   align-items: center;

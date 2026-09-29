@@ -1,6 +1,6 @@
-import { ChipButton } from '#primitives/ChipButton'
 import { Popover } from '#primitives/Popover'
 import { type ProjectListFilter, type ProjectProgress, PROJECT_PROGRESS, countProjectFilters, t } from '@dotpm/core'
+import { renderPopHead } from '../popoverParts'
 import { renderOptionRow } from '../properties/optionList'
 
 export interface ProjectFilterProps {
@@ -38,17 +38,18 @@ export function renderProjectFilterPanel(parent: HTMLElement, props: ProjectFilt
 
   const render = (): void => {
     body.empty()
-    const head = body.createDiv('pm-sort-pop-head')
-    head.createSpan({ cls: 'pm-pop-heading', text: t('columns.progress') })
-    new ChipButton(head)
-      .setVariant('flat')
-      .setLabel(t('filter.clearAll'))
-      .setDisabled(countProjectFilters(filter) === 0)
-      .onClick(() => {
-        filter.tags = undefined
-        filter.progress = undefined
-        changed()
-      })
+    renderPopHead(body, {
+      title: t('columns.progress'),
+      action: {
+        label: t('filter.clearAll'),
+        disabled: countProjectFilters(filter) === 0,
+        onClick: () => {
+          filter.tags = undefined
+          filter.progress = undefined
+          changed()
+        }
+      }
+    })
     for (const stage of PROJECT_PROGRESS) {
       renderOptionRow(body, {
         label: progressLabel(stage),
@@ -61,7 +62,7 @@ export function renderProjectFilterPanel(parent: HTMLElement, props: ProjectFilt
       })
     }
 
-    body.createDiv({ cls: 'pm-pop-heading pm-project-filter-head', text: t('taskForm.tags') })
+    renderPopHead(body, { title: t('taskForm.tags'), section: true })
     if (!props.tags.length) body.createDiv({ cls: 'pm-pop-empty', text: t('projectFilter.noTags') })
     for (const { tag, count } of props.tags) {
       renderOptionRow(body, {

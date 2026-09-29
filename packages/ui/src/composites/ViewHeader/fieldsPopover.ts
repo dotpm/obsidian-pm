@@ -14,6 +14,7 @@ import {
   tidyFields,
   viewFieldLabel
 } from '@dotpm/core'
+import { renderPopHead } from '../popoverParts'
 import { renderVisibilityList } from '../visibilityList'
 
 export interface FieldsPopoverProps {
@@ -98,7 +99,7 @@ export function renderFieldsPanel(parent: HTMLElement, props: FieldsPopoverProps
     })
 
     if (hidden.length) {
-      body.createDiv({ cls: 'pm-pop-heading pm-fields-hidden-head', text: t('header.hiddenFields') })
+      renderPopHead(body, { title: t('header.hiddenFields'), section: true })
       renderVisibilityList(body, {
         rows: hidden.map((id) => ({ id, label: label(id), hidden: true })),
         showLabel: t('header.showField'),
@@ -107,7 +108,7 @@ export function renderFieldsPanel(parent: HTMLElement, props: FieldsPopoverProps
       })
     }
 
-    const foot = body.createDiv('pm-fields-foot')
+    const foot = body.createDiv('pm-fields-foot pm-pop-section')
     if (isTable) {
       new ChipButton(foot)
         .setVariant('flat')

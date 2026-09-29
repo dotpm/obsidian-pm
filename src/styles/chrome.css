@@ -121,8 +121,3 @@
   font-weight: 400;
   font-variant-numeric: tabular-nums;
 }
-.pm-project-filter-head {
-  margin-top: 4px;
-  padding-top: 6px;
-  border-top: 1px solid var(--background-modifier-border);
-}
