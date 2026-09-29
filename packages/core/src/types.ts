@@ -146,12 +146,13 @@ export type FilterOp = (typeof FILTER_OPS)[number]
  * One applied filter. `field` is a built-in field id or `cf:<id>` for a custom field.
  * `value` holds the ids an `any` / `none` / `all` compares against, the text of a
  * `contains`, the numbers of a number comparison, the bucket of a `bucket`, or the two
- * `YYYY-MM-DD` ends of a date `between` (either may be empty).
+ * ends of a `between`: `YYYY-MM-DD` strings for a date, where an open end is empty, and
+ * numbers for a number, where an open end is null.
  */
 export interface FilterCondition {
   field: string
   op: FilterOp
-  value?: string[] | string | number[]
+  value?: string[] | string | (number | null)[]
 }
 
 /** Conditions combine with AND; the ids inside one condition with OR. */

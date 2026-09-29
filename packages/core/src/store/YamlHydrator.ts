@@ -79,7 +79,10 @@ const DATE_BUCKETS: DateBucket[] = ['overdue', 'today', 'this-week', 'this-month
 function conditionValue(raw: unknown, op: FilterOp): FilterCondition['value'] {
   if (typeof raw === 'string') return raw
   if (!Array.isArray(raw)) return undefined
-  if (raw.length && raw.every((v) => typeof v === 'number' && Number.isFinite(v))) return raw as number[]
+  const isNumber = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v)
+  if (raw.some(isNumber) && raw.every((v) => isNumber(v) || (op === 'between' && v === null))) {
+    return raw as (number | null)[]
+  }
   if (op === 'between') return raw.map((v) => (typeof v === 'string' ? v : ''))
   return stringList(raw)
 }

@@ -63,12 +63,12 @@ export function matchesCondition(task: Task, condition: FilterCondition, ctx: Fi
       const n = typeof value === 'number' ? value : null
       if (op === 'empty') return n === null
       const [a, b] = numberValues(condition)
+      if (op === 'between') return a === undefined && b === undefined ? true : inNumberRange(n, a, b)
       if (a === undefined) return true
       if (op === 'ne') return n !== a
       if (n === null) return false
       if (op === 'gte') return n >= a
       if (op === 'lte') return n <= a
-      if (op === 'between') return n >= a && (b === undefined || n <= b)
       return n === a
     }
     case 'date': {
@@ -91,6 +91,11 @@ function stringValues(condition: FilterCondition): string[] {
 function numberValues(condition: FilterCondition): (number | undefined)[] {
   if (!Array.isArray(condition.value)) return []
   return condition.value.map((v) => (typeof v === 'number' && Number.isFinite(v) ? v : undefined))
+}
+
+function inNumberRange(n: number | null, from: number | undefined, to: number | undefined): boolean {
+  if (n === null) return false
+  return (from === undefined || n >= from) && (to === undefined || n <= to)
 }
 
 function inRange(date: string, [from, to]: string[]): boolean {
@@ -170,7 +175,7 @@ export function isConditionComplete(condition: FilterCondition): boolean {
     case 'bucket':
       return typeof condition.value === 'string' && condition.value.trim().length > 0
     case 'between':
-      return Array.isArray(condition.value) && condition.value.some((v) => v !== '' && v !== undefined)
+      return Array.isArray(condition.value) && condition.value.some((v) => v !== '' && v !== null && v !== undefined)
     default:
       return Array.isArray(condition.value) && condition.value.length > 0
   }
