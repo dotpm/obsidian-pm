@@ -469,6 +469,10 @@ export default class PMPlugin extends Plugin {
         entry.ganttGranularity = this.settings.ganttGranularity
         migrated = true
       }
+      if (!entry.nonWorkingDays) {
+        entry.nonWorkingDays = {}
+        migrated = true
+      }
     }
 
     for (const view of Object.values(this.settings.scopeViews).flat()) {
@@ -793,7 +797,8 @@ export default class PMPlugin extends Plugin {
       sort: makeDefaultSort(),
       group: makeDefaultGroup(),
       fields: {},
-      ganttGranularity: this.settings.ganttGranularity
+      ganttGranularity: this.settings.ganttGranularity,
+      nonWorkingDays: {}
     }
     await this.saveSettings()
     await this.router.openScope({ kind: 'vault' })

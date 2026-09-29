@@ -7,6 +7,7 @@ import {
   type GanttGranularity,
   type GanttWeekLabel,
   type LineBorders,
+  type NonWorkingDays,
   type PriorityConfig,
   type PriorityIconSet,
   type ResolvedProjectConfig,
@@ -38,6 +39,7 @@ export interface ViewSettings {
   lineBorders: LineBorders
   ganttWeekLabel: GanttWeekLabel
   ganttGranularity: GanttGranularity
+  holidays: string[]
 }
 
 /**
@@ -48,6 +50,7 @@ export interface ViewModel {
   sort: SortRule[]
   group: GroupState
   fields: ViewFields
+  nonWorkingDays: NonWorkingDays
   projects: ViewProject[]
   settings: ViewSettings
   filter: FilterState

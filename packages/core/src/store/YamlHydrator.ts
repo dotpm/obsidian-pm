@@ -6,6 +6,7 @@ import type {
   FieldList,
   GroupColumns,
   GroupState,
+  NonWorkingDays,
   PriorityConfig,
   PriorityIconSet,
   Project,
@@ -180,6 +181,14 @@ export function hydrateFields(raw: unknown): ViewFields {
   return fields
 }
 
+export function hydrateNonWorkingDays(raw: unknown): NonWorkingDays {
+  const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+  const days: NonWorkingDays = {}
+  if (r.weekends === true) days.weekends = true
+  if (r.holidays === true) days.holidays = true
+  return days
+}
+
 export function hydrateSavedViews(raw: unknown[]): SavedView[] {
   if (!Array.isArray(raw)) return []
   return raw
@@ -199,6 +208,7 @@ export function hydrateSavedViews(raw: unknown[]): SavedView[] {
         ...(v.fields ? { fields: hydrateFields(v.fields) } : {}),
         ...(validViewMode ? { viewMode: validViewMode } : {}),
         ...(granularity ? { ganttGranularity: granularity } : {}),
+        ...(v.nonWorkingDays ? { nonWorkingDays: hydrateNonWorkingDays(v.nonWorkingDays) } : {}),
         ...(v.isDefault === true ? { isDefault: true } : {})
       }
     })

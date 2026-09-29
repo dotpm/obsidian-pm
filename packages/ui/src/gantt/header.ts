@@ -1,5 +1,5 @@
 import type { GanttCanvas } from './canvas'
-import { HEADER_HEIGHT, dateToX, getWeekNumber } from './TimelineConfig'
+import { HEADER_HEIGHT, dateToX, dayX, getWeekNumber, isHiddenDay } from './TimelineConfig'
 import { svgEl } from '#dom'
 import { Temporal, type GanttWeekLabel, formatDateRange, locale, t } from '@dotpm/core'
 
@@ -37,8 +37,9 @@ function renderDayHeader(g: SVGGElement, ctx: GanttCanvas): void {
   const { startDate, totalDays, dayWidth } = ctx.cfg
   renderMonthBands(g, 0, 24, ctx)
   for (let i = 0; i < totalDays; i++) {
+    if (isHiddenDay(ctx.cfg, i)) continue
     const d = startDate.add({ days: i })
-    const x = i * dayWidth
+    const x = dayX(ctx.cfg, i)
     const isWeekend = d.dayOfWeek === 6 || d.dayOfWeek === 7
     if (isWeekend) {
       g.appendChild(
@@ -64,7 +65,7 @@ function renderDayHeader(g: SVGGElement, ctx: GanttCanvas): void {
 }
 
 function renderWeekHeader(g: SVGGElement, ctx: GanttCanvas): void {
-  const { startDate, totalDays, dayWidth } = ctx.cfg
+  const { startDate, totalDays } = ctx.cfg
   renderMonthBands(g, 0, 24, ctx)
 
   // Aligned to real Mondays so the header ticks match the grid lines.
@@ -74,7 +75,7 @@ function renderWeekHeader(g: SVGGElement, ctx: GanttCanvas): void {
 
   if (offsetToMonday > 0) {
     const weekNum = getWeekNumber(startDate)
-    const w = offsetToMonday * dayWidth
+    const w = dayX(ctx.cfg, offsetToMonday)
     const text = svgEl('text', {
       x: w / 2,
       y: 44,
@@ -88,9 +89,9 @@ function renderWeekHeader(g: SVGGElement, ctx: GanttCanvas): void {
   while (i < totalDays) {
     const d = startDate.add({ days: i })
     const weekNum = getWeekNumber(d)
-    const x = i * dayWidth
+    const x = dayX(ctx.cfg, i)
     const daysInWeek = Math.min(7, totalDays - i)
-    const w = daysInWeek * dayWidth
+    const w = dayX(ctx.cfg, i + daysInWeek) - x
     const text = svgEl('text', {
       x: x + w / 2,
       y: 44,

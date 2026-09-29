@@ -1,7 +1,7 @@
 import { type GanttWeekLabel, today } from '@dotpm/core'
 import { svgEl } from '#dom'
 import type { TimelineCfg } from './TimelineConfig'
-import { ROW_HEIGHT, HEADER_HEIGHT, dateToX } from './TimelineConfig'
+import { ROW_HEIGHT, HEADER_HEIGHT, dateToX, dayX, isHiddenDay } from './TimelineConfig'
 
 /** The two SVG surfaces a gantt draws on and the timeline they share. */
 export interface GanttCanvas {
@@ -19,8 +19,9 @@ export function renderGridLines(ctx: GanttCanvas, totalRows: number): void {
 
   for (let i = 0; i < totalDays; i++) {
     const d = startDate.add({ days: i })
-    const x = i * dayWidth
-    const isWeekend = d.dayOfWeek === 6 || d.dayOfWeek === 7
+    const x = dayX(ctx.cfg, i)
+    // A hidden day keeps its gridline, drawn where the next shown day starts.
+    const isWeekend = (d.dayOfWeek === 6 || d.dayOfWeek === 7) && !isHiddenDay(ctx.cfg, i)
     const isMonday = d.dayOfWeek === 1
     const isFirst = d.day === 1
 

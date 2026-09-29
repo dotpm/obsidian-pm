@@ -6,6 +6,7 @@ import {
   type SortRule,
   type GroupState,
   type ViewFields,
+  type NonWorkingDays,
   type ViewMode,
   flattenTasks,
   locale,
@@ -29,6 +30,7 @@ export interface ExportViewState {
   sort: SortRule[]
   group: GroupState
   fields: ViewFields
+  nonWorkingDays: NonWorkingDays
   filter: FilterState
   ganttGranularity: GanttGranularity
 }
@@ -138,6 +140,7 @@ export async function buildSnapshot(plugin: PMPlugin, scope: ProjectScope, view:
       sort: view.sort,
       group: view.group,
       fields: view.fields,
+      nonWorkingDays: view.nonWorkingDays,
       ganttGranularity: view.ganttGranularity
     },
     settings: {
@@ -146,6 +149,7 @@ export async function buildSnapshot(plugin: PMPlugin, scope: ProjectScope, view:
       showSubtreeConnections: config.showSubtreeConnections,
       lineBorders: config.lineBorders,
       ganttWeekLabel: plugin.settings.ganttWeekLabel,
+      holidays: plugin.settings.holidays,
       dateFormat: plugin.settings.dateFormat
     },
     projects,

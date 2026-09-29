@@ -2,6 +2,7 @@ import { ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
 import {
   type GanttGranularity,
+  type NonWorkingDays,
   type Project,
   type SavedView,
   type ResolvedProjectConfig,
@@ -41,6 +42,12 @@ import {
   boardCandidates,
   boardColumns,
   ChipButton,
+  clampZoom,
+  MAX_ZOOM,
+  MIN_ZOOM,
+  openNonWorkingDaysPopover,
+  Stepper,
+  stepZoom,
   EmptyState,
   groupableFields,
   openFieldsPopover,
@@ -123,6 +130,9 @@ export class ProjectView extends ItemView {
   sort: SortRule[] = makeDefaultSort()
   group: GroupState = makeDefaultGroup()
   fields: ViewFields = {}
+  nonWorkingDays: NonWorkingDays = {}
+  /** Percent of the scale's day width. Kept per device, not in the view. */
+  zoom = 100
   granularity: GanttGranularity
   private subview: SubView | null = null
   private headerEl!: HTMLElement
@@ -137,6 +147,8 @@ export class ProjectView extends ItemView {
   private sortButton: ChipButton | null = null
   private groupButton: ChipButton | null = null
   private fieldsButton: ChipButton | null = null
+  private zoomStepper: Stepper | null = null
+  private daysButton: ChipButton | null = null
   private saveViewButton: ChipButton | null = null
   private keyScope: Scope
   private pendingRefresh: Promise<void> | null = null
@@ -180,7 +192,8 @@ export class ProjectView extends ItemView {
       sort: structuredClone(this.sort),
       group: structuredClone(this.group),
       fields: structuredClone(this.fields),
-      ganttGranularity: this.granularity
+      ganttGranularity: this.granularity,
+      nonWorkingDays: structuredClone(this.nonWorkingDays)
     }
   }
   getIcon(): string {
@@ -298,6 +311,7 @@ export class ProjectView extends ItemView {
       this.currentView = this.projectScope.config.defaultView
     }
     this.loadFilterFromSettings()
+    this.zoom = clampZoom(Number(this.app.loadLocalStorage(this.zoomKey())) || 100)
     this.queryBarOpen = countActiveFilters(this.query.filter) > 0
     ;(this.leaf as WorkspaceLeaf & { updateHeader?: () => void }).updateHeader?.()
     this.renderHeader()
@@ -329,6 +343,7 @@ export class ProjectView extends ItemView {
       this.group = saved.group
       this.fields = saved.fields
       this.granularity = saved.ganttGranularity
+      this.nonWorkingDays = saved.nonWorkingDays
       return
     }
     this.query.filter = makeDefaultFilter()
@@ -336,6 +351,7 @@ export class ProjectView extends ItemView {
     this.sort = makeDefaultSort()
     this.group = makeDefaultGroup()
     this.fields = {}
+    this.nonWorkingDays = {}
     this.granularity = this.plugin.settings.ganttGranularity
     // A scope seen for the first time opens with its starred view, and keeps it from then on.
     const starred = this.savedViews().find((view) => view.isDefault)
@@ -352,6 +368,7 @@ export class ProjectView extends ItemView {
     if (view.group) this.group = structuredClone(view.group)
     if (view.fields) this.fields = structuredClone(view.fields)
     if (view.ganttGranularity) this.granularity = view.ganttGranularity
+    if (view.nonWorkingDays) this.nonWorkingDays = structuredClone(view.nonWorkingDays)
     if (view.viewMode) this.currentView = view.viewMode
   }
 
@@ -369,7 +386,8 @@ export class ProjectView extends ItemView {
       group: t('header.changedGroup'),
       fields: t('header.changedFields'),
       mode: t('header.mode'),
-      scale: t('header.scale')
+      scale: t('header.scale'),
+      days: t('header.changedDays')
     }
     const state = {
       filter: this.query.filter,
@@ -377,7 +395,8 @@ export class ProjectView extends ItemView {
       group: this.group,
       fields: this.fields,
       mode: this.currentView,
-      granularity: this.granularity
+      granularity: this.granularity,
+      nonWorkingDays: this.nonWorkingDays
     }
     return viewDifferences(active, state).map((part) => labels[part])
   }
@@ -390,7 +409,8 @@ export class ProjectView extends ItemView {
       sort: this.sort,
       group: this.group,
       fields: this.fields,
-      ganttGranularity: this.granularity
+      ganttGranularity: this.granularity,
+      nonWorkingDays: this.nonWorkingDays
     }
     await this.plugin.saveSettings()
   }
@@ -480,6 +500,8 @@ export class ProjectView extends ItemView {
       const hidden = shownFields({}, this.currentView, catalog).filter((id) => !shown.includes(id)).length
       this.fieldsButton.setDetail(changed && hidden ? tn('header.hiddenCount', hidden) : '').setActive(changed)
     }
+    this.zoomStepper?.setValue(`${this.zoom}%`, this.zoom <= MIN_ZOOM, this.zoom >= MAX_ZOOM)
+    this.daysButton?.setActive(!!this.nonWorkingDays.weekends || !!this.nonWorkingDays.holidays)
     if (this.sortButton) {
       const [first] = this.sort
       const isDefault = sameValue(this.sort, makeDefaultSort())
@@ -844,6 +866,35 @@ export class ProjectView extends ItemView {
         }
         showMenuBelow(menu, scale.el)
       })
+      this.zoomStepper = new Stepper(parent, {
+        decreaseLabel: t('timeline.zoomOut'),
+        increaseLabel: t('timeline.zoomIn'),
+        resetLabel: t('timeline.resetZoom'),
+        onDecrease: () => this.setZoom(stepZoom(this.zoom, -1)),
+        onIncrease: () => this.setZoom(stepZoom(this.zoom, 1)),
+        onReset: () => this.setZoom(100)
+      })
+      const days = new ChipButton(parent)
+        .setIcon('calendar-off')
+        .setLabel('')
+        .setAriaLabel(t('timeline.nonWorkingDays'))
+        .setTooltip(t('timeline.nonWorkingDays'))
+      days.onClick(() =>
+        openNonWorkingDaysPopover(days.el, {
+          days: this.nonWorkingDays,
+          holidays: this.plugin.settings.holidays,
+          onChange: () => this.handleTimelineAxisChange(),
+          onHolidaysChange: safeAsync(async (holidays: string[]) => {
+            this.plugin.settings.holidays = holidays
+            await this.plugin.saveSettings()
+            if (this.nonWorkingDays.holidays) this.renderCurrentView()
+          })
+        })
+      )
+      this.daysButton = days
+    } else {
+      this.zoomStepper = null
+      this.daysButton = null
     }
     if (this.currentView === 'kanban') return
     const anyCollapsed = collapsedTaskIds(this.plugin.settings, scope.projects).size > 0
@@ -859,6 +910,29 @@ export class ProjectView extends ItemView {
         this.renderHeader()
         this.refreshSubview()
       })
+  }
+
+  /** Zoom is per device, so it is kept in this vault's local storage rather than in the view. */
+  private zoomKey(): string {
+    return `dotpm-timeline-zoom:${this.projectScope?.key ?? ''}`
+  }
+
+  private setZoom(zoom: number): void {
+    if (zoom === this.zoom) return
+    this.zoom = zoom
+    this.rememberZoom()
+    if (this.subview instanceof GanttView) this.subview.setZoom(zoom)
+  }
+
+  private rememberZoom(): void {
+    this.app.saveLocalStorage(this.zoomKey(), this.zoom === 100 ? null : this.zoom)
+    this.syncHeader()
+  }
+
+  private handleTimelineAxisChange(): void {
+    this.syncHeader()
+    this.renderCurrentView()
+    void this.persistFilter()
   }
 
   private setGranularity(granularity: GanttGranularity): void {
@@ -977,6 +1051,7 @@ export class ProjectView extends ItemView {
       fields: structuredClone(this.fields),
       viewMode: this.currentView,
       ganttGranularity: this.granularity,
+      nonWorkingDays: structuredClone(this.nonWorkingDays),
       ...(isDefault ? { isDefault: true } : {})
     }
     this.activeSavedViewId = sv.id
@@ -996,6 +1071,7 @@ export class ProjectView extends ItemView {
     sv.group = structuredClone(this.group)
     sv.fields = structuredClone(this.fields)
     sv.ganttGranularity = this.granularity
+    sv.nonWorkingDays = structuredClone(this.nonWorkingDays)
     this.activeSavedViewId = sv.id
     await this.persistSavedViews(views)
     void this.persistFilter()
@@ -1110,7 +1186,13 @@ export class ProjectView extends ItemView {
           this.query,
           this.granularity,
           this.keyScope,
-          this.fields
+          this.fields,
+          this.zoom,
+          this.nonWorkingDays,
+          (zoom) => {
+            this.zoom = zoom
+            this.rememberZoom()
+          }
         )
         if (savedGanttScroll) gantt.setPendingScroll(savedGanttScroll)
         if (savedGanttLabelWidth !== null) gantt.setLabelWidth(savedGanttLabelWidth)

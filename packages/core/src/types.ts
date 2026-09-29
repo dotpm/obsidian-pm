@@ -192,6 +192,12 @@ export interface FieldList {
 /** Per view mode. A mode left out shows its default fields. */
 export type ViewFields = Partial<Record<ViewMode, FieldList>>
 
+/** Days a timeline leaves out of its axis. Holidays are the dates in `PMSettings.holidays`. */
+export interface NonWorkingDays {
+  weekends?: boolean
+  holidays?: boolean
+}
+
 export interface SavedView {
   id: string
   name: string
@@ -202,6 +208,7 @@ export interface SavedView {
   fields?: ViewFields
   viewMode?: ViewMode
   ganttGranularity?: GanttGranularity
+  nonWorkingDays?: NonWorkingDays
   /** The view a scope opens with. At most one per scope. */
   isDefault?: boolean
 }
@@ -217,6 +224,7 @@ export interface PerProjectFilter {
   group: GroupState
   fields: ViewFields
   ganttGranularity: GanttGranularity
+  nonWorkingDays: NonWorkingDays
 }
 
 export interface StatusConfig {
@@ -296,6 +304,8 @@ export interface PMSettings {
   defaultView: ViewMode
   ganttGranularity: GanttGranularity
   ganttWeekLabel: GanttWeekLabel
+  /** `YYYY-MM-DD` dates a timeline can leave out, for the whole vault. */
+  holidays: string[]
   statuses: StatusConfig[]
   priorities: PriorityConfig[]
   /** Icons for priorities that don't carry their own. */
@@ -396,6 +406,7 @@ export const DEFAULT_SETTINGS: PMSettings = {
   defaultView: 'table',
   ganttGranularity: 'week',
   ganttWeekLabel: 'weekNumber',
+  holidays: [],
   statuses: DEFAULT_STATUSES,
   priorities: DEFAULT_PRIORITIES,
   priorityIcons: 'chevrons',

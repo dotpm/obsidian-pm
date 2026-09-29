@@ -6,6 +6,7 @@ import {
   hydrateFilter,
   hydrateFields,
   hydrateGroup,
+  hydrateNonWorkingDays,
   hydrateSort,
   legacyBoardFields,
   locale,
@@ -54,7 +55,12 @@ export function viewModelFromSnapshot(snapshot: Snapshot): ViewModel {
         lineBorders: snapshot.settings.lineBorders
       }
     })),
-    settings: { ...snapshot.settings, ganttGranularity: snapshot.view.ganttGranularity },
+    settings: {
+      ...snapshot.settings,
+      ganttGranularity: snapshot.view.ganttGranularity,
+      holidays: snapshot.settings.holidays ?? []
+    },
+    nonWorkingDays: hydrateNonWorkingDays(snapshot.view.nonWorkingDays),
     filter: hydrateFilter(snapshot.view.filter),
     sort: hydrateSort(snapshot.view as unknown as Record<string, unknown>),
     group: hydrateGroup(snapshot.view.group),

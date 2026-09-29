@@ -65,7 +65,8 @@ export async function migrateBoardCardConfig(plugin: PMPlugin): Promise<void> {
       sort: makeDefaultSort(),
       group: makeDefaultGroup(),
       fields: {},
-      ganttGranularity: plugin.settings.ganttGranularity
+      ganttGranularity: plugin.settings.ganttGranularity,
+      nonWorkingDays: {}
     })
     // A key the note leaves out inherited the global setting, which loadSettings has already moved here.
     const had = entry.fields.kanban?.visible ?? []

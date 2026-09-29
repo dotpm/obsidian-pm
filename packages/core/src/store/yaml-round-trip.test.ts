@@ -374,6 +374,14 @@ describe('project round-trip', () => {
     expect(project.savedViews[1].fields).toBeUndefined()
   })
 
+  it('reads saved non-working days and drops anything but true', () => {
+    const fm = {
+      savedViews: [{ id: 'v1', name: 'D', nonWorkingDays: { weekends: true, holidays: 'yes', fridays: true } }]
+    }
+    const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
+    expect(project.savedViews[0].nonWorkingDays).toEqual({ weekends: true })
+  })
+
   it('drops a timeline scale it does not know', () => {
     const fm = { savedViews: [{ id: 'v1', name: 'Odd', ganttGranularity: 'decade' }] }
     const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
