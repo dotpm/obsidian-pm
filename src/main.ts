@@ -439,12 +439,14 @@ export default class PMPlugin extends Plugin {
     // for every view, a filter was a fixed set of facets before it became conditions, and
     // what a board card shows was two settings.
     const legacyBoard = (saved ?? {}) as { kanbanShowSubtasks?: boolean; kanbanShowDescriptionPreview?: boolean }
-    const boardFields = legacyBoardFields(!!legacyBoard.kanbanShowSubtasks, !!legacyBoard.kanbanShowDescriptionPreview)
-    for (const key of ['kanbanShowSubtasks', 'kanbanShowDescriptionPreview']) {
-      if (key in this.settings) {
-        Reflect.deleteProperty(this.settings, key)
-        migrated = true
-      }
+    const legacyBoardKeys = ['kanbanShowSubtasks', 'kanbanShowDescriptionPreview']
+    if (legacyBoardKeys.some((key) => key in this.settings)) {
+      this.settings.defaultFields = legacyBoardFields(
+        !!legacyBoard.kanbanShowSubtasks,
+        !!legacyBoard.kanbanShowDescriptionPreview
+      )
+      for (const key of legacyBoardKeys) Reflect.deleteProperty(this.settings, key)
+      migrated = true
     }
     for (const entry of Object.values(this.settings.projectFilters)) {
       if (!Array.isArray(entry.filter.conditions)) {
@@ -462,7 +464,7 @@ export default class PMPlugin extends Plugin {
         migrated = true
       }
       if (!entry.fields) {
-        entry.fields = structuredClone(boardFields)
+        entry.fields = structuredClone(this.settings.defaultFields)
         migrated = true
       }
       if (!entry.ganttGranularity) {
@@ -796,7 +798,7 @@ export default class PMPlugin extends Plugin {
       activeSavedViewId: null,
       sort: makeDefaultSort(),
       group: makeDefaultGroup(),
-      fields: {},
+      fields: structuredClone(this.settings.defaultFields),
       ganttGranularity: this.settings.ganttGranularity,
       nonWorkingDays: {}
     }

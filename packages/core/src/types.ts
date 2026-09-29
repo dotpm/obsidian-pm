@@ -373,6 +373,8 @@ export interface PMSettings {
   projectSurface: 'overview' | 'tasks'
   /** Keyed by scope key, e.g. `project:Projects/Roadmap.md`. */
   projectFilters: Record<string, PerProjectFilter>
+  /** The fields a scope shows before it has an entry in `projectFilters`. */
+  defaultFields: ViewFields
   /** Saved views for a scope covering several projects, which has no file to keep them in. */
   scopeViews: Record<string, SavedView[]>
   /** Collapsed task ids per project path. Lives here so a toggle doesn't rewrite task files. */
@@ -468,6 +470,7 @@ export const DEFAULT_SETTINGS: PMSettings = {
   editorSaveModifier: 'Shift',
   projectSurface: 'overview',
   projectFilters: {},
+  defaultFields: {},
   scopeViews: {},
   collapsedTasks: {},
   collapsedProjects: [],
