@@ -1,5 +1,6 @@
 import { setIcon } from '#platform'
 import { makeReorderable } from '#dom'
+import type { ChipButton } from '#primitives/ChipButton'
 import { IconButton } from '#primitives/IconButton'
 import { Popover } from '#primitives/Popover'
 import { type SortDir, type SortKey, MAX_SORT_RULES, t } from '@dotpm/core'
@@ -137,6 +138,22 @@ export function renderSortPanel<K extends string>(parent: HTMLElement, props: So
   }
 
   render()
+}
+
+/**
+ * Shows the sort on the header's Sort button: the first key's name, its direction as the icon,
+ * and "+N" for the keys after it. `first` is undefined while the default sort applies.
+ */
+export function syncSortButton(
+  button: ChipButton,
+  first: { label: string; dir: SortDir } | undefined,
+  keys: number
+): void {
+  button
+    .setLabel(first?.label ?? t('header.sort'))
+    .setIcon(!first ? 'arrow-down-up' : first.dir === 'asc' ? 'arrow-up-narrow-wide' : 'arrow-down-wide-narrow')
+    .setBadge(first && keys > 1 ? `+${keys - 1}` : '')
+    .setActive(!!first)
 }
 
 /** The sort panel in a popover under `anchor`. */

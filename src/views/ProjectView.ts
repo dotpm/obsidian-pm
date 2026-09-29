@@ -13,6 +13,7 @@ import {
   type ViewMode,
   flattenTasks,
   shownFields,
+  withDefault,
   tidyFields,
   GANTT_GRANULARITIES,
   bestConditionToDrop,
@@ -80,7 +81,9 @@ import {
   type SortField,
   type StepperProps,
   type SwitcherProject,
-  type TuneItem
+  type TuneItem,
+  SavedViewSlot,
+  syncSortButton
 } from '@dotpm/ui'
 import type { SubView } from './SubView'
 import { TableView } from './table/TableView'
@@ -119,14 +122,16 @@ const sortFields = (config?: ResolvedProjectConfig): SortField[] => [
   { id: 'progress', label: t('columns.progress') }
 ]
 
-/** The views with the star on `id` alone, or on none. */
-function withDefault(views: SavedView[], id: string | null): SavedView[] {
-  return views.map((view) => {
-    const copy = { ...view }
-    delete copy.isDefault
-    if (view.id === id) copy.isDefault = true
-    return copy
-  })
+/** One of a mode's own controls, as the options slot, the Tune list and the More menu draw it. */
+interface ViewOption {
+  id: 'today' | 'scale' | 'days' | 'collapse'
+  icon: string
+  label: string
+  /** The current value: the Tune list's faint state, and the chip's text when `chip` is `value`. */
+  value?: string
+  /** How the options slot draws it: icon and label, the value with a chevron, or the icon alone. */
+  chip: 'label' | 'value' | 'icon'
+  run: (anchor: HTMLElement) => void
 }
 
 function specOf(state: ProjectViewState): ScopeSpec | null {
@@ -158,15 +163,13 @@ export class ProjectView extends ItemView {
   private filterBar: FilterBar | null = null
   private searchBox: SearchBox | null = null
   private queryBarOpen = false
-  private savedViewButton: ChipButton | null = null
-  private countEl: HTMLElement | null = null
+  private viewSlot: SavedViewSlot | null = null
   private filterButton: ChipButton | null = null
   private sortButton: ChipButton | null = null
   private groupButton: ChipButton | null = null
   private fieldsButton: ChipButton | null = null
   private zoomStepper: Stepper | null = null
   private daysButton: ChipButton | null = null
-  private saveViewButton: ChipButton | null = null
   private keyScope: Scope
   private pendingRefresh: Promise<void> | null = null
   private initialized = false
@@ -523,19 +526,15 @@ export class ProjectView extends ItemView {
   /** Brings the parts that follow the filter, sort and task counts up to date without rebuilding them. */
   private syncHeader(): void {
     const active = this.activeView()
-    const dirty = this.viewChanges().length > 0
-    this.savedViewButton
-      ?.setLabel(active?.name ?? t('header.allTasks'))
-      .setTooltip(active?.name ?? t('header.allTasks'))
-    this.savedViewButton?.el.toggleClass('pm-vh-saved-view--none', !active)
-    this.savedViewButton?.el.toggleClass('pm-vh-saved-view--dirty', dirty)
-    this.saveViewButton?.el.toggleClass('pm-hidden', !dirty)
     const counts = this.taskCounts()
-    this.countEl?.setText(
-      isQueryActive(this.query)
+    this.viewSlot?.sync({
+      name: active?.name ?? t('header.allTasks'),
+      saved: !!active,
+      dirty: this.viewChanges().length > 0,
+      count: isQueryActive(this.query)
         ? t('header.shownOf', { shown: counts.shown, total: counts.total })
         : tn('header.taskCount', counts.total)
-    )
+    })
     this.filterBar?.setSummary(t('header.shownSummary', { shown: counts.shown, total: counts.total }))
     this.syncFilterEmpty(counts)
     const filters = countActiveFilters(this.query.filter)
@@ -561,12 +560,8 @@ export class ProjectView extends ItemView {
     this.daysButton?.setActive(!!this.nonWorkingDays.weekends || !!this.nonWorkingDays.holidays)
     if (this.sortButton) {
       const [first] = this.sort
-      const { label, more } = this.sortSummary()
-      this.sortButton
-        .setLabel(label || t('header.sort'))
-        .setIcon(!first ? 'arrow-down-up' : first.dir === 'asc' ? 'arrow-up-narrow-wide' : 'arrow-down-wide-narrow')
-        .setBadge(more)
-        .setActive(!!label)
+      const { label } = this.sortSummary()
+      syncSortButton(this.sortButton, label ? { label, dir: first.dir } : undefined, this.sort.length)
     }
     this.header?.fit()
   }
@@ -648,6 +643,12 @@ export class ProjectView extends ItemView {
 
   private showModeMenu(anchor: HTMLElement, scope: ProjectScope, primary: Project): void {
     const menu = new Menu()
+    this.addModeItems(menu, scope, primary)
+    showMenuBelow(menu, anchor)
+  }
+
+  /** The three modes with the current one checked, then the project's overview when there is one project. */
+  private addModeItems(menu: PlatformMenu, scope: ProjectScope, primary: Project): void {
     for (const mode of MODES) {
       menu.addItem((item) =>
         item
@@ -657,16 +658,14 @@ export class ProjectView extends ItemView {
           .onClick(() => this.switchMode(mode))
       )
     }
-    if (!scope.isMulti) {
-      menu.addSeparator()
-      menu.addItem((item) =>
-        item
-          .setTitle(t('views.overview'))
-          .setIcon('file-text')
-          .onClick(safeAsync(() => this.plugin.router.openProjectOverview(primary.filePath, this.leaf)))
-      )
-    }
-    showMenuBelow(menu, anchor)
+    if (scope.isMulti) return
+    menu.addSeparator()
+    menu.addItem((item) =>
+      item
+        .setTitle(t('views.overview'))
+        .setIcon('file-text')
+        .onClick(safeAsync(() => this.plugin.router.openProjectOverview(primary.filePath, this.leaf)))
+    )
   }
 
   private switchMode(mode: ViewMode): void {
@@ -742,46 +741,41 @@ export class ProjectView extends ItemView {
   }
 
   private renderViewSlot(parent: HTMLElement): void {
-    const button = new ChipButton(parent).setIcon('bookmark').setChevron(true).setAriaLabel(t('header.savedViews'))
-    button.el.addClass('pm-vh-saved-view')
-    button.el.createSpan({ cls: 'pm-dirty-dot', attr: { 'aria-hidden': 'true' } })
-    button.onClick(() => {
-      const primary = this.projectScope?.primary
-      openSavedViewsPopover(button.el, {
-        views: this.savedViews().map((view) => ({
-          id: view.id,
-          name: view.name,
-          modeIcon: view.viewMode ? MODE_ICONS[view.viewMode] : undefined,
-          isDefault: view.isDefault
-        })),
-        activeId: this.activeSavedViewId,
-        changes: this.viewChanges(),
-        canSave:
-          countActiveFilters(this.query.filter) > 0 ||
-          !sameValue(this.sort, makeDefaultSort()) ||
-          Object.keys(this.fields).length > 0 ||
-          this.currentView !== this.projectScope?.config.defaultView,
-        storageNote:
-          this.projectScope?.spec.kind === 'project' && primary
-            ? t('header.storedInNote', { name: primary.title })
-            : t('header.storedInSettings'),
-        onSelect: (id) => this.handleSavedViewSelect(id),
-        onSave: (name, isDefault) => this.handleSavedViewSave(name, isDefault),
-        onUpdate: (id) => this.handleSavedViewUpdate(id),
-        onRevert: () => this.handleSavedViewSelect(this.activeSavedViewId),
-        onRename: (id, name) => this.handleSavedViewRename(id, name),
-        onDelete: (id) => this.handleSavedViewDelete(id),
-        onReorder: (ids) => this.handleSavedViewReorder(ids),
-        onSetDefault: (id) => this.handleSavedViewDefault(id)
-      })
+    this.viewSlot = new SavedViewSlot(parent, {
+      onOpen: (anchor) => this.openSavedViews(anchor),
+      onSave: safeAsync(() => this.updateActiveView())
     })
-    this.savedViewButton = button
-    this.saveViewButton = new ChipButton(parent)
-      .setLabel(t('header.saveChanges'))
-      .setTooltip(t('header.updateView'))
-      .onClick(safeAsync(() => this.updateActiveView()))
-    this.saveViewButton.el.addClass('pm-vh-save-view')
-    this.countEl = parent.createSpan('pm-vh-count')
+  }
+
+  private openSavedViews(anchor: HTMLElement): void {
+    const primary = this.projectScope?.primary
+    openSavedViewsPopover(anchor, {
+      views: this.savedViews().map((view) => ({
+        id: view.id,
+        name: view.name,
+        modeIcon: view.viewMode ? MODE_ICONS[view.viewMode] : undefined,
+        isDefault: view.isDefault
+      })),
+      activeId: this.activeSavedViewId,
+      changes: this.viewChanges(),
+      canSave:
+        countActiveFilters(this.query.filter) > 0 ||
+        !sameValue(this.sort, makeDefaultSort()) ||
+        Object.keys(this.fields).length > 0 ||
+        this.currentView !== this.projectScope?.config.defaultView,
+      storageNote:
+        this.projectScope?.spec.kind === 'project' && primary
+          ? t('header.storedInNote', { name: primary.title })
+          : t('header.storedInSettings'),
+      onSelect: (id) => this.handleSavedViewSelect(id),
+      onSave: (name, isDefault) => this.handleSavedViewSave(name, isDefault),
+      onUpdate: (id) => this.handleSavedViewUpdate(id),
+      onRevert: () => this.handleSavedViewSelect(this.activeSavedViewId),
+      onRename: (id, name) => this.handleSavedViewRename(id, name),
+      onDelete: (id) => this.handleSavedViewDelete(id),
+      onReorder: (ids) => this.handleSavedViewReorder(ids),
+      onSetDefault: (id) => this.handleSavedViewDefault(id)
+    })
   }
 
   private async updateActiveView(): Promise<void> {
@@ -950,45 +944,23 @@ export class ProjectView extends ItemView {
       state: hidden ? tn('header.hiddenCount', hidden) : '',
       onOpen: (anchor) => this.openFields(anchor)
     })
-    const options: TuneItem[] = []
-    if (this.currentView === 'gantt') {
-      options.push(
-        { icon: 'calendar-check', label: t('gantt.today'), onOpen: () => this.scrollToToday() },
-        {
-          icon: 'calendar-range',
-          label: t('header.scale'),
-          state: granularityLabel(this.granularity),
-          onOpen: (anchor) => this.openScaleMenu(anchor)
-        },
-        {
-          icon: 'zoom-in',
-          label: t('timeline.zoom'),
-          control: (parent) => {
-            const stepper = new Stepper(
-              parent,
-              this.zoomProps(() => sync())
-            )
-            const sync = (): void => {
-              stepper.setValue(`${this.zoom}%`, this.zoom <= MIN_ZOOM, this.zoom >= MAX_ZOOM)
-            }
-            sync()
+    const options = this.viewOptions(scope).map((option): TuneItem => {
+      if (option !== 'zoom') return { icon: option.icon, label: option.label, state: option.value, onOpen: option.run }
+      return {
+        icon: 'zoom-in',
+        label: t('timeline.zoom'),
+        control: (parent) => {
+          const stepper = new Stepper(
+            parent,
+            this.zoomProps(() => sync())
+          )
+          const sync = (): void => {
+            stepper.setValue(`${this.zoom}%`, this.zoom <= MIN_ZOOM, this.zoom >= MAX_ZOOM)
           }
-        },
-        {
-          icon: 'calendar-off',
-          label: t('timeline.nonWorkingDays'),
-          onOpen: (anchor) => this.openNonWorkingDays(anchor)
+          sync()
         }
-      )
-    }
-    if (this.currentView !== 'kanban') {
-      const anyCollapsed = collapsedTaskIds(this.plugin.settings, scope.projects).size > 0
-      options.push({
-        icon: anyCollapsed ? 'chevrons-up-down' : 'chevrons-down-up',
-        label: anyCollapsed ? t('gantt.expandAll') : t('gantt.collapseAll'),
-        onOpen: () => this.toggleCollapseAll(scope, anyCollapsed)
-      })
-    }
+      }
+    })
     return [[mode], query, options]
   }
 
@@ -1105,66 +1077,33 @@ export class ProjectView extends ItemView {
     const scope = this.projectScope
     const primary = scope?.primary
     if (!scope || !primary) return
-    for (const mode of MODES) {
+    this.addModeItems(menu, scope, primary)
+    const options = this.viewOptions(scope)
+    if (options.length) menu.addSeparator()
+    for (const option of options) {
+      if (option === 'zoom') {
+        menu.addItem((item) =>
+          item
+            .setTitle(t('timeline.zoomIn'))
+            .setIcon('zoom-in')
+            .setDisabled(this.zoom >= MAX_ZOOM)
+            .onClick(() => this.setZoom(stepZoom(this.zoom, 1)))
+        )
+        menu.addItem((item) =>
+          item
+            .setTitle(t('timeline.zoomOut'))
+            .setIcon('zoom-out')
+            .setDisabled(this.zoom <= MIN_ZOOM)
+            .onClick(() => this.setZoom(stepZoom(this.zoom, -1)))
+        )
+        continue
+      }
+      const title = option.value ? `${option.label}: ${option.value}` : option.label
       menu.addItem((item) =>
         item
-          .setTitle(modeLabel(mode))
-          .setIcon(MODE_ICONS[mode])
-          .setChecked(mode === this.currentView)
-          .onClick(() => this.switchMode(mode))
-      )
-    }
-    if (!scope.isMulti) {
-      menu.addItem((item) =>
-        item
-          .setTitle(t('views.overview'))
-          .setIcon('file-text')
-          .onClick(safeAsync(() => this.plugin.router.openProjectOverview(primary.filePath, this.leaf)))
-      )
-    }
-    if (this.currentView === 'gantt') {
-      menu.addSeparator()
-      menu.addItem((item) =>
-        item
-          .setTitle(t('gantt.today'))
-          .setIcon('calendar-check')
-          .onClick(() => this.scrollToToday())
-      )
-      menu.addItem((item) =>
-        item
-          .setTitle(`${t('header.scale')}: ${granularityLabel(this.granularity)}`)
-          .setIcon('calendar-range')
-          .onClick(() => this.openScaleMenu(anchor))
-      )
-      menu.addItem((item) =>
-        item
-          .setTitle(t('timeline.zoomIn'))
-          .setIcon('zoom-in')
-          .setDisabled(this.zoom >= MAX_ZOOM)
-          .onClick(() => this.setZoom(stepZoom(this.zoom, 1)))
-      )
-      menu.addItem((item) =>
-        item
-          .setTitle(t('timeline.zoomOut'))
-          .setIcon('zoom-out')
-          .setDisabled(this.zoom <= MIN_ZOOM)
-          .onClick(() => this.setZoom(stepZoom(this.zoom, -1)))
-      )
-      menu.addItem((item) =>
-        item
-          .setTitle(t('timeline.nonWorkingDays'))
-          .setIcon('calendar-off')
-          .onClick(() => this.openNonWorkingDays(anchor))
-      )
-    }
-    if (this.currentView !== 'kanban') {
-      const anyCollapsed = collapsedTaskIds(this.plugin.settings, scope.projects).size > 0
-      menu.addSeparator()
-      menu.addItem((item) =>
-        item
-          .setTitle(anyCollapsed ? t('gantt.expandAll') : t('gantt.collapseAll'))
-          .setIcon(anyCollapsed ? 'chevrons-up-down' : 'chevrons-down-up')
-          .onClick(() => this.toggleCollapseAll(scope, anyCollapsed))
+          .setTitle(title)
+          .setIcon(option.icon)
+          .onClick(() => option.run(anchor))
       )
     }
     if (this.currentView === 'gantt') {
@@ -1181,38 +1120,68 @@ export class ProjectView extends ItemView {
   private renderOptionsSlot(parent: HTMLElement, scope: ProjectScope): void {
     this.zoomStepper = null
     this.daysButton = null
-    if (this.currentView === 'gantt') {
-      new ChipButton(parent)
-        .setIcon('calendar-check')
-        .setLabel(t('gantt.today'))
-        .setAriaLabel(t('gantt.today'))
-        .onClick(() => this.scrollToToday())
-      const scale = new ChipButton(parent)
-        .setLabel(granularityLabel(this.granularity))
-        .setChevron(true)
-        .setAriaLabel(t('header.scale'))
-      scale.onClick(() => this.openScaleMenu(scale.el))
-      this.zoomStepper = new Stepper(
-        parent,
-        this.zoomProps(() => {})
-      )
-      const days = new ChipButton(parent)
-        .setIcon('calendar-off')
-        .setLabel('')
-        .setAriaLabel(t('timeline.nonWorkingDays'))
-        .setTooltip(t('timeline.nonWorkingDays'))
-      days.onClick(() => this.openNonWorkingDays(days.el))
-      this.daysButton = days
+    for (const option of this.viewOptions(scope)) {
+      if (option === 'zoom') {
+        this.zoomStepper = new Stepper(
+          parent,
+          this.zoomProps(() => {})
+        )
+        continue
+      }
+      const chip = new ChipButton(parent).setAriaLabel(option.label)
+      if (option.chip === 'value') chip.setLabel(option.value ?? '').setChevron(true)
+      else chip.setIcon(option.icon).setLabel(option.chip === 'label' ? option.label : '')
+      if (option.chip === 'icon') chip.setTooltip(option.label)
+      chip.onClick(() => option.run(chip.el))
+      if (option.id === 'days') this.daysButton = chip
     }
-    if (this.currentView === 'kanban') return
-    const anyCollapsed = collapsedTaskIds(this.plugin.settings, scope.projects).size > 0
-    const label = anyCollapsed ? t('gantt.expandAll') : t('gantt.collapseAll')
-    new ChipButton(parent)
-      .setIcon(anyCollapsed ? 'chevrons-up-down' : 'chevrons-down-up')
-      .setLabel('')
-      .setAriaLabel(label)
-      .setTooltip(label)
-      .onClick(() => this.toggleCollapseAll(scope, anyCollapsed))
+  }
+
+  /**
+   * The mode's own controls in their order: on the timeline Today, the scale, the zoom and the
+   * non-working days, then collapse on anything but the board. The options slot, the Tune list
+   * and the More menu all draw this list; `zoom` stands for the stepper, which each draws its own way.
+   */
+  private viewOptions(scope: ProjectScope): (ViewOption | 'zoom')[] {
+    const options: (ViewOption | 'zoom')[] = []
+    if (this.currentView === 'gantt') {
+      options.push(
+        {
+          id: 'today',
+          icon: 'calendar-check',
+          label: t('gantt.today'),
+          chip: 'label',
+          run: () => this.scrollToToday()
+        },
+        {
+          id: 'scale',
+          icon: 'calendar-range',
+          label: t('header.scale'),
+          value: granularityLabel(this.granularity),
+          chip: 'value',
+          run: (anchor) => this.openScaleMenu(anchor)
+        },
+        'zoom',
+        {
+          id: 'days',
+          icon: 'calendar-off',
+          label: t('timeline.nonWorkingDays'),
+          chip: 'icon',
+          run: (anchor) => this.openNonWorkingDays(anchor)
+        }
+      )
+    }
+    if (this.currentView !== 'kanban') {
+      const anyCollapsed = collapsedTaskIds(this.plugin.settings, scope.projects).size > 0
+      options.push({
+        id: 'collapse',
+        icon: anyCollapsed ? 'chevrons-up-down' : 'chevrons-down-up',
+        label: anyCollapsed ? t('gantt.expandAll') : t('gantt.collapseAll'),
+        chip: 'icon',
+        run: () => this.toggleCollapseAll(scope, anyCollapsed)
+      })
+    }
+    return options
   }
 
   private scrollToToday(): void {

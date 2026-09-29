@@ -50,3 +50,13 @@ export function viewDifferences(view: SavedView, state: ViewState): ViewPart[] {
   if (view.nonWorkingDays && !sameValue(view.nonWorkingDays, state.nonWorkingDays)) parts.push('days')
   return parts
 }
+
+/** The views with the star on `id` alone, or on none when `id` is null. */
+export function withDefault<T extends { id: string; isDefault?: boolean }>(views: T[], id: string | null): T[] {
+  return views.map((view) => {
+    const copy = { ...view }
+    delete copy.isDefault
+    if (view.id === id) copy.isDefault = true
+    return copy
+  })
+}
