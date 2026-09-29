@@ -1,4 +1,4 @@
-import { ButtonComponent, Component, ItemView, MarkdownRenderer, WorkspaceLeaf } from 'obsidian'
+import { ButtonComponent, Menu, Component, ItemView, MarkdownRenderer, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
 import {
   type Project,
@@ -14,7 +14,6 @@ import {
   dateUrgency,
   dedupePeople,
   isTerminalStatus,
-  truncateTitle,
   t,
   tn
 } from '@dotpm/core'
@@ -74,10 +73,37 @@ export class ProjectOverviewView extends ItemView {
     return PM_PROJECT_OVERVIEW_VIEW_TYPE
   }
   getDisplayText(): string {
-    return truncateTitle(this.project?.title ?? t('common.project'), 10)
+    return this.project?.title ?? t('common.project')
   }
   getIcon(): string {
     return 'gauge'
+  }
+
+  onPaneMenu(menu: Menu, source: string): void {
+    super.onPaneMenu(menu, source)
+    const project = this.project
+    if (!project) return
+    menu.addItem((item) =>
+      item
+        .setSection('open')
+        .setTitle(t('project.openTasks'))
+        .setIcon('table')
+        .onClick(safeAsync(() => this.plugin.router.openScope({ kind: 'project', path: project.filePath }, this.leaf)))
+    )
+    menu.addItem((item) =>
+      item
+        .setSection('open')
+        .setTitle(t('project.edit'))
+        .setIcon('settings')
+        .onClick(safeAsync(() => this.plugin.router.openProjectEdit(project.filePath, this.leaf)))
+    )
+    menu.addItem((item) =>
+      item
+        .setSection('open')
+        .setTitle(t('project.openAsNote'))
+        .setIcon('file-text')
+        .onClick(safeAsync(() => this.plugin.openAsMarkdown(project.filePath, this.leaf)))
+    )
   }
 
   async setState(state: ProjectOverviewState, result: unknown): Promise<void> {
@@ -98,7 +124,9 @@ export class ProjectOverviewView extends ItemView {
     this.container = this.contentEl.createDiv('pm-overview')
     this.register(
       this.plugin.store.onProjectChanged((path) => {
-        if (path === this.project?.filePath) this.render()
+        if (path !== this.project?.filePath) return
+        ;(this.leaf as WorkspaceLeaf & { updateHeader?: () => void }).updateHeader?.()
+        this.render()
       })
     )
     this.register(this.plugin.index.onNoteColorChange(() => this.render()))

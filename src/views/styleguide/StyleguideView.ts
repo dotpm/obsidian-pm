@@ -703,7 +703,6 @@ export class StyleguideView extends ItemView {
     new ChipButton(header.query).setIcon('columns-3').setLabel('Fields').setDetail('3 hidden').setActive(true)
     new ChipButton(header.options).setIcon('chevrons-down-up').setLabel('').setAriaLabel('Collapse all')
     new SplitButton(header.actions).setIcon('plus').setLabel('Add task').onClick(noop)
-    new ChipButton(header.actions).setIcon('ellipsis').setLabel('').setAriaLabel('More options')
     new FilterBar(header.bar, {
       filter: {
         ...makeDefaultFilter(),

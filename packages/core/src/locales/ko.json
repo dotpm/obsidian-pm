@@ -229,7 +229,6 @@
   "header.lockedField": "항상 표시",
   "header.makeDefault": "기본 뷰로 설정",
   "header.mode": "뷰 모드",
-  "header.more": "다른 옵션",
   "header.moreToAdd": "다른 추가 항목",
   "header.noSort": "작업이 저장된 순서대로 표시됩니다.",
   "header.noViewsHint": "현재 필터와 정렬을 뷰로 저장해 두면 언제든 다시 불러올 수 있습니다.",

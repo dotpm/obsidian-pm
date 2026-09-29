@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added "Open as note" to the project overview and the "More options" menu of the task views
+- Added "Open as note" to the project overview and to the tab's "More options" menu on every project page
 - Added parent project links and a project switcher to the top of the task views
 - Added "Expand all" and "Collapse all" to the table
 - Filters can now match custom fields, start dates, task types and titles
@@ -30,6 +30,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Tab titles now show the whole project or task name instead of the first 10 characters
 - Project notes now open on their project page instead of in Obsidian's editor
 - The table now remembers its sort order after the view is closed and reopened
 - Redesigned the top of the task views into one row with a separate filter bar

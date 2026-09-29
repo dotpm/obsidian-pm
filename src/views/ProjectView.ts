@@ -25,7 +25,6 @@ import {
   viewDifferences,
   makeId,
   matchesQuery,
-  truncateTitle,
   t,
   tn
 } from '@dotpm/core'
@@ -181,7 +180,7 @@ export class ProjectView extends ItemView {
     return PM_PROJECT_VIEW_TYPE
   }
   getDisplayText(): string {
-    return truncateTitle(this.projectScope?.label() ?? t('common.project'), 10)
+    return this.projectScope?.label() ?? t('common.project')
   }
 
   /** The mode, filter, sort and scale a reader of an export starts from. */
@@ -198,6 +197,40 @@ export class ProjectView extends ItemView {
   }
   getIcon(): string {
     return 'chart-gantt'
+  }
+
+  onPaneMenu(menu: Menu, source: string): void {
+    super.onPaneMenu(menu, source)
+    const scope = this.projectScope
+    const primary = scope?.primary
+    if (!scope || !primary) return
+    if (!scope.isMulti) {
+      menu.addItem((item) =>
+        item
+          .setSection('open')
+          .setTitle(t('project.openAsNote'))
+          .setIcon('file-text')
+          .onClick(safeAsync(() => this.plugin.openAsMarkdown(primary.filePath, this.leaf)))
+      )
+      menu.addItem((item) =>
+        item
+          .setSection('open')
+          .setTitle(t('project.settings'))
+          .setIcon('settings')
+          .onClick(safeAsync(() => this.plugin.router.openProjectEdit(primary.filePath)))
+      )
+    }
+    menu.addItem((item) =>
+      item
+        .setSection('action')
+        .setTitle(t('commands.exportViewHtml'))
+        .setIcon('file-output')
+        .onClick(
+          safeAsync(async () => {
+            await exportViewAsHtml(this.plugin, this)
+          })
+        )
+    )
   }
 
   /** The project a command should act on: the only one, or the group's primary. */
@@ -289,6 +322,7 @@ export class ProjectView extends ItemView {
     }
     // A settings edit may have changed a palette, which the scope has resolved and kept.
     this.projectScope.invalidate()
+    ;(this.leaf as WorkspaceLeaf & { updateHeader?: () => void }).updateHeader?.()
     // Rebuilding the header would drop the caret out of the search box.
     if (this.headerEl.contains(activeDocument.activeElement)) this.syncHeader()
     else this.renderHeader()
@@ -459,7 +493,7 @@ export class ProjectView extends ItemView {
     this.renderViewSlot(header.view)
     this.renderQuerySlot(header.query)
     this.renderOptionsSlot(header.options, scope)
-    this.renderActionsSlot(header.actions, scope, primary)
+    this.renderActionsSlot(header.actions)
     this.renderFilterBar()
     this.syncHeader()
   }
@@ -943,7 +977,7 @@ export class ProjectView extends ItemView {
     this.renderCurrentView()
   }
 
-  private renderActionsSlot(parent: HTMLElement, scope: ProjectScope, primary: Project): void {
+  private renderActionsSlot(parent: HTMLElement): void {
     const add = new SplitButton(parent).setIcon('plus').setLabel(t('projectView.addTask'))
     add.onClick(() => this.addTask(add.el))
     if (this.currentView === 'gantt') {
@@ -958,37 +992,6 @@ export class ProjectView extends ItemView {
         showMenuBelow(menu, add.el)
       })
     }
-
-    const more = new ChipButton(parent).setIcon('ellipsis').setLabel('').setAriaLabel(t('header.more'))
-    more.setTooltip(t('header.more'))
-    more.onClick(() => {
-      const menu = new Menu()
-      if (!scope.isMulti) {
-        menu.addItem((item) =>
-          item
-            .setTitle(t('project.openAsNote'))
-            .setIcon('file-text')
-            .onClick(safeAsync(() => this.plugin.openAsMarkdown(primary.filePath, this.leaf)))
-        )
-        menu.addItem((item) =>
-          item
-            .setTitle(t('project.settings'))
-            .setIcon('settings')
-            .onClick(safeAsync(() => this.plugin.router.openProjectEdit(primary.filePath)))
-        )
-      }
-      menu.addItem((item) =>
-        item
-          .setTitle(t('commands.exportViewHtml'))
-          .setIcon('file-output')
-          .onClick(
-            safeAsync(async () => {
-              await exportViewAsHtml(this.plugin, this)
-            })
-          )
-      )
-      showMenuBelow(menu, more.el)
-    })
   }
 
   private renderFilterBar(): void {

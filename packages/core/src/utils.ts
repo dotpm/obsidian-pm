@@ -111,11 +111,6 @@ export function stringifyCustomValue(val: unknown): string {
   return ''
 }
 
-export function truncateTitle(title: string, maxLen = 20): string {
-  if (title.length <= maxLen) return title
-  return title.slice(0, maxLen - 1) + '…'
-}
-
 export function sanitizeFileName(title: string): string {
   return title.replace(/[\\/:*?"<>|]/g, '-')
 }
