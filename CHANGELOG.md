@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Added "Open as note" to the project overview and to the tab's "More options" menu on every project page
+- Added "Open as note" to the project overview and the tab's "More options" menu
 - Added parent project links and a project switcher to the top of the task views
 - Added "Expand all" and "Collapse all" to the table
 - Filters can now match custom fields, start dates, task types and titles
