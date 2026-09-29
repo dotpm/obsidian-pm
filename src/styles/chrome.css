@@ -70,7 +70,21 @@
   cursor: pointer;
 }
 
+/* The title column takes what the others leave, and its name truncates beside the icon
+   rather than wrapping under it; the columns after it scroll. */
+.pm-project-table .pm-table-cell-title {
+  max-width: 0;
+}
+.pm-project-table .pm-table-title-inner {
+  flex-wrap: nowrap;
+}
+.pm-project-table .pm-task-title-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .pm-project-row-icon {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   font-size: 15px;
