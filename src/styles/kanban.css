@@ -144,6 +144,22 @@
   flex-wrap: wrap;
   gap: 4px;
 }
+.pm-kanban-card-field {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+  font-size: var(--font-ui-smaller);
+}
+.pm-kanban-card-field-name {
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+.pm-kanban-card-field-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .pm-kanban-card-footer {
   display: flex;
