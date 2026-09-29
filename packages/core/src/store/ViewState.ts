@@ -1,4 +1,13 @@
-import type { FilterState, GanttGranularity, GroupState, SavedView, SortRule, ViewFields, ViewMode } from '../types'
+import type {
+  FilterState,
+  GanttGranularity,
+  GroupState,
+  NonWorkingDays,
+  SavedView,
+  SortRule,
+  ViewFields,
+  ViewMode
+} from '../types'
 
 /** What a view is showing right now, in the terms a saved view stores. */
 export interface ViewState {
@@ -8,9 +17,10 @@ export interface ViewState {
   fields: ViewFields
   mode: ViewMode
   granularity: GanttGranularity
+  nonWorkingDays: NonWorkingDays
 }
 
-export type ViewPart = 'filter' | 'sort' | 'group' | 'fields' | 'mode' | 'scale'
+export type ViewPart = 'filter' | 'sort' | 'group' | 'fields' | 'mode' | 'scale' | 'days'
 
 /** JSON with object keys in a fixed order, so two equal values always compare equal. */
 function stable(value: unknown): string {
@@ -27,7 +37,7 @@ export function sameValue(a: unknown, b: unknown): boolean {
 
 /**
  * The parts of `state` that differ from `view`. A view that names no grouping, fields,
- * mode or scale doesn't care which one is showing.
+ * mode, scale or non-working days doesn't care which one is showing.
  */
 export function viewDifferences(view: SavedView, state: ViewState): ViewPart[] {
   const parts: ViewPart[] = []
@@ -37,5 +47,6 @@ export function viewDifferences(view: SavedView, state: ViewState): ViewPart[] {
   if (view.fields && !sameValue(view.fields, state.fields)) parts.push('fields')
   if (view.viewMode && view.viewMode !== state.mode) parts.push('mode')
   if (view.ganttGranularity && view.ganttGranularity !== state.granularity) parts.push('scale')
+  if (view.nonWorkingDays && !sameValue(view.nonWorkingDays, state.nonWorkingDays)) parts.push('days')
   return parts
 }

@@ -763,3 +763,50 @@ input.pm-vis-detail-input {
   padding-top: 4px;
   border-top: 1px solid var(--background-modifier-border);
 }
+
+.pm-stepper {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  border-radius: var(--radius-s);
+  --icon-size: 14px;
+}
+.pm-stepper-btn {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+}
+button.pm-stepper-value {
+  min-width: 44px;
+  height: 24px;
+  padding: 0 4px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+button.pm-stepper-value:hover {
+  color: var(--text-normal);
+}
+
+.pm-days-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 9px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+input.pm-days-input {
+  height: 24px;
+  font-size: var(--font-ui-smaller);
+}
+.pm-days-note {
+  padding: 2px 9px 6px;
+  color: var(--text-faint);
+  font-size: var(--font-ui-smaller);
+  white-space: normal;
+}

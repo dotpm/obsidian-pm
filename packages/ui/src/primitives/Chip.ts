@@ -75,9 +75,13 @@ export class Chip {
     return this
   }
 
-  setRemovable(onRemove: () => void): this {
+  setRemovable(onRemove: () => void, label?: string): this {
     const rmBtn = this.el.createEl('button', { cls: 'pm-chip-rm' })
     setIcon(rmBtn, 'x')
+    if (label) {
+      rmBtn.setAttribute('aria-label', label)
+      setTooltip(rmBtn, label)
+    }
     rmBtn.onclick = (e) => {
       e.preventDefault()
       e.stopPropagation()

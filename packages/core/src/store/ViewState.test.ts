@@ -19,6 +19,7 @@ function state(overrides: Partial<ViewState> = {}): ViewState {
     fields: {},
     mode: 'table',
     granularity: 'week',
+    nonWorkingDays: {},
     ...overrides
   }
 }
@@ -57,6 +58,12 @@ describe('viewDifferences', () => {
     expect(viewDifferences({ ...view, fields: narrow }, state({ fields: { table: { visible: ['title'] } } }))).toEqual(
       []
     )
+  })
+
+  it('compares the non-working days only when the view saved them', () => {
+    expect(viewDifferences(view, state({ nonWorkingDays: { weekends: true } }))).toEqual([])
+    const saved: SavedView = { ...view, nonWorkingDays: {} }
+    expect(viewDifferences(saved, state({ nonWorkingDays: { weekends: true } }))).toEqual(['days'])
   })
 
   it('does not care about a mode or scale the view never named', () => {

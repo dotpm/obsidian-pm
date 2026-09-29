@@ -73,12 +73,14 @@ function model(overrides: Partial<ViewModel> = {}): ViewModel {
       showSubtreeConnections: true,
       lineBorders: 'none',
       ganttWeekLabel: 'weekNumber',
-      ganttGranularity: 'week'
+      ganttGranularity: 'week',
+      holidays: []
     },
     filter: makeDefaultFilter(),
     sort: [{ key: 'title', dir: 'asc' }],
     group: makeDefaultGroup(),
     fields: {},
+    nonWorkingDays: {},
     personColors: {},
     ...overrides
   }
@@ -196,6 +198,17 @@ describe('snapshot gantt', () => {
     const buttons = Array.from(host.querySelectorAll('.pm-gantt-controls button')).map((b) => b.textContent)
     expect(buttons).toEqual(['Day', 'Week', 'Month', 'Quarter', 'Year'])
     expect(host.querySelector('.pm-gantt-bar-aside')).toBeNull()
+  })
+
+  it('leaves out the weekends when the view hides them', () => {
+    const width = (view: ViewModel): number => {
+      const host = document.body.createDiv()
+      renderSnapshotGantt(host, view)
+      return Number(host.querySelector('.pm-gantt-svg')?.getAttribute('width'))
+    }
+    const full = width(model())
+    const workdays = width(model({ nonWorkingDays: { weekends: true } }))
+    expect(workdays).toBeLessThan(full)
   })
 
   it('writes the label fields the view chose beside each bar', () => {

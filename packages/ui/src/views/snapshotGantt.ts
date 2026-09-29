@@ -23,7 +23,14 @@ import {
 import type { GanttCanvas } from '../gantt/canvas'
 import { renderGridLines, renderTodayLine } from '../gantt/canvas'
 import { renderTimelineHeader } from '../gantt/header'
-import { HEADER_HEIGHT, LABEL_WIDTH, ROW_HEIGHT, buildTimelineConfig, dateToX } from '../gantt/TimelineConfig'
+import {
+  HEADER_HEIGHT,
+  LABEL_WIDTH,
+  ROW_HEIGHT,
+  buildTimelineConfig,
+  dateToX,
+  nonWorkingDay
+} from '../gantt/TimelineConfig'
 import {
   allTasks,
   customFieldColumns,
@@ -67,7 +74,9 @@ function renderLabel(container: HTMLElement, model: ViewModel, task: Task, depth
 function renderBody(container: HTMLElement, model: ViewModel, granularity: GanttGranularity): void {
   const tasks = visibleTasks(model)
   const rows = flattenTasks(tasks).map((f) => ({ task: f.task, depth: f.depth }))
-  const cfg = buildTimelineConfig(tasks, granularity)
+  const cfg = buildTimelineConfig(tasks, granularity, {
+    isHidden: nonWorkingDay(model.nonWorkingDays, model.settings.holidays)
+  })
   const config = mergedConfig(model)
   const statuses = config.statuses
   const labelFields = shownFields(model.fields, 'gantt', fieldCatalogOf(model)).filter((id) => id !== 'title')

@@ -5,6 +5,7 @@ import type {
   GanttGranularity,
   GanttWeekLabel,
   LineBorders,
+  NonWorkingDays,
   PriorityIconSet,
   ViewFields,
   ViewMode
@@ -32,6 +33,8 @@ export interface SnapshotView {
   /** Absent on a page exported before views chose their fields; read through `hydrateFields`. */
   fields?: ViewFields
   ganttGranularity: GanttGranularity
+  /** Absent on a page exported before the timeline could leave days out. */
+  nonWorkingDays?: NonWorkingDays
 }
 
 export interface SnapshotSettings {
@@ -43,6 +46,7 @@ export interface SnapshotSettings {
   kanbanShowSubtasks?: boolean
   ganttWeekLabel: GanttWeekLabel
   dateFormat: string
+  holidays?: string[]
 }
 
 /**

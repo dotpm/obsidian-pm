@@ -24,6 +24,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Board columns can now be reordered and hidden, and empty columns left out
 - Added the "Fields" menu for choosing table columns, kanban card fields, and timeline labels
 - Table columns can now be resized by dragging the edge of their header
+- The timeline can now zoom in and out, with the zoom buttons or Ctrl+scroll
+- The timeline can now leave out weekends and holidays, with holidays set per vault
 - Person notes can now set their avatar color with a `color` property
 
 ### Changed

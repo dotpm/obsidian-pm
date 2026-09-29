@@ -2,6 +2,7 @@ import type { Scope } from 'obsidian'
 import type PMPlugin from '#main'
 import {
   type Task,
+  type NonWorkingDays,
   type ViewFields,
   shownFields,
   type GanttGranularity,
@@ -19,7 +20,9 @@ import {
   svgEl,
   type TimelineCfg,
   buildTimelineConfig,
+  clampZoom,
   dateToX,
+  nonWorkingDay,
   xToDate,
   HEADER_HEIGHT,
   ROW_HEIGHT,
@@ -62,7 +65,9 @@ export class GanttView implements SubView {
     this.labelWidth = w
   }
   private cleanupFns: (() => void)[] = []
-  private pendingScroll: { top: number; anchorDate: Temporal.PlainDate } | null = null
+  /** `anchorDate` lands `offset` px from the left edge; without one, at the edge. */
+  private pendingScroll: { top: number; anchorDate: Temporal.PlainDate; offset?: number } | null = null
+  private zoomFrame: number | null = null
 
   constructor(
     private container: HTMLElement,
@@ -72,10 +77,45 @@ export class GanttView implements SubView {
     private query: TaskQuery,
     private granularity: GanttGranularity,
     private keyScope: Scope,
-    private fields: ViewFields
+    private fields: ViewFields,
+    private zoom: number,
+    private nonWorkingDays: NonWorkingDays,
+    /** Ctrl+scroll changed the zoom. */
+    private onZoom: (zoom: number) => void
   ) {}
 
+  /** Redraws at `zoom`, keeping the date at `clientX` (or the middle of the chart) where it was. */
+  setZoom(zoom: number, clientX?: number): void {
+    if (!this.scrollEl) return
+    const rect = this.scrollEl.getBoundingClientRect()
+    const offset = clientX === undefined ? this.scrollEl.clientWidth / 2 : clientX - rect.left
+    this.pendingScroll = {
+      top: this.scrollEl.scrollTop,
+      anchorDate: xToDate(this.cfg, this.scrollEl.scrollLeft + offset),
+      offset
+    }
+    this.zoom = zoom
+    this.render()
+  }
+
+  /** Ctrl+scroll (pinch on a trackpad) zooms around the pointer, one redraw per frame. */
+  private handleZoomWheel(e: WheelEvent): void {
+    if (!e.ctrlKey && !e.metaKey) return
+    e.preventDefault()
+    const next = clampZoom(this.zoom * Math.exp(-e.deltaY / 300))
+    if (next === this.zoom) return
+    this.zoom = next
+    const clientX = e.clientX
+    if (this.zoomFrame !== null) return
+    this.zoomFrame = window.requestAnimationFrame(() => {
+      this.zoomFrame = null
+      this.setZoom(this.zoom, clientX)
+      this.onZoom(this.zoom)
+    })
+  }
+
   destroy(): void {
+    if (this.zoomFrame !== null) window.cancelAnimationFrame(this.zoomFrame)
     for (const fn of this.cleanupFns) fn()
     this.cleanupFns = []
   }
@@ -105,7 +145,10 @@ export class GanttView implements SubView {
     const activeTasks = this.getVisibleTasks()
     this.collapsedIds = collapsedTaskIds(this.plugin.settings, this.scope.projects)
     this.flatTasks = flattenTasks(activeTasks, this.collapsedIds).filter((f) => f.visible || f.depth === 0)
-    this.cfg = buildTimelineConfig(activeTasks, this.granularity)
+    this.cfg = buildTimelineConfig(activeTasks, this.granularity, {
+      zoom: this.zoom,
+      isHidden: nonWorkingDay(this.nonWorkingDays, this.plugin.settings.holidays)
+    })
 
     this.renderGantt()
   }
@@ -153,6 +196,7 @@ export class GanttView implements SubView {
 
     const rightPanel = wrapper.createDiv('pm-gantt-right')
     this.scrollEl = rightPanel
+    rightPanel.addEventListener('wheel', (e) => this.handleZoomWheel(e), { passive: false })
 
     // The header has its own SVG in a sticky wrapper: it shares the body's horizontal
     // scroll but pins to the top, so the time period stays visible as rows scroll.
@@ -244,7 +288,8 @@ export class GanttView implements SubView {
       syncSpacer()
       if (this.pendingScroll) {
         this.scrollEl.scrollTop = this.pendingScroll.top
-        this.scrollEl.scrollLeft = Math.max(0, dateToX(this.cfg, this.pendingScroll.anchorDate))
+        const { anchorDate, offset = 0 } = this.pendingScroll
+        this.scrollEl.scrollLeft = Math.max(0, dateToX(this.cfg, anchorDate) - offset)
         this.pendingScroll = null
       } else {
         this.scrollToToday()

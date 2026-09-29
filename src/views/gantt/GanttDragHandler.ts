@@ -1,5 +1,5 @@
 import { Notice } from 'obsidian'
-import { safeAsync, type TimelineCfg, xToDate, getSnapPoints, snapX } from '@dotpm/ui'
+import { safeAsync, type TimelineCfg, xToDate, xToLastDate, getSnapPoints, snapX } from '@dotpm/ui'
 import type PMPlugin from '#main'
 import { type Project, type Task, t } from '@dotpm/core'
 
@@ -119,9 +119,7 @@ export function attachBarDrag(opts: BarDragOpts): () => void {
       const oldStart = drag.dragTask.start
       const oldDue = drag.dragTask.due
       const start = xToDate(cfg, snap(movedX)).toString()
-      const due = xToDate(cfg, snap(movedX + movedW))
-        .subtract({ days: 1 })
-        .toString()
+      const due = xToLastDate(cfg, snap(movedX + movedW)).toString()
       const patch: Partial<Task> = side === 'left' ? { start } : side === 'right' ? { due } : { start, due }
 
       try {

@@ -47,7 +47,8 @@ describe('buildSnapshot', () => {
       sort: [{ key: 'due', dir: 'desc' }],
       group: { field: 'priority' },
       fields: { table: { visible: ['title', 'due'], widths: { due: 80 } } },
-      ganttGranularity: 'month'
+      ganttGranularity: 'month',
+      nonWorkingDays: { weekends: true }
     })
     expect(isSnapshot(snapshot)).toBe(true)
     expect(snapshot.title).toBe('Roadmap <b>')
@@ -57,7 +58,8 @@ describe('buildSnapshot', () => {
       sort: [{ key: 'due', dir: 'desc' }],
       group: { field: 'priority' },
       fields: { table: { visible: ['title', 'due'], widths: { due: 80 } } },
-      ganttGranularity: 'month'
+      ganttGranularity: 'month',
+      nonWorkingDays: { weekends: true }
     })
     expect(snapshot.view.filter.conditions).toEqual([{ field: 'status', op: 'any', value: ['todo'] }])
     expect(snapshot.projects.length).toBe(1)
@@ -85,7 +87,8 @@ describe('buildSnapshot', () => {
       sort: [{ key: 'title', dir: 'asc' }],
       group: makeDefaultGroup(),
       fields: {},
-      ganttGranularity: 'week'
+      ganttGranularity: 'week',
+      nonWorkingDays: {}
     })
     expect(snapshot.personColors).toEqual({ '[[Jane Doe]]': '#c47070' })
   })

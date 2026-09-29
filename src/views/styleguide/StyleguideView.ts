@@ -63,6 +63,7 @@ import {
   ProgressBar,
   SegmentedControl,
   SplitButton,
+  Stepper,
   ViewSwitcher,
   renderPriorityBadge,
   renderStatusBadge,
@@ -127,6 +128,7 @@ export class StyleguideView extends ItemView {
     this.renderEmptyState()
     this.renderSegmented()
     this.renderSplitButton()
+    this.renderStepper()
     this.renderFilterChip()
     this.renderViewSwitcher()
     this.renderPopover()
@@ -280,6 +282,21 @@ export class StyleguideView extends ItemView {
     const row = this.row(sec, 'plain / with a menu')
     new SplitButton(row).setIcon('plus').setLabel('Add task').onClick(noop)
     new SplitButton(row).setIcon('plus').setLabel('Add task').onClick(noop).onMenu('More to add', noop)
+  }
+
+  private renderStepper(): void {
+    const sec = this.section('Stepper', 'stepper')
+    const row = this.row(sec, 'middle / at the lower end')
+    const props = {
+      decreaseLabel: 'Zoom out',
+      increaseLabel: 'Zoom in',
+      resetLabel: 'Reset zoom',
+      onDecrease: noop,
+      onIncrease: noop,
+      onReset: noop
+    }
+    new Stepper(row, props).setValue('120%', false, false)
+    new Stepper(row, props).setValue('50%', true, false)
   }
 
   private renderFilterChip(): void {

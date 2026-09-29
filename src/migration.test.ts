@@ -87,7 +87,8 @@ describe('migrateProjectLayout', () => {
       sort: makeDefaultSort(),
       group: makeDefaultGroup(),
       fields: {},
-      ganttGranularity: 'week'
+      ganttGranularity: 'week',
+      nonWorkingDays: {}
     }
     settings.scopeViews['subtree:Projects/Roadmap.md'] = []
     settings.collapsedTasks['Projects/Roadmap.md'] = ['t1']
@@ -283,7 +284,8 @@ describe('migrateBoardCardConfig', () => {
       sort: makeDefaultSort(),
       group: makeDefaultGroup(),
       fields: { kanban: { visible: ['priority', 'description', 'subtasks'] } },
-      ganttGranularity: 'week'
+      ganttGranularity: 'week',
+      nonWorkingDays: {}
     }
     await migrateBoardCardConfig(plugin)
     const visible = settings.projectFilters['project:Projects/Roadmap/Roadmap.md'].fields.kanban?.visible
