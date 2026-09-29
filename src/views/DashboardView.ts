@@ -25,13 +25,20 @@ import {
   openSavedViewsPopover,
   openSearchPopover,
   openSortPopover,
+  renderOptionRow,
+  renderProjectFilterPanel,
+  renderSortPanel,
   renderBreadcrumb,
   safeAsync,
   SearchBox,
   showMenuBelow,
   SplitButton,
   ViewHeader,
+  type PlatformMenu,
+  type ProjectFilterProps,
   type SearchBoxProps,
+  type SortPopoverProps,
+  type TuneSheetProps,
   type SortField,
   type TuneItem
 } from '@dotpm/ui'
@@ -67,6 +74,7 @@ export class DashboardView extends ItemView {
   private sortButton: ChipButton | null = null
   private groupButton: ChipButton | null = null
   private items: ProjectListItem[] = []
+  private shown = 0
 
   constructor(leaf: WorkspaceLeaf, plugin: PMPlugin) {
     super(leaf)
@@ -149,7 +157,10 @@ export class DashboardView extends ItemView {
     })
     this.renderViewSlot(header.view)
     this.renderQuerySlot(header.query)
-    header.setTuneItems(() => this.tuneItems())
+    header
+      .setTuneItems(() => this.tuneItems())
+      .setTuneSheet(() => this.tuneSheet())
+      .setMoreMenu((menu) => this.fillMoreMenu(menu))
     new SplitButton(header.actions)
       .setIcon('plus')
       .setLabel(t('header.newProject'))
@@ -198,15 +209,25 @@ export class DashboardView extends ItemView {
   }
 
   private openFilter(anchor: HTMLElement): void {
+    openProjectFilterPopover(
+      anchor,
+      this.filterProps(() => {})
+    )
+  }
+
+  private filterProps(after: () => void): ProjectFilterProps {
     const all = allProjectItems(this.items)
     const progress: Record<ProjectProgress, number> = { 'not-started': 0, 'in-progress': 0, complete: 0 }
     for (const item of all) progress[projectProgress(item)]++
-    openProjectFilterPopover(anchor, {
+    return {
       filter: this.state.filter,
       progress,
       tags: projectTagCounts(this.items),
-      onChange: () => this.changed()
-    })
+      onChange: () => {
+        this.changed()
+        after()
+      }
+    }
   }
 
   private toggleArchived(): void {
@@ -218,16 +239,92 @@ export class DashboardView extends ItemView {
   }
 
   private openSort(anchor: HTMLElement): void {
-    openSortPopover(anchor, {
+    openSortPopover(
+      anchor,
+      this.sortProps(() => {})
+    )
+  }
+
+  private sortProps(after: () => void): SortPopoverProps<ProjectSortKey> {
+    return {
       fields: sortFields(),
       sort: this.state.sort,
-      onChange: () => this.changed(),
+      onChange: () => {
+        this.changed()
+        after()
+      },
       onReset: () => {
         const { sort } = this.state
         sort.splice(0, sort.length, ...structuredClone(this.activeView()?.sort ?? []))
         this.changed()
+        after()
       }
-    })
+    }
+  }
+
+  /** The phone's sheet: Filter, Sort and Group, and how many projects they leave. */
+  private tuneSheet(): TuneSheetProps {
+    return {
+      tabs: [
+        {
+          id: 'filter',
+          label: t('header.filter'),
+          badge: () => {
+            const count = countProjectFilters(this.state.filter)
+            return count ? String(count) : ''
+          },
+          render: (parent, changed) => renderProjectFilterPanel(parent, this.filterProps(changed))
+        },
+        {
+          id: 'sort',
+          label: t('header.sort'),
+          render: (parent, changed) => renderSortPanel(parent, this.sortProps(changed))
+        },
+        {
+          id: 'group',
+          label: t('header.group'),
+          render: (parent, changed) => {
+            const draw = (): void => {
+              parent.empty()
+              const list = parent.createDiv('pm-pop-list')
+              for (const option of ['none', 'folder', 'tag'] as const) {
+                renderOptionRow(list, {
+                  label: groupLabel(option),
+                  selected: this.state.group === option,
+                  onPick: () => {
+                    this.state.group = option
+                    this.changed()
+                    draw()
+                    changed()
+                  }
+                })
+              }
+            }
+            draw()
+          }
+        }
+      ],
+      clear: {
+        label: t('filter.clearAll'),
+        canClear: () => countProjectFilters(this.state.filter) > 0,
+        onClear: () => {
+          this.state.filter = {}
+          this.changed()
+        }
+      },
+      doneLabel: () => tn('header.showProjects', this.shown)
+    }
+  }
+
+  /** The phone's "More" menu: the Archived toggle, which the header has no room for. */
+  private fillMoreMenu(menu: PlatformMenu): void {
+    menu.addItem((item) =>
+      item
+        .setTitle(t('common.archived'))
+        .setIcon('archive')
+        .setChecked(this.plugin.settings.showArchivedProjects)
+        .onClick(() => this.toggleArchived())
+    )
   }
 
   private openGroupMenu(anchor: HTMLElement): void {
@@ -308,6 +405,7 @@ export class DashboardView extends ItemView {
     const { groups, shown, total } = arrangeProjects(this.items, this.state, this.text, (path) =>
       plugin.isProjectCollapsed(path)
     )
+    this.shown = shown
     this.syncHeader(shown, total)
     this.bodyEl.empty()
 

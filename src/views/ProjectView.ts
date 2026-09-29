@@ -1,4 +1,4 @@
-import { ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
+import { ItemView, Menu, Platform, Scope, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
 import {
   type GanttGranularity,
@@ -13,6 +13,7 @@ import {
   type ViewMode,
   flattenTasks,
   shownFields,
+  tidyFields,
   GANTT_GRANULARITIES,
   bestConditionToDrop,
   countActiveFilters,
@@ -57,13 +58,24 @@ import {
   openSavedViewsPopover,
   openSearchPopover,
   openSortPopover,
+  renderFieldsPanel,
+  renderFilterPanel,
+  renderGroupPanel,
+  renderSortPanel,
   renderBreadcrumb,
   safeAsync,
   SearchBox,
   showMenuBelow,
   SplitButton,
   ViewHeader,
+  type FieldsPopoverProps,
+  type FilterSetup,
+  type GroupPopoverProps,
+  type PlatformMenu,
   type SearchBoxProps,
+  type SheetTab,
+  type SortPopoverProps,
+  type TuneSheetProps,
   type SortField,
   type StepperProps,
   type SwitcherProject,
@@ -499,7 +511,10 @@ export class ProjectView extends ItemView {
     this.renderQuerySlot(header.query)
     this.renderOptionsSlot(header.options, scope)
     this.renderActionsSlot(header.actions)
-    header.setTuneItems(() => this.tuneItems())
+    header
+      .setTuneItems(() => this.tuneItems())
+      .setTuneSheet(() => this.tuneSheet())
+      .setMoreMenu((menu, anchor) => this.fillMoreMenu(menu, anchor))
     this.renderFilterBar()
     this.syncHeader()
   }
@@ -820,12 +835,21 @@ export class ProjectView extends ItemView {
   }
 
   private openSort(anchor: HTMLElement): void {
+    openSortPopover(
+      anchor,
+      this.sortProps(() => {})
+    )
+  }
+
+  /** What the sort panel edits; `after` runs after each change, for a host that follows it. */
+  private sortProps(after: () => void): SortPopoverProps {
     const sorted = (): void => {
       this.syncHeader()
       this.refreshSubview()
       void this.persistFilter()
+      after()
     }
-    openSortPopover(anchor, {
+    return {
       fields: sortFields(this.projectScope?.config),
       sort: this.sort,
       onChange: sorted,
@@ -833,18 +857,26 @@ export class ProjectView extends ItemView {
         this.sort.splice(0, this.sort.length, ...structuredClone(this.activeView()?.sort ?? makeDefaultSort()))
         sorted()
       }
-    })
+    }
   }
 
   private openFields(anchor: HTMLElement): void {
+    const props = this.fieldsProps(() => {})
+    if (props) openFieldsPopover(anchor, props)
+  }
+
+  private fieldsProps(after: () => void): FieldsPopoverProps | null {
     const scope = this.projectScope
-    if (!scope) return
-    openFieldsPopover(anchor, {
+    if (!scope) return null
+    return {
       mode: this.currentView,
       fields: this.fields,
       catalog: scope.fieldCatalog(),
-      onChange: () => this.handleFieldsChange()
-    })
+      onChange: () => {
+        this.handleFieldsChange()
+        after()
+      }
+    }
   }
 
   /** The sort button's words: the first key's field and how many keys follow it, or nothing at the default. */
@@ -981,9 +1013,14 @@ export class ProjectView extends ItemView {
   }
 
   private openGroup(anchor: HTMLElement): void {
+    const props = this.groupProps(() => {})
+    if (props) openGroupPopover(anchor, props)
+  }
+
+  private groupProps(after: () => void): GroupPopoverProps | null {
     const setup = this.groupSetup()
-    if (!setup) return
-    openGroupPopover(anchor, {
+    if (!setup) return null
+    return {
       fields: groupableFields(setup).map((id) => ({ id, label: filterFieldLabel(id, setup.ctx.customFields) })),
       group: this.group,
       columns: () => this.boardColumnsNow(),
@@ -991,8 +1028,151 @@ export class ProjectView extends ItemView {
         this.syncHeader()
         this.refreshSubview()
         void this.persistFilter()
+        after()
+      }
+    }
+  }
+
+  /** The phone's sheet: a tab for each query control this mode has, and how many tasks it leaves. */
+  private tuneSheet(): TuneSheetProps {
+    const tabs: SheetTab[] = []
+    const setup = this.filterSetup()
+    if (setup) {
+      tabs.push({
+        id: 'filter',
+        label: t('header.filter'),
+        badge: () => {
+          const count = countActiveFilters(this.query.filter)
+          return count ? String(count) : ''
+        },
+        render: (parent, changed) =>
+          renderFilterPanel(
+            parent,
+            setup,
+            () => {
+              this.handleFilterMutation()
+              changed()
+            },
+            'list'
+          )
+      })
+    }
+    if (this.currentView !== 'gantt') {
+      tabs.push({
+        id: 'sort',
+        label: t('header.sort'),
+        render: (parent, changed) => renderSortPanel(parent, this.sortProps(changed))
+      })
+    }
+    if (this.currentView === 'kanban') {
+      tabs.push({
+        id: 'group',
+        label: t('header.group'),
+        render: (parent, changed) => {
+          const props = this.groupProps(changed)
+          if (props) renderGroupPanel(parent, props)
+        }
+      })
+    }
+    tabs.push({
+      id: 'fields',
+      label: t('header.fields'),
+      render: (parent, changed) => {
+        const props = this.fieldsProps(changed)
+        if (props) renderFieldsPanel(parent, props)
       }
     })
+    return {
+      tabs,
+      clear: {
+        label: t('filter.clearAll'),
+        canClear: () => countActiveFilters(this.query.filter) > 0,
+        onClear: () => {
+          this.query.filter.conditions = []
+          this.query.filter.showArchived = false
+          this.handleFilterMutation()
+        }
+      },
+      doneLabel: () => tn('header.showTasks', this.taskCounts().shown)
+    }
+  }
+
+  /** The phone's "More" menu: the view mode and the options the header has no room for. */
+  private fillMoreMenu(menu: PlatformMenu, anchor: HTMLElement): void {
+    const scope = this.projectScope
+    const primary = scope?.primary
+    if (!scope || !primary) return
+    for (const mode of MODES) {
+      menu.addItem((item) =>
+        item
+          .setTitle(modeLabel(mode))
+          .setIcon(MODE_ICONS[mode])
+          .setChecked(mode === this.currentView)
+          .onClick(() => this.switchMode(mode))
+      )
+    }
+    if (!scope.isMulti) {
+      menu.addItem((item) =>
+        item
+          .setTitle(t('views.overview'))
+          .setIcon('file-text')
+          .onClick(safeAsync(() => this.plugin.router.openProjectOverview(primary.filePath, this.leaf)))
+      )
+    }
+    if (this.currentView === 'gantt') {
+      menu.addSeparator()
+      menu.addItem((item) =>
+        item
+          .setTitle(t('gantt.today'))
+          .setIcon('calendar-check')
+          .onClick(() => this.scrollToToday())
+      )
+      menu.addItem((item) =>
+        item
+          .setTitle(`${t('header.scale')}: ${granularityLabel(this.granularity)}`)
+          .setIcon('calendar-range')
+          .onClick(() => this.openScaleMenu(anchor))
+      )
+      menu.addItem((item) =>
+        item
+          .setTitle(t('timeline.zoomIn'))
+          .setIcon('zoom-in')
+          .setDisabled(this.zoom >= MAX_ZOOM)
+          .onClick(() => this.setZoom(stepZoom(this.zoom, 1)))
+      )
+      menu.addItem((item) =>
+        item
+          .setTitle(t('timeline.zoomOut'))
+          .setIcon('zoom-out')
+          .setDisabled(this.zoom <= MIN_ZOOM)
+          .onClick(() => this.setZoom(stepZoom(this.zoom, -1)))
+      )
+      menu.addItem((item) =>
+        item
+          .setTitle(t('timeline.nonWorkingDays'))
+          .setIcon('calendar-off')
+          .onClick(() => this.openNonWorkingDays(anchor))
+      )
+    }
+    if (this.currentView !== 'kanban') {
+      const anyCollapsed = collapsedTaskIds(this.plugin.settings, scope.projects).size > 0
+      menu.addSeparator()
+      menu.addItem((item) =>
+        item
+          .setTitle(anyCollapsed ? t('gantt.expandAll') : t('gantt.collapseAll'))
+          .setIcon(anyCollapsed ? 'chevrons-up-down' : 'chevrons-down-up')
+          .onClick(() => this.toggleCollapseAll(scope, anyCollapsed))
+      )
+    }
+    if (this.currentView === 'gantt') {
+      menu.addSeparator()
+      menu.addItem((item) =>
+        item
+          .setTitle(t('projectView.addMilestone'))
+          .setIcon('diamond')
+          .onClick(() => this.addTask(anchor, { type: 'milestone' }))
+      )
+    }
   }
 
   private renderOptionsSlot(parent: HTMLElement, scope: ProjectScope): void {
@@ -1085,6 +1265,38 @@ export class ProjectView extends ItemView {
     this.refreshSubview()
   }
 
+  /** Column widths a phone keeps for itself, since widths set on a wider screen rarely suit it. */
+  private phoneWidthsKey(): string {
+    return `dotpm-table-widths:${this.projectScope?.key ?? ''}`
+  }
+
+  /** The view's fields with this phone's own column widths in place of the view's, for the table to edit. */
+  private phoneTableFields(): ViewFields {
+    const fields = structuredClone(this.fields)
+    const widths = this.app.loadLocalStorage(this.phoneWidthsKey()) as Record<string, number> | null
+    if (fields.table) delete fields.table.widths
+    if (widths && this.projectScope) {
+      const visible = shownFields(this.fields, 'table', this.projectScope.fieldCatalog())
+      fields.table = { visible: fields.table?.visible ?? visible, widths }
+    }
+    return fields
+  }
+
+  /** Keeps widths on the device and takes only which columns show back into the view. */
+  private handlePhoneTableFields(edited: ViewFields): void {
+    const scope = this.projectScope
+    if (!scope) return
+    const widths = edited.table?.widths
+    this.app.saveLocalStorage(this.phoneWidthsKey(), widths && Object.keys(widths).length ? widths : null)
+    const catalog = scope.fieldCatalog()
+    const visible = shownFields(edited, 'table', catalog)
+    if (!sameValue(visible, shownFields(this.fields, 'table', catalog))) {
+      this.fields.table = { ...this.fields.table, visible }
+      tidyFields(this.fields, catalog)
+    }
+    this.handleFieldsChange()
+  }
+
   /** Zoom is per device, so it is kept in this vault's local storage rather than in the view. */
   private zoomKey(): string {
     return `dotpm-timeline-zoom:${this.projectScope?.key ?? ''}`
@@ -1133,16 +1345,11 @@ export class ProjectView extends ItemView {
     }
   }
 
-  private renderFilterBar(): void {
-    const header = this.header
+  private filterSetup(): FilterSetup | null {
     const scope = this.projectScope
-    if (!header || !scope) return
-    header.bar.empty()
-    this.filterBar = null
-    if (!this.queryBarOpen) return
+    if (!scope) return null
     const config = scope.config
-    const counts = this.taskCounts()
-    this.filterBar = new FilterBar(header.bar, {
+    return {
       filter: this.query.filter,
       tasks: flattenTasks(scope.tasks()).map((flat) => flat.task),
       ctx: scope.filterContext(personKeyer(this.plugin.app)),
@@ -1150,7 +1357,21 @@ export class ProjectView extends ItemView {
       priorityIcons: config.priorityIcons,
       projects: scope.isMulti
         ? scope.projects.map((project) => ({ id: project.id, title: project.title, color: project.color }))
-        : [],
+        : []
+    }
+  }
+
+  /** The applied filters under the header. A phone reaches them through the Tune sheet instead. */
+  private renderFilterBar(): void {
+    const header = this.header
+    const setup = this.filterSetup()
+    if (!header || !setup) return
+    header.bar.empty()
+    this.filterBar = null
+    if (!this.queryBarOpen || Platform.isPhone) return
+    const counts = this.taskCounts()
+    this.filterBar = new FilterBar(header.bar, {
+      ...setup,
       summary: t('header.shownSummary', { shown: counts.shown, total: counts.total }),
       onChange: () => this.handleFilterMutation(),
       onClose: () => {
@@ -1300,6 +1521,8 @@ export class ProjectView extends ItemView {
 
     switch (this.currentView) {
       case 'table': {
+        const phone = Platform.isPhone
+        const fields = phone ? this.phoneTableFields() : this.fields
         const table = new TableView(
           this.bodyEl,
           scope,
@@ -1312,8 +1535,8 @@ export class ProjectView extends ItemView {
             await this.persistFilter()
           }),
           this.keyScope,
-          this.fields,
-          () => this.handleFieldsChange()
+          fields,
+          () => (phone ? this.handlePhoneTableFields(fields) : this.handleFieldsChange())
         )
         if (savedTableScrollTop !== null) table.setPendingScrollTop(savedTableScrollTop)
         this.subview = table

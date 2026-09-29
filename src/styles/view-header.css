@@ -895,3 +895,148 @@ input.pm-days-input {
   font-size: var(--font-ui-smaller);
   white-space: normal;
 }
+.pm-vh--phone .pm-vh-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-rows: 48px 44px;
+  grid-template-areas:
+    'context query more'
+    'view view tune';
+  column-gap: 2px;
+  height: auto;
+}
+.pm-vh--phone .pm-vh-row > .pm-vh-slot {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: none;
+}
+.pm-vh--phone .pm-vh-context {
+  grid-area: context;
+  min-width: 0;
+}
+.pm-vh--phone .pm-vh-query {
+  grid-area: query;
+}
+.pm-vh--phone .pm-vh-query > :not(.pm-search-box),
+.pm-vh--phone .pm-vh-options,
+.pm-vh--phone .pm-vh-spacer {
+  display: none;
+}
+.pm-vh--phone .pm-vh-more {
+  grid-area: more;
+}
+.pm-vh--phone .pm-vh-view {
+  grid-area: view;
+  gap: 6px;
+}
+.pm-vh--phone .pm-vh-row > .pm-vh-tune {
+  grid-area: tune;
+  display: flex;
+}
+.pm-vh--phone .pm-crumbs {
+  font-size: var(--font-ui-medium);
+}
+.pm-vh--phone .pm-crumbs-glyph {
+  --pm-glyph-size: 18px;
+  --icon-size: 18px;
+}
+.pm-vh--phone button.pm-crumb {
+  height: 44px;
+}
+.pm-vh--phone button.pm-chip-btn--icon-only,
+.pm-vh--phone .pm-search-box-toggle {
+  width: 44px;
+  height: 44px;
+  --icon-size: 20px;
+}
+.pm-vh--phone .pm-search-box {
+  height: 44px;
+}
+.pm-vh--phone .pm-vh-view button.pm-chip-btn,
+.pm-vh--phone .pm-vh-tune button.pm-chip-btn {
+  height: 32px;
+  padding: 0 10px;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 16px;
+  --icon-size: 14px;
+}
+.pm-vh--phone .pm-vh-tune button.pm-chip-btn--active {
+  border-color: transparent;
+}
+.pm-vh--phone .pm-vh-row > .pm-vh-actions {
+  position: absolute;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 10;
+}
+.pm-vh--phone .pm-split-btn-label,
+.pm-vh--phone .pm-split-btn-menu {
+  display: none;
+}
+.pm-vh--phone .pm-split-btn button.pm-split-btn-main {
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  box-shadow: var(--shadow-s);
+  --icon-size: 24px;
+}
+.pm-root:has(.pm-vh--phone) .pm-content {
+  padding-bottom: 88px;
+}
+
+.pm-tune-sheet {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.pm-tune-sheet-tabs {
+  display: flex;
+  gap: 2px;
+  padding: 2px;
+  border-radius: var(--radius-m);
+  background: var(--background-modifier-hover);
+}
+button.pm-tune-sheet-tab {
+  display: inline-flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+  padding: 0 6px;
+  border: none;
+  border-radius: var(--radius-s);
+  background: transparent;
+  box-shadow: none;
+  color: var(--text-muted);
+  font-size: var(--font-ui-small);
+}
+button.pm-tune-sheet-tab.is-active {
+  background: var(--background-primary);
+  box-shadow: 0 0 0 1px var(--background-modifier-border);
+  color: var(--text-normal);
+}
+.pm-tune-sheet-body {
+  min-height: 0;
+}
+.pm-tune-sheet-foot {
+  display: flex;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+.pm-tune-sheet-foot button {
+  height: 44px;
+}
+button.pm-tune-sheet-done {
+  flex: 1;
+}
+.pm-pop--sheet:has(.pm-tune-sheet) {
+  box-shadow: 0 0 0 100vmax var(--background-modifier-cover);
+}
+.pm-pop--sheet button.pm-pop-item {
+  min-height: 44px;
+  font-size: var(--font-ui-small);
+}

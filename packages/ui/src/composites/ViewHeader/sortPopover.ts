@@ -44,9 +44,8 @@ export function sortDirLabel<K extends string>(field: SortField<K>, dir: SortDir
  * One row per sort key: a grip to drag it into another rank, the field, the direction,
  * and a remove button. Rows below the first break ties left by the ones above.
  */
-export function openSortPopover<K extends string>(anchor: HTMLElement, props: SortPopoverProps<K>): Popover {
-  const pop = new Popover({ anchor, width: 340 })
-  const body = pop.contentEl.createDiv('pm-sort-pop')
+export function renderSortPanel<K extends string>(parent: HTMLElement, props: SortPopoverProps<K>): void {
+  const body = parent.createDiv('pm-sort-pop')
   const { sort } = props
   let dragFrom: number | null = null
 
@@ -139,6 +138,12 @@ export function openSortPopover<K extends string>(anchor: HTMLElement, props: So
   }
 
   render()
+}
+
+/** The sort panel in a popover under `anchor`. */
+export function openSortPopover<K extends string>(anchor: HTMLElement, props: SortPopoverProps<K>): Popover {
+  const pop = new Popover({ anchor, width: 340 })
+  renderSortPanel(pop.contentEl, props)
   pop.open()
   return pop
 }

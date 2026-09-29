@@ -44,6 +44,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Changing a saved view now marks it unsaved instead of switching back to all tasks
 - Search text is no longer saved with a view. Saved views that searched now filter by title.
 - In a narrow pane, the header now folds its controls into "View options" and filters into a count
+- On phones, the header now takes two rows and the add button floats over the view
+- Table column widths set on a phone now stay on that phone
 
 ### Removed
 
@@ -52,6 +54,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Fixed a task note opened with "Open as note" never opening in the task editor again
+- Fixed project names wrapping under their icons when the project list is narrow
 - Fixed projects, statuses, and priorities with an invalid color breaking the color picker
 - Fixed tasks failing to save or losing their description after renaming their project ([#359](https://github.com/dotpm/obsidian-pm/issues/359))
 - Fixed saved views losing their sort when saved, updated, or opened outside the table
