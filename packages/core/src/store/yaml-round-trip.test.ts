@@ -4,6 +4,7 @@ import {
   DEFAULT_PROJECT_COLOR,
   makeProject,
   makeTask,
+  type FilterCondition,
   type Project,
   type SavedView,
   type Task
@@ -252,6 +253,18 @@ describe('project round-trip', () => {
 
     const { project } = roundTripProject(p)
     expect(project.savedViews).toEqual([view])
+  })
+
+  it('keeps the open end of a between in place', () => {
+    const p = makeProject('P', 'Projects/P.md')
+    const conditions: FilterCondition[] = [
+      { field: 'due', op: 'between', value: ['', '2026-01-31'] },
+      { field: 'start', op: 'between', value: ['2026-01-01', ''] }
+    ]
+    p.savedViews = [{ id: 'v1', name: 'Open ends', filter: { conditions, showArchived: false }, sort: [] }]
+
+    const { project } = roundTripProject(p)
+    expect(project.savedViews[0].filter.conditions).toEqual(conditions)
   })
 
   it('falls back to the default sort when a saved view holds an unknown one', () => {
