@@ -1,9 +1,9 @@
 import { ButtonComponent, ItemView, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
+import { renderPanelSections } from './panelSections'
 import {
   type PriorityConfig,
   type PriorityIconSet,
-  type SortRule,
   type Task,
   DEFAULT_PRIORITIES,
   DEFAULT_STATUSES,
@@ -72,8 +72,6 @@ import {
   safeAsync,
   renderBreadcrumb,
   renderVisibilityList,
-  openTuneSheet,
-  renderSortPanel,
   SearchBox,
   ViewHeader
 } from '@dotpm/ui'
@@ -148,6 +146,11 @@ export class StyleguideView extends ItemView {
     this.renderViewHeader()
     this.renderVisibilityList()
     this.renderTable()
+    this.group('Popover panels')
+    renderPanelSections({
+      section: (title, id) => this.section(title, id),
+      row: (sec, caption) => this.row(sec, caption)
+    })
     return Promise.resolve()
   }
 
@@ -196,6 +199,14 @@ export class StyleguideView extends ItemView {
     new ChipButton(parts).setIcon('bookmark').setLabel('Sprint 14').setChevron(true)
     new ChipButton(parts).setIcon('ellipsis').setLabel('').setAriaLabel('More options')
     new ChipButton(parts).setLabel('Disabled').setDisabled(true)
+    const flat = this.row(sec, 'flat / flat active / flat disabled: buttons inside a panel or a bar')
+    new ChipButton(flat).setVariant('flat').setLabel('Reset')
+    new ChipButton(flat).setVariant('flat').setLabel('Filter').setBadge('2').setActive(true)
+    new ChipButton(flat).setVariant('flat').setLabel('Hide all').setDisabled(true)
+    const outline = this.row(sec, 'outline / outline active / outline disabled: one of a set of choices')
+    new ChipButton(outline).setVariant('outline').setLabel('is any of').setActive(true)
+    new ChipButton(outline).setVariant('outline').setLabel('is none of')
+    new ChipButton(outline).setVariant('outline').setLabel('is empty').setDisabled(true)
   }
 
   private renderAvatars(): void {
@@ -683,37 +694,6 @@ export class StyleguideView extends ItemView {
     const narrow = this.row(sec, '300px: query and options folded into Tune, filters folded into a count')
     narrow.addClass('pm-sg-narrow')
     this.mountViewHeader(narrow)
-
-    const sheetRow = this.row(sec, "the phone's Tune sheet: a tab per panel, edits apply live, the button closes it")
-    const open = new ButtonComponent(sheetRow).setButtonText('Open view options sheet')
-    open.onClick(() => {
-      const sort: SortRule[] = [{ key: 'priority', dir: 'desc' }]
-      let shown = 42
-      openTuneSheet(open.buttonEl, {
-        tabs: [
-          {
-            id: 'sort',
-            label: 'Sort',
-            badge: () => (sort.length > 1 ? String(sort.length) : ''),
-            render: (parent, changed) =>
-              renderSortPanel(parent, {
-                fields: [
-                  { id: 'priority', label: 'Priority' },
-                  { id: 'due', label: 'Due date' }
-                ],
-                sort,
-                onChange: () => {
-                  shown = 42 - sort.length
-                  changed()
-                },
-                onReset: changed
-              })
-          },
-          { id: 'fields', label: 'Fields', render: (parent) => parent.createDiv({ text: 'The Fields panel.' }) }
-        ],
-        doneLabel: () => `Show ${shown} tasks`
-      })
-    })
   }
 
   private mountViewHeader(host: HTMLElement): void {
