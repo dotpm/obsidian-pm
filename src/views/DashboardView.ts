@@ -16,7 +16,8 @@ import {
   projectTagCounts,
   sameValue,
   t,
-  tn
+  tn,
+  withDefault
 } from '@dotpm/core'
 import {
   ChipButton,
@@ -40,7 +41,9 @@ import {
   type SortPopoverProps,
   type TuneSheetProps,
   type SortField,
-  type TuneItem
+  type TuneItem,
+  SavedViewSlot,
+  syncSortButton
 } from '@dotpm/ui'
 import { openProjectCreate } from '#ui/ModalFactory'
 import { projectListItems, renderProjectTable, type ProjectListContext } from './ProjectListRenderer'
@@ -66,9 +69,7 @@ export class DashboardView extends ItemView {
   /** Search text lives as long as this view and is never saved. */
   private text = ''
   private collapsedGroups = new Set<string>()
-  private savedViewButton: ChipButton | null = null
-  private saveViewButton: ChipButton | null = null
-  private countEl: HTMLElement | null = null
+  private viewSlot: SavedViewSlot | null = null
   private filterButton: ChipButton | null = null
   private archivedButton: ChipButton | null = null
   private sortButton: ChipButton | null = null
@@ -168,17 +169,10 @@ export class DashboardView extends ItemView {
   }
 
   private renderViewSlot(parent: HTMLElement): void {
-    const button = new ChipButton(parent).setIcon('bookmark').setChevron(true).setAriaLabel(t('header.savedViews'))
-    button.el.addClass('pm-vh-saved-view')
-    button.el.createSpan({ cls: 'pm-dirty-dot', attr: { 'aria-hidden': 'true' } })
-    button.onClick(() => this.openSavedViews(button.el))
-    this.savedViewButton = button
-    this.saveViewButton = new ChipButton(parent)
-      .setLabel(t('header.saveChanges'))
-      .setTooltip(t('header.updateView'))
-      .onClick(safeAsync(() => this.updateActiveView()))
-    this.saveViewButton.el.addClass('pm-vh-save-view')
-    this.countEl = parent.createSpan('pm-vh-count')
+    this.viewSlot = new SavedViewSlot(parent, {
+      onOpen: (anchor) => this.openSavedViews(anchor),
+      onSave: safeAsync(() => this.updateActiveView())
+    })
   }
 
   private renderQuerySlot(parent: HTMLElement): void {
@@ -454,18 +448,14 @@ export class DashboardView extends ItemView {
   private syncHeader(shown: number, total: number): void {
     const { settings, index } = this.plugin
     const active = this.activeView()
-    const dirty = this.viewChanges().length > 0
-    this.savedViewButton
-      ?.setLabel(active?.name ?? t('header.allProjects'))
-      .setTooltip(active?.name ?? t('header.allProjects'))
-    this.savedViewButton?.el.toggleClass('pm-vh-saved-view--none', !active)
-    this.savedViewButton?.el.toggleClass('pm-vh-saved-view--dirty', dirty)
-    this.saveViewButton?.el.toggleClass('pm-hidden', !dirty)
-    this.countEl?.setText(
-      isProjectQueryActive(this.state.filter, this.text)
+    this.viewSlot?.sync({
+      name: active?.name ?? t('header.allProjects'),
+      saved: !!active,
+      dirty: this.viewChanges().length > 0,
+      count: isProjectQueryActive(this.state.filter, this.text)
         ? t('header.shownOf', { shown, total })
         : tn('count.projects', total)
-    )
+    })
     const filters = countProjectFilters(this.state.filter)
     this.filterButton?.setBadge(filters ? String(filters) : '').setActive(filters > 0)
     this.searchBox?.setValue(this.text)
@@ -477,11 +467,9 @@ export class DashboardView extends ItemView {
     this.archivedButton?.el.toggleClass('pm-hidden', !hasArchived && !settings.showArchivedProjects)
     const [first] = this.state.sort
     const field = first ? sortFields().find((f) => f.id === first.key) : undefined
-    this.sortButton
-      ?.setLabel(field?.label ?? t('header.sort'))
-      .setIcon(!first ? 'arrow-down-up' : first.dir === 'asc' ? 'arrow-up-narrow-wide' : 'arrow-down-wide-narrow')
-      .setBadge(this.state.sort.length > 1 ? `+${this.state.sort.length - 1}` : '')
-      .setActive(!!first)
+    if (this.sortButton) {
+      syncSortButton(this.sortButton, field && { label: field.label, dir: first.dir }, this.state.sort.length)
+    }
     const grouped = this.state.group !== 'none'
     this.groupButton?.setLabel(grouped ? groupLabel(this.state.group) : t('header.group')).setActive(grouped)
     this.header?.fit()
@@ -558,7 +546,7 @@ export class DashboardView extends ItemView {
       },
       onSave: async (name, isDefault) => {
         const view = { ...this.snapshot(makeId(), name), ...(isDefault ? { isDefault: true } : {}) }
-        const rest = isDefault ? views.map((v) => ({ ...v, isDefault: undefined })) : views
+        const rest = isDefault ? withDefault(views, null) : views
         this.state.activeViewId = view.id
         await this.persistViews([...rest, view])
       },
@@ -574,7 +562,7 @@ export class DashboardView extends ItemView {
         await this.persistViews(views.filter((v) => v.id !== id))
       },
       onReorder: (ids) => this.persistViews(ids.flatMap((id) => views.find((v) => v.id === id) ?? [])),
-      onSetDefault: (id) => this.persistViews(views.map((v) => ({ ...v, isDefault: v.id === id ? true : undefined })))
+      onSetDefault: (id) => this.persistViews(withDefault(views, id))
     })
   }
 }

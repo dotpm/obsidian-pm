@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { makeDefaultFilter, makeDefaultGroup, makeDefaultSort, type SavedView } from '../types'
-import { sameValue, viewDifferences, type ViewState } from './ViewState'
+import { sameValue, viewDifferences, withDefault, type ViewState } from './ViewState'
 
 const view: SavedView = {
   id: 'v1',
@@ -88,5 +88,22 @@ describe('sameValue', () => {
   it('compares nested values by content', () => {
     expect(sameValue({ a: 1, b: [1, { c: 2 }] }, { b: [1, { c: 2 }], a: 1 })).toBe(true)
     expect(sameValue([1, 2], [2, 1])).toBe(false)
+  })
+})
+
+describe('withDefault', () => {
+  const views = [
+    { id: 'a', isDefault: true },
+    { id: 'b' },
+    { id: 'c', isDefault: true }
+  ]
+
+  it('stars one view and clears the rest', () => {
+    expect(withDefault(views, 'b')).toEqual([{ id: 'a' }, { id: 'b', isDefault: true }, { id: 'c' }])
+  })
+
+  it('clears every star for null, leaving the input as it was', () => {
+    expect(withDefault(views, null)).toEqual([{ id: 'a' }, { id: 'b' }, { id: 'c' }])
+    expect(views[0].isDefault).toBe(true)
   })
 })
