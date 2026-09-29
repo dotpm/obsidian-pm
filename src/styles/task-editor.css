@@ -280,6 +280,11 @@ button.pm-pop-item--danger {
 .pm-pop-check--hidden {
   visibility: hidden;
 }
+.pm-pop-item-trail {
+  display: inline-flex;
+  color: var(--text-faint);
+  --icon-size: 12px;
+}
 .pm-pop-field {
   width: 100%;
   margin-bottom: 4px;

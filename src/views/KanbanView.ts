@@ -1,4 +1,4 @@
-import { Menu, setIcon } from 'obsidian'
+import { Menu } from 'obsidian'
 import type PMPlugin from '#main'
 import {
   type Task,
@@ -27,6 +27,7 @@ import {
   boardColumns,
   boardField,
   cardCustomValues,
+  ChipButton,
   descriptionPreview,
   compareTasks,
   groupValues,
@@ -112,11 +113,13 @@ export class KanbanView implements SubView {
 
     const hidden = columns.filter((c) => c.hidden).length
     if (hidden) {
-      const rail = board.createEl('button', { cls: 'pm-kanban-hidden-rail' })
-      setIcon(rail.createSpan('pm-kanban-hidden-icon'), 'eye-off')
-      rail.createSpan({ text: tn('header.hiddenCount', hidden) })
-      rail.setAttribute('aria-label', t('header.showHiddenColumns'))
-      rail.addEventListener('click', () => this.onShowHidden(rail))
+      const rail = new ChipButton(board)
+        .setVariant('flat')
+        .setIcon('eye-off')
+        .setLabel(tn('header.hiddenCount', hidden))
+        .setAriaLabel(t('header.showHiddenColumns'))
+        .onClick(() => this.onShowHidden(rail.el))
+      rail.el.addClass('pm-kanban-hidden-rail')
     }
   }
 

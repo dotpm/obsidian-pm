@@ -1,4 +1,5 @@
-import { setIcon } from '#platform'
+import { ChipButton } from '#primitives/ChipButton'
+import { IconButton } from '#primitives/IconButton'
 import { Popover } from '#primitives/Popover'
 import {
   type DateBucket,
@@ -208,16 +209,15 @@ export function renderFilterPanel(
     body.empty()
     const list = body.createDiv('pm-pop-list')
     const remove = (row: HTMLElement, label: string, onRemove: () => void): void => {
-      const button = row.createEl('button', {
-        cls: 'clickable-icon pm-filter-list-remove',
-        attr: { 'aria-label': t('filter.remove', { label }) }
-      })
-      setIcon(button, 'x')
-      button.addEventListener('click', () => {
-        onRemove()
-        onChange()
-        showList()
-      })
+      new IconButton(row)
+        .setIcon('x')
+        .setTooltip(t('filter.remove', { label }))
+        .onClick(() => {
+          onRemove()
+          onChange()
+          showList()
+        })
+        .el.addClass('pm-filter-list-remove')
     }
     filter.conditions.forEach((condition, index) => {
       const label = filterFieldLabel(condition.field, setup.ctx.customFields)
@@ -265,9 +265,7 @@ export function renderFilterPanel(
     body.empty()
     if (back) {
       const head = body.createDiv('pm-filter-pop-head')
-      const button = head.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': t('filter.back') } })
-      setIcon(button, 'chevron-left')
-      button.addEventListener('click', back)
+      new IconButton(head).setIcon('chevron-left').setTooltip(t('filter.back')).onClick(back)
       head.createSpan({ cls: 'pm-filter-pop-title', text: t('filter.addFilter') })
     }
     const search = body.createEl('input', {
@@ -344,9 +342,7 @@ export function renderFilterPanel(
     body.empty()
     const head = body.createDiv('pm-filter-pop-head')
     if (back) {
-      const button = head.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': t('filter.back') } })
-      setIcon(button, 'chevron-left')
-      button.addEventListener('click', back)
+      new IconButton(head).setIcon('chevron-left').setTooltip(t('filter.back')).onClick(back)
     }
     head.createSpan({ cls: 'pm-filter-pop-title', text: filterFieldLabel(field, setup.ctx.customFields) })
 
@@ -355,17 +351,20 @@ export function renderFilterPanel(
     const renderOps = (): void => {
       ops.empty()
       for (const op of OPS_BY_KIND[kind]) {
-        const button = ops.createEl('button', { cls: 'pm-filter-pop-op', text: opLabel(op, 2) })
-        button.toggleClass('is-active', draft.op === op)
-        button.addEventListener('click', () => {
-          const listOps: FilterOp[] = ['any', 'none', 'all']
-          const keepsValue = listOps.includes(draft.op) && listOps.includes(op)
-          draft.op = op
-          if (!keepsValue) delete draft.value
-          commit()
-          renderOps()
-          renderValue()
-        })
+        new ChipButton(ops)
+          .setVariant('outline')
+          .setLabel(opLabel(op, 2))
+          .setActive(draft.op === op)
+          .onClick(() => {
+            const listOps: FilterOp[] = ['any', 'none', 'all']
+            const keepsValue = listOps.includes(draft.op) && listOps.includes(op)
+            draft.op = op
+            if (!keepsValue) delete draft.value
+            commit()
+            renderOps()
+            renderValue()
+          })
+          .el.addClass('pm-filter-pop-op')
       }
     }
 

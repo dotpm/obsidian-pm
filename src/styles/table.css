@@ -402,7 +402,8 @@ button.pm-chip-btn--active:hover {
 }
 .pm-table-row:hover .pm-icon-btn--hover-only,
 .pm-modal-subtask-row:hover .pm-icon-btn--hover-only,
-.pm-gantt-label-row:hover .pm-icon-btn--hover-only {
+.pm-gantt-label-row:hover .pm-icon-btn--hover-only,
+.pm-saved-view-row:hover .pm-icon-btn--hover-only {
   opacity: 1;
 }
 .pm-icon-btn--hover-only:focus-visible {

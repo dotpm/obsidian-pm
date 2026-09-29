@@ -1,4 +1,4 @@
-import { setIcon, setTooltip } from '#platform'
+import { IconButton } from '#primitives/IconButton'
 import { Popover } from '#primitives/Popover'
 
 export interface SearchBoxProps {
@@ -20,30 +20,23 @@ export class SearchBox {
 
   constructor(parentEl: HTMLElement, props: SearchBoxProps) {
     this.el = parentEl.createDiv('pm-search-box')
-    const toggle = this.el.createEl('button', {
-      cls: 'pm-search-box-toggle clickable-icon',
-      attr: { 'aria-label': props.label }
-    })
-    setIcon(toggle, 'search')
-    setTooltip(toggle, props.label)
+    const toggle = new IconButton(this.el).setIcon('search').setTooltip(props.label)
+    toggle.el.addClass('pm-search-box-toggle')
     this.input = this.el.createEl('input', {
       type: 'search',
       cls: 'pm-search-box-input',
       attr: { placeholder: props.placeholder, spellcheck: 'false', 'aria-label': props.label }
     })
     this.input.value = props.value
-    const clear = this.el.createEl('button', {
-      cls: 'pm-search-box-clear clickable-icon',
-      attr: { 'aria-label': props.clearLabel }
-    })
-    setIcon(clear, 'x')
+    const clear = new IconButton(this.el).setIcon('x').setTooltip(props.clearLabel)
+    clear.el.addClass('pm-search-box-clear')
 
     const set = (value: string) => {
       this.input.value = value
       this.sync()
       props.onChange(value)
     }
-    toggle.addEventListener('click', () => {
+    toggle.onClick(() => {
       this.el.addClass('is-open')
       this.input.focus()
     })
@@ -62,7 +55,7 @@ export class SearchBox {
         this.el.removeClass('is-open')
       }
     })
-    clear.addEventListener('click', () => {
+    clear.onClick(() => {
       set('')
       this.input.focus()
     })

@@ -1,7 +1,10 @@
-import { setIcon, setTooltip } from '#platform'
+import { createButton, setTooltip } from '#platform'
 import { safeAsync } from '#dom'
+import { Checkbox } from '#primitives/Checkbox'
+import { IconButton } from '#primitives/IconButton'
 import { Popover } from '#primitives/Popover'
 import { locale, t } from '@dotpm/core'
+import { renderOptionRow } from '../properties/optionList'
 
 export interface SavedViewItem {
   id: string
@@ -40,11 +43,10 @@ const SEARCH_FROM = 8
  * the default, renamed, deleted or dragged into another place; then a form to save the
  * current state as a new view.
  */
-export function openSavedViewsPopover(anchor: HTMLElement, props: SavedViewsProps): Popover {
-  const pop = new Popover({ anchor, width: 300 })
-  const body = pop.contentEl.createDiv('pm-saved-views')
+export function renderSavedViewsPanel(parent: HTMLElement, props: SavedViewsProps, close: () => void): void {
+  const body = parent.createDiv('pm-saved-views')
   const run = (action: () => Promise<void>): void => {
-    pop.close()
+    close()
     safeAsync(action)()
   }
 
@@ -57,7 +59,7 @@ export function openSavedViewsPopover(anchor: HTMLElement, props: SavedViewsProp
       attr: { placeholder: t('header.viewName'), spellcheck: 'false' }
     })
     const defaultRow = foot.createEl('label', { cls: 'pm-saved-views-check' })
-    const isDefault = defaultRow.createEl('input', { type: 'checkbox' })
+    const isDefault = new Checkbox(defaultRow).el
     defaultRow.createSpan({ text: t('header.makeDefault') })
     foot.createDiv({ cls: 'pm-saved-views-storage', text: props.storageNote })
     input.focus()
@@ -77,20 +79,18 @@ export function openSavedViewsPopover(anchor: HTMLElement, props: SavedViewsProp
     const changes = new Intl.ListFormat(locale(), { type: 'conjunction', style: 'narrow' }).format(props.changes)
     note.createSpan({ text: t('header.unsaved', { changes }) })
     const actions = dirty.createDiv('pm-saved-views-dirty-actions')
-    const update = actions.createEl('button', { cls: 'mod-cta', text: t('header.updateView') })
-    update.addEventListener('click', () => run(() => props.onUpdate(active.id)))
-    const saveNew = actions.createEl('button', { text: t('header.saveAsNew') })
-    saveNew.addEventListener('click', openForm)
-    const revert = actions.createEl('button', {
-      cls: 'clickable-icon',
-      attr: { 'aria-label': t('header.revert') }
-    })
-    setIcon(revert, 'undo-2')
-    setTooltip(revert, t('header.revert'))
-    revert.addEventListener('click', () => {
-      pop.close()
-      props.onRevert()
-    })
+    createButton(actions)
+      .setButtonText(t('header.updateView'))
+      .setCta()
+      .onClick(() => run(() => props.onUpdate(active.id)))
+    createButton(actions).setButtonText(t('header.saveAsNew')).onClick(openForm)
+    new IconButton(actions)
+      .setIcon('undo-2')
+      .setTooltip(t('header.revert'))
+      .onClick(() => {
+        close()
+        props.onRevert()
+      })
   }
 
   const search =
@@ -103,7 +103,7 @@ export function openSavedViewsPopover(anchor: HTMLElement, props: SavedViewsProp
   const list = body.createDiv('pm-pop-list')
   let dragFrom: string | null = null
 
-  const beginRename = (main: HTMLButtonElement, label: HTMLElement, view: SavedViewItem): void => {
+  const beginRename = (main: HTMLButtonElement, view: SavedViewItem): void => {
     const input = createEl('input', { cls: 'pm-pop-field pm-saved-view-rename', value: view.name })
     main.replaceWith(input)
     input.focus()
@@ -117,7 +117,7 @@ export function openSavedViewsPopover(anchor: HTMLElement, props: SavedViewsProp
         input.replaceWith(main)
         return
       }
-      label.setText(name)
+      main.find('.pm-pop-item-label')?.setText(name)
       run(() => props.onRename(view.id, name))
     }
     input.addEventListener('keydown', (e) => {
@@ -128,33 +128,46 @@ export function openSavedViewsPopover(anchor: HTMLElement, props: SavedViewsProp
     input.addEventListener('blur', commit)
   }
 
+  const renderRow = (
+    parent: HTMLElement,
+    name: string,
+    selected: boolean,
+    icon: string | undefined,
+    onSelect: () => void
+  ): { row: HTMLElement; main: HTMLButtonElement } => {
+    const row = parent.createDiv('pm-saved-view-row')
+    const main = renderOptionRow(row, {
+      label: name,
+      trailingIcon: icon,
+      check: 'start',
+      selected,
+      onPick: () => {
+        close()
+        onSelect()
+      }
+    })
+    main.addClass('pm-saved-view-main')
+    return { row, main }
+  }
+
   const renderList = (): void => {
     list.empty()
     const query = search?.value.trim().toLowerCase() ?? ''
     if (!query) {
-      const all = renderRow(list, { name: t('header.allTasks'), active: props.activeId === null })
-      all.main.addEventListener('click', () => {
-        pop.close()
-        props.onSelect(null)
-      })
+      const all = renderRow(list, t('header.allTasks'), props.activeId === null, undefined, () => props.onSelect(null))
       all.row.createSpan({ cls: 'pm-saved-view-note', text: t('header.builtIn') })
     }
     for (const view of props.views.filter((v) => !query || v.name.toLowerCase().includes(query))) {
-      const { row, main, label } = renderRow(list, {
-        name: view.name,
-        active: props.activeId === view.id,
-        icon: view.modeIcon
-      })
-      main.addEventListener('click', () => {
-        pop.close()
+      const { row, main } = renderRow(list, view.name, props.activeId === view.id, view.modeIcon, () =>
         props.onSelect(view.id)
-      })
+      )
 
       const star = rowAction(row, 'star', view.isDefault ? t('header.isDefault') : t('header.makeDefault'), () =>
         run(() => props.onSetDefault(view.isDefault ? null : view.id))
       )
       star.toggleClass('is-default', !!view.isDefault)
-      rowAction(row, 'pencil', t('header.rename'), () => beginRename(main, label, view))
+      star.toggleClass('pm-icon-btn--hover-only', !view.isDefault)
+      rowAction(row, 'pencil', t('header.rename'), () => beginRename(main, view))
       rowAction(row, 'trash-2', t('header.deleteView'), () => run(() => props.onDelete(view.id)))
 
       if (query) continue
@@ -182,36 +195,22 @@ export function openSavedViewsPopover(anchor: HTMLElement, props: SavedViewsProp
   renderList()
 
   body.appendChild(foot)
-  const start = foot.createEl('button', { cls: 'pm-pop-item pm-pop-item--accent' })
-  setIcon(start.createSpan('pm-saved-view-mode'), 'plus')
-  start.createSpan({ cls: 'pm-pop-item-label', text: t('header.saveCurrent') })
+  const start = renderOptionRow(foot, { label: t('header.saveCurrent'), icon: 'plus', accent: true, onPick: openForm })
   start.disabled = !props.canSave
   if (!props.canSave) setTooltip(start, t('header.nothingToSave'))
-  start.addEventListener('click', openForm)
+}
 
+/** The saved views in a popover under `anchor`, with the search field focused when there is one. */
+export function openSavedViewsPopover(anchor: HTMLElement, props: SavedViewsProps): Popover {
+  const pop = new Popover({ anchor, width: 300 })
+  renderSavedViewsPanel(pop.contentEl, props, () => pop.close())
   pop.open()
-  search?.focus()
+  pop.contentEl.find('input.pm-pop-field')?.focus()
   return pop
 }
 
-function renderRow(
-  parent: HTMLElement,
-  item: { name: string; active: boolean; icon?: string }
-): { row: HTMLElement; main: HTMLButtonElement; label: HTMLElement } {
-  const row = parent.createDiv('pm-saved-view-row')
-  const main = row.createEl('button', { cls: 'pm-pop-item pm-saved-view-main' })
-  const check = main.createSpan({ cls: 'pm-pop-check' })
-  setIcon(check, 'check')
-  if (!item.active) check.addClass('pm-pop-check--hidden')
-  const label = main.createSpan({ cls: 'pm-pop-item-label', text: item.name })
-  if (item.icon) setIcon(main.createSpan('pm-saved-view-mode'), item.icon)
-  return { row, main, label }
-}
-
-function rowAction(row: HTMLElement, icon: string, label: string, onClick: () => void): HTMLButtonElement {
-  const button = row.createEl('button', { cls: 'pm-saved-view-action clickable-icon', attr: { 'aria-label': label } })
-  setIcon(button, icon)
-  setTooltip(button, label)
-  button.addEventListener('click', onClick)
+function rowAction(row: HTMLElement, icon: string, label: string, onClick: () => void): HTMLElement {
+  const button = new IconButton(row).setIcon(icon).setTooltip(label).setRevealOnHover(true).onClick(onClick).el
+  button.addClass('pm-saved-view-action')
   return button
 }

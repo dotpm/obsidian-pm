@@ -373,43 +373,18 @@ input.pm-search-box-input:focus {
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
-button.pm-filter-bar-add,
-button.pm-filter-bar-list,
-button.pm-filter-bar-clear {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
+.pm-filter-bar button.pm-chip-btn {
   height: 24px;
-  padding: 0 8px;
-  border: none;
-  border-radius: var(--radius-s);
-  background: transparent;
-  box-shadow: none;
-  color: var(--text-muted);
-  font-size: var(--font-ui-smaller);
-  white-space: nowrap;
-  cursor: pointer;
-  --icon-size: 12px;
 }
-button.pm-filter-bar-add:hover,
-button.pm-filter-bar-list:hover,
-button.pm-filter-bar-clear:hover {
-  background: var(--background-modifier-hover);
-  color: var(--text-normal);
-}
-.pm-filter-bar-add-icon {
-  display: inline-flex;
-}
-button.pm-filter-bar-list {
+.pm-filter-bar button.pm-filter-bar-list {
   display: none;
   color: var(--text-accent);
-  font-weight: 500;
 }
 @container pm-vh (max-width: 480px) {
   .pm-filter-bar-chips {
     display: none;
   }
-  button.pm-filter-bar-list {
+  .pm-filter-bar button.pm-filter-bar-list {
     display: inline-flex;
   }
 }
@@ -502,11 +477,6 @@ button.pm-filter-chip-remove {
   flex: 1;
   min-width: 0;
 }
-.pm-saved-view-mode {
-  display: inline-flex;
-  color: var(--text-faint);
-  --icon-size: 12px;
-}
 .pm-saved-view-note {
   padding: 0 8px;
   font-size: var(--font-ui-smaller);
@@ -514,17 +484,6 @@ button.pm-filter-chip-remove {
 }
 .pm-saved-view-action {
   --icon-size: 14px;
-  visibility: hidden;
-}
-.pm-saved-view-row:hover .pm-saved-view-action,
-.pm-saved-view-action:focus-visible {
-  visibility: visible;
-}
-.pm-saved-views-empty {
-  padding: 6px 9px;
-  white-space: normal;
-  font-size: var(--font-ui-smaller);
-  color: var(--text-muted);
 }
 .pm-saved-views-foot {
   margin-top: 4px;
@@ -532,17 +491,8 @@ button.pm-filter-chip-remove {
   border-top: 1px solid var(--background-modifier-border);
 }
 
-button.pm-switcher-row {
-  padding-left: calc(9px + var(--depth, 0) * 16px);
-}
-.pm-switcher-glyph {
-  display: inline-flex;
-  --pm-glyph-size: 14px;
-  --icon-size: 14px;
-}
-.pm-switcher-note {
-  font-size: var(--font-ui-smaller);
-  color: var(--text-faint);
+.pm-pop-list button.pm-switcher-row {
+  padding-left: calc(9px + var(--pm-depth, 0) * 16px);
 }
 button.pm-switcher-all {
   margin-top: 4px;
@@ -565,21 +515,10 @@ button.pm-switcher-all {
   gap: 4px;
   padding: 0 4px 6px;
 }
-button.pm-filter-pop-op {
+.pm-filter-pop-ops button.pm-chip-btn {
   height: 24px;
   padding: 0 8px;
-  border: 1px solid var(--background-modifier-border);
-  border-radius: var(--radius-s);
-  background: transparent;
-  box-shadow: none;
-  color: var(--text-muted);
-  font-size: var(--font-ui-smaller);
-  cursor: pointer;
-}
-button.pm-filter-pop-op.is-active {
-  border-color: transparent;
-  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
-  color: var(--text-accent);
+  font-weight: normal;
 }
 .pm-filter-pop-range {
   display: flex;
@@ -646,7 +585,6 @@ button.pm-filter-pop-op.is-active {
   opacity: 0.5;
 }
 .pm-saved-view-action.is-default {
-  visibility: visible;
   color: var(--color-yellow);
 }
 .pm-saved-view-rename {
@@ -671,16 +609,6 @@ button.pm-filter-pop-op.is-active {
   display: flex;
   align-items: center;
   justify-content: space-between;
-}
-button.pm-sort-pop-reset {
-  height: 22px;
-  padding: 0 6px;
-  border: none;
-  background: transparent;
-  box-shadow: none;
-  color: var(--text-accent);
-  font-size: var(--font-ui-smaller);
-  cursor: pointer;
 }
 .pm-sort-row {
   display: flex;
@@ -723,10 +651,6 @@ select.pm-sort-dir {
 }
 .pm-sort-add {
   flex: 1;
-}
-.pm-sort-add-icon {
-  display: inline-flex;
-  --icon-size: 14px;
 }
 .pm-sort-pop-count {
   padding: 0 8px;
@@ -998,29 +922,13 @@ input.pm-days-input {
 .pm-tune-sheet-tabs {
   display: flex;
   gap: 2px;
-  padding: 2px;
-  border-radius: var(--radius-m);
-  background: var(--background-modifier-hover);
 }
-button.pm-tune-sheet-tab {
-  display: inline-flex;
+.pm-tune-sheet-tabs button.pm-chip-btn {
   flex: 1;
-  align-items: center;
   justify-content: center;
   gap: 4px;
   height: 32px;
-  padding: 0 6px;
-  border: none;
-  border-radius: var(--radius-s);
-  background: transparent;
-  box-shadow: none;
-  color: var(--text-muted);
   font-size: var(--font-ui-small);
-}
-button.pm-tune-sheet-tab.is-active {
-  background: var(--background-primary);
-  box-shadow: 0 0 0 1px var(--background-modifier-border);
-  color: var(--text-normal);
 }
 .pm-tune-sheet-body {
   min-height: 0;

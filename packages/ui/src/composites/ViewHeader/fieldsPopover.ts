@@ -1,3 +1,4 @@
+import { ChipButton } from '#primitives/ChipButton'
 import { Popover } from '#primitives/Popover'
 import { SegmentedControl } from '#primitives/SegmentedControl'
 import {
@@ -108,19 +109,23 @@ export function renderFieldsPanel(parent: HTMLElement, props: FieldsPopoverProps
 
     const foot = body.createDiv('pm-fields-foot')
     if (isTable) {
-      const reset = foot.createEl('button', { cls: 'pm-sort-pop-reset', text: t('header.resetWidths') })
-      reset.disabled = !fields.table?.widths
-      reset.addEventListener('click', () => {
-        delete list().widths
+      new ChipButton(foot)
+        .setVariant('flat')
+        .setLabel(t('header.resetWidths'))
+        .setDisabled(!fields.table?.widths)
+        .onClick(() => {
+          delete list().widths
+          changed()
+        })
+    }
+    new ChipButton(foot)
+      .setVariant('flat')
+      .setLabel(t('header.hideAll'))
+      .setDisabled(shown.every((id) => isLockedField(mode, id)))
+      .onClick(() => {
+        list().visible = []
         changed()
       })
-    }
-    const hideAll = foot.createEl('button', { cls: 'pm-sort-pop-reset', text: t('header.hideAll') })
-    hideAll.disabled = shown.every((id) => isLockedField(mode, id))
-    hideAll.addEventListener('click', () => {
-      list().visible = []
-      changed()
-    })
   }
 
   render()
