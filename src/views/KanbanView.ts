@@ -8,7 +8,9 @@ import {
   type SortRule,
   type TaskQuery,
   type ResolvedProjectConfig,
+  type ViewFields,
   customFieldOf,
+  shownFields,
   valueKey,
   flattenTasks,
   totalLoggedHours,
@@ -21,7 +23,10 @@ import {
 import { personKeyer, type ProjectScope } from '#store'
 import {
   safeAsync,
+  boardCandidates,
   boardColumns,
+  cardCustomValues,
+  descriptionPreview,
   compareTasks,
   groupValues,
   KanbanColumn,
@@ -52,6 +57,8 @@ export class KanbanView implements SubView {
   /** Resolved once per board render. */
   private config!: ResolvedProjectConfig
   private filterContext!: FilterContext
+  /** The card fields, resolved once per board render. */
+  private cardFields: string[] = []
 
   constructor(
     private container: HTMLElement,
@@ -61,13 +68,14 @@ export class KanbanView implements SubView {
     private query: TaskQuery,
     private sort: SortRule[],
     private group: GroupState,
+    private fields: ViewFields,
     /** Opens the Group popover from the strip that stands in for hidden columns. */
     private onShowHidden: (anchor: HTMLElement) => void
   ) {}
 
   render(): void {
     this.renderBoard()
-    if (this.config.kanbanShowDescriptionPreview) {
+    if (this.cardFields.includes('description')) {
       void this.hydrateDescriptions()
     }
   }
@@ -76,6 +84,7 @@ export class KanbanView implements SubView {
     this.config = this.scope.config
     this.setup = this.scope.filterSetup(this.query.filter, personKeyer(this.plugin.app))
     this.filterContext = this.setup.ctx
+    this.cardFields = shownFields(this.fields, 'kanban', this.scope.fieldCatalog())
     this.container.empty()
     this.container.addClass('pm-kanban-view')
 
@@ -84,6 +93,7 @@ export class KanbanView implements SubView {
     for (const column of columns.filter((c) => !c.hidden)) {
       new KanbanColumn(board, {
         column,
+        fields: this.cardFields,
         cards: column.tasks.map((task) => this.buildCardData(task)),
         onCardClick: (task) => this.openTask(task),
         onCardContextMenu: (task, e) => this.openContextMenu(task, e),
@@ -111,10 +121,7 @@ export class KanbanView implements SubView {
 
   /** Descriptions load lazily from the note body, so previews fill in on a second render. */
   private async hydrateDescriptions(): Promise<void> {
-    const candidates = this.config.kanbanShowSubtasks
-      ? flattenTasks(this.scope.tasks()).map((ft) => ft.task)
-      : this.scope.tasks()
-    const pending = candidates.filter(
+    const pending = boardCandidates(this.scope.tasks(), this.cardFields).filter(
       (t) => t.filePath && !t.description && matchesQuery(t, this.query, this.filterContext)
     )
     if (!pending.length) return
@@ -123,10 +130,7 @@ export class KanbanView implements SubView {
   }
 
   private visibleTasks(): Task[] {
-    const candidates = this.config.kanbanShowSubtasks
-      ? flattenTasks(this.scope.tasks()).map((ft) => ft.task)
-      : this.scope.tasks()
-    return candidates
+    return boardCandidates(this.scope.tasks(), this.cardFields)
       .filter((task) => matchesQuery(task, this.query, this.filterContext))
       .sort((a, b) => compareTasks(a, b, this.sort, this.config.statuses, this.config.priorities))
   }
@@ -136,21 +140,8 @@ export class KanbanView implements SubView {
     const priorityColor =
       priorityConfig && task.priority !== 'medium' && task.priority !== 'low' ? priorityConfig.color : undefined
 
-    let descriptionPreview: string | undefined
-    if (this.config.kanbanShowDescriptionPreview && task.description.trim()) {
-      const text = task.description
-        .replace(/```[\s\S]*?```/g, ' ')
-        .replace(/`([^`]*)`/g, '$1')
-        .replace(/!?\[([^\]]*)\]\([^)]*\)/g, '$1')
-        .replace(/^[ \t]*[#>\-*+]+[ \t]+/gm, '')
-        .replace(/[*~]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim()
-      descriptionPreview = text ? text.slice(0, 240) : undefined
-    }
-
     let parentTitle: string | undefined
-    if (this.config.kanbanShowSubtasks && task.type === 'subtask') {
+    if (this.cardFields.includes('subtasks') && task.type === 'subtask') {
       const parent = this.findParentTask(task.id)
       if (parent) parentTitle = parent.title
     }
@@ -161,8 +152,9 @@ export class KanbanView implements SubView {
       task,
       people: linkedRefs(this.plugin.app, task.assignees, task.filePath ?? ''),
       priorityColor,
-      descriptionPreview,
+      descriptionPreview: this.cardFields.includes('description') ? descriptionPreview(task.description) : undefined,
       parentTitle,
+      customValues: cardCustomValues(task, this.scope.customFields(), this.cardFields),
       renderSource: owner
         ? (el) =>
             renderProjectChip(el, {

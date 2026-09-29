@@ -5,6 +5,7 @@ import {
   type Project,
   type SortRule,
   type GroupState,
+  type ViewFields,
   type ViewMode,
   flattenTasks,
   locale,
@@ -27,6 +28,7 @@ export interface ExportViewState {
   mode: ViewMode
   sort: SortRule[]
   group: GroupState
+  fields: ViewFields
   filter: FilterState
   ganttGranularity: GanttGranularity
 }
@@ -135,6 +137,7 @@ export async function buildSnapshot(plugin: PMPlugin, scope: ProjectScope, view:
       filter: { ...view.filter },
       sort: view.sort,
       group: view.group,
+      fields: view.fields,
       ganttGranularity: view.ganttGranularity
     },
     settings: {
@@ -142,7 +145,6 @@ export async function buildSnapshot(plugin: PMPlugin, scope: ProjectScope, view:
       showTagColors: plugin.settings.showTagColors,
       showSubtreeConnections: config.showSubtreeConnections,
       lineBorders: config.lineBorders,
-      kanbanShowSubtasks: config.kanbanShowSubtasks,
       ganttWeekLabel: plugin.settings.ganttWeekLabel,
       dateFormat: plugin.settings.dateFormat
     },

@@ -69,6 +69,7 @@ import {
   renderStatusDot,
   safeAsync,
   renderBreadcrumb,
+  renderVisibilityList,
   SearchBox,
   ViewHeader
 } from '@dotpm/ui'
@@ -140,6 +141,7 @@ export class StyleguideView extends ItemView {
     this.renderMetricStrip()
     this.renderMilestoneTimeline()
     this.renderViewHeader()
+    this.renderVisibilityList()
     this.renderTable()
     return Promise.resolve()
   }
@@ -575,8 +577,9 @@ export class StyleguideView extends ItemView {
 
   private renderCards(): void {
     const sec = this.section('Cards', 'cards')
-    const kanbanRow = this.row(sec, 'KanbanCard: plain / overdue milestone with everything')
+    const kanbanRow = this.row(sec, 'KanbanCard: default fields / overdue milestone with every field')
     new KanbanCard(kanbanRow, {
+      fields: ['priority', 'time', 'tags', 'progress', 'assignees', 'due'],
       task: makeTask({ title: 'Write the launch announcement' }),
       people: [],
       loggedHours: 0,
@@ -588,6 +591,7 @@ export class StyleguideView extends ItemView {
       onDragEnd: noop
     })
     new KanbanCard(kanbanRow, {
+      fields: ['priority', 'description', 'time', 'tags', 'progress', 'cf:client', 'project', 'assignees', 'due'],
       task: makeTask({
         title: 'Ship the redesign',
         type: 'milestone',
@@ -600,6 +604,7 @@ export class StyleguideView extends ItemView {
       priorityColor: '#c47070',
       descriptionPreview: 'Everything that must land before the announcement goes out.',
       parentTitle: 'Website relaunch',
+      customValues: { 'cf:client': { name: 'Client', text: 'Acme' } },
       renderSource: (el) => renderProjectChip(el, { title: 'Platform', color: '#7a9ec4', onClick: noop }),
       loggedHours: 11,
       overdue: true,
@@ -678,6 +683,7 @@ export class StyleguideView extends ItemView {
     })
     new ChipButton(header.query).setIcon('list-filter').setLabel('Filter').setBadge('2').setActive(true)
     new ChipButton(header.query).setIcon('arrow-up-narrow-wide').setLabel('Priority').setActive(true)
+    new ChipButton(header.query).setIcon('columns-3').setLabel('Fields').setDetail('3 hidden').setActive(true)
     new ChipButton(header.options).setIcon('chevrons-down-up').setLabel('').setAriaLabel('Collapse all')
     new SplitButton(header.actions).setIcon('plus').setLabel('Add task').onClick(noop)
     new ChipButton(header.actions).setIcon('ellipsis').setLabel('').setAriaLabel('More options')
@@ -701,6 +707,26 @@ export class StyleguideView extends ItemView {
       onClose: noop
     })
     header.fit()
+  }
+
+  private renderVisibilityList(): void {
+    const sec = this.section('VisibilityList', 'visibility-list')
+    const host = this.row(sec, 'locked, shown with widths, hidden; the Group and Fields popovers use it')
+    host.addClass('pm-sg-narrow')
+    renderVisibilityList(host, {
+      rows: [
+        { id: 'title', label: 'Task', hidden: false, locked: true, detail: 'fill' },
+        { id: 'status', label: 'Status', hidden: false, detail: '130' },
+        { id: 'due', label: 'Due', hidden: false, detail: '110' },
+        { id: 'time', label: 'Time', hidden: true },
+        { id: 'empty', label: 'Blocked', hidden: false, detail: 'empty', quiet: true }
+      ],
+      showLabel: 'Show field',
+      hideLabel: 'Hide field',
+      lockedLabel: 'Always shown',
+      onToggle: noop,
+      onReorder: noop
+    })
   }
 
   private renderTable(): void {

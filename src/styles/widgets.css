@@ -302,3 +302,10 @@
   gap: 6px;
   --pm-glyph-size: 15px;
 }
+
+.pm-gantt-bar-aside {
+  font-size: var(--font-ui-smaller);
+  fill: var(--text-muted);
+  dominant-baseline: central;
+  pointer-events: none;
+}

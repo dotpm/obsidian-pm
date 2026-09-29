@@ -1,7 +1,6 @@
 import {
   type CustomFieldDef,
   type FlatTask,
-  type SortKey,
   applyTaskFilterFlat,
   dueUrgency,
   flattenTasks,
@@ -9,9 +8,11 @@ import {
   getStatusConfig,
   isQueryActive,
   isTerminalStatus,
+  columnWidth,
+  shownFields,
   stringifyCustomValue,
   totalLoggedHours,
-  t
+  viewFieldLabel
 } from '@dotpm/core'
 import { TaskRow } from '../composites/TaskRow'
 import { AssigneesCell } from '../composites/cells/AssigneesCell'
@@ -29,8 +30,8 @@ import {
   allTasks,
   configOf,
   customFieldColumns,
+  fieldCatalogOf,
   filterContextOf,
-  isMulti,
   mergedConfig,
   personOf,
   projectOf,
@@ -100,38 +101,28 @@ function customFieldValue(model: ViewModel, cf: CustomFieldDef, val: unknown): C
 /** The table view without any way to change it: no selection, no editing, no actions. */
 export function renderSnapshotTable(container: HTMLElement, model: ViewModel): HTMLElement {
   const config = mergedConfig(model)
-  const multi = isMulti(model)
   const customFields = customFieldColumns(model)
+  const columns = shownFields(model.fields, 'table', fieldCatalogOf(model))
 
   const wrapper = container.createDiv('pm-table-wrapper')
   wrapper.setAttr('data-borders', model.settings.lineBorders)
   const table = wrapper.createEl('table', { cls: 'pm-table' })
   const hrow = table.createEl('thead').createEl('tr')
 
-  const cols: { key: SortKey | null; label: string; width: string }[] = [
-    { key: null, label: '', width: '32px' },
-    { key: 'title', label: t('columns.task'), width: 'auto' },
-    ...(multi ? [{ key: null, label: t('columns.project'), width: '130px' }] : []),
-    { key: 'status', label: t('columns.status'), width: '130px' },
-    { key: 'priority', label: t('columns.priority'), width: '110px' },
-    { key: 'assignees', label: t('columns.assignees'), width: '140px' },
-    { key: 'due', label: t('columns.due'), width: '110px' },
-    { key: 'progress', label: t('columns.progress'), width: '120px' },
-    { key: null, label: t('columns.time'), width: '90px' }
-  ]
-  for (const col of cols) {
-    const th = hrow.createEl('th', { text: col.label })
-    th.setCssStyles({ width: col.width })
-    const rank = col.key ? model.sort.findIndex((rule) => rule.key === col.key) : -1
+  hrow.createEl('th').setCssStyles({ width: '32px' })
+  for (const id of columns) {
+    const th = hrow.createEl('th', { text: viewFieldLabel(id, customFields) })
+    const width = columnWidth(model.fields, id)
+    th.setCssStyles({ width: width === undefined ? 'auto' : `${width}px` })
+    const rank = model.sort.findIndex((rule) => rule.key === id)
     if (rank >= 0) {
       const indicator = th.createSpan({
-        text: model.sort[rank].dir === 'asc' ? ' ↑' : ' ↓',
+        text: model.sort[rank].dir === 'asc' ? ' \u2191' : ' \u2193',
         cls: 'pm-sort-indicator'
       })
       if (model.sort.length > 1) indicator.createEl('sup', { text: String(rank + 1) })
     }
   }
-  for (const cf of customFields) hrow.createEl('th', { text: cf.name }).setCssStyles({ width: '120px' })
 
   const tbody = table.createEl('tbody')
   for (const flat of tableRows(model)) {
@@ -150,35 +141,61 @@ export function renderSnapshotTable(container: HTMLElement, model: ViewModel): H
       onRowClick: noop
     })
     new ExpandCell(row, { hasSubtasks: task.subtasks.length > 0, collapsed: false, onToggle: noop })
-    new TitleCell(row, {
-      task,
-      treeGuides: model.settings.showSubtreeConnections ? flat.guides : null,
-      isLastChild: flat.isLastChild,
-      showTagColors: model.settings.showTagColors,
-      onTitleClick: noop,
-      onTitleSave: noSave,
-      onAddSubtask: noop
-    })
-    if (multi && owner) new ProjectCell(row, { title: owner.title, color: owner.color, onClick: noop })
-    new StatusCell(row, { task, statuses: config.statuses, onChange: noop })
-    new PriorityCell(row, {
-      task,
-      priorities: config.priorities,
-      priorityIcons: model.settings.priorityIcons,
-      onChange: noop
-    })
-    new AssigneesCell(
-      row,
-      task.assignees.map((raw) => personOf(model, raw))
-    )
-    new DueDateCell(row, { task, urgency: dueUrgency(task, ownConfig.statuses), onSave: noSave })
-    new ProgressCell(row, {
-      value: task.progress,
-      color: statusConfig?.color ?? 'var(--interactive-accent)',
-      onSave: noSave
-    })
-    new TimeCell(row, { logged: totalLoggedHours(task), estimate: task.timeEstimate ?? 0 })
-    for (const cf of customFields) new CustomFieldCell(row, customFieldValue(model, cf, task.customFields[cf.id]))
+    for (const id of columns) {
+      switch (id) {
+        case 'title':
+          new TitleCell(row, {
+            task,
+            treeGuides: model.settings.showSubtreeConnections ? flat.guides : null,
+            isLastChild: flat.isLastChild,
+            showTagColors: model.settings.showTagColors,
+            onTitleClick: noop,
+            onTitleSave: noSave,
+            onAddSubtask: noop
+          })
+          break
+        case 'project':
+          new ProjectCell(row, { title: owner?.title ?? '', color: owner?.color ?? '', onClick: noop })
+          break
+        case 'status':
+          new StatusCell(row, { task, statuses: config.statuses, onChange: noop })
+          break
+        case 'priority':
+          new PriorityCell(row, {
+            task,
+            priorities: config.priorities,
+            priorityIcons: model.settings.priorityIcons,
+            onChange: noop
+          })
+          break
+        case 'assignees':
+          new AssigneesCell(
+            row,
+            task.assignees.map((raw) => personOf(model, raw))
+          )
+          break
+        case 'due':
+          new DueDateCell(row, { task, urgency: dueUrgency(task, ownConfig.statuses), onSave: noSave })
+          break
+        case 'progress':
+          new ProgressCell(row, {
+            value: task.progress,
+            color: statusConfig?.color ?? 'var(--interactive-accent)',
+            onSave: noSave
+          })
+          break
+        case 'time':
+          new TimeCell(row, { logged: totalLoggedHours(task), estimate: task.timeEstimate ?? 0 })
+          break
+        default: {
+          const cf = customFields.find((field) => `cf:${field.id}` === id)
+          new CustomFieldCell(
+            row,
+            cf ? customFieldValue(model, cf, task.customFields[cf.id]) : { kind: 'text', text: '' }
+          )
+        }
+      }
+    }
   }
   return wrapper
 }

@@ -40,8 +40,6 @@ describe('resolveProjectConfig', () => {
     expect(resolved.pullForwardOnEarlyFinish).toBe(DEFAULT_SETTINGS.pullForwardOnEarlyFinish)
     expect(resolved.showSubtreeConnections).toBe(DEFAULT_SETTINGS.showSubtreeConnections)
     expect(resolved.lineBorders).toBe(DEFAULT_SETTINGS.lineBorders)
-    expect(resolved.kanbanShowSubtasks).toBe(DEFAULT_SETTINGS.kanbanShowSubtasks)
-    expect(resolved.kanbanShowDescriptionPreview).toBe(DEFAULT_SETTINGS.kanbanShowDescriptionPreview)
   })
 
   it('treats empty override lists as inherit', () => {
@@ -68,8 +66,7 @@ describe('resolveProjectConfig', () => {
         autoSchedule: false,
         pullForwardOnEarlyFinish: true,
         showSubtreeConnections: false,
-        lineBorders: 'both',
-        kanbanShowSubtasks: true
+        lineBorders: 'both'
       }),
       DEFAULT_SETTINGS
     )
@@ -79,9 +76,7 @@ describe('resolveProjectConfig', () => {
     expect(resolved.pullForwardOnEarlyFinish).toBe(true)
     expect(resolved.showSubtreeConnections).toBe(false)
     expect(resolved.lineBorders).toBe('both')
-    expect(resolved.kanbanShowSubtasks).toBe(true)
     expect(resolved.statuses).toEqual(DEFAULT_STATUSES)
-    expect(resolved.kanbanShowDescriptionPreview).toBe(DEFAULT_SETTINGS.kanbanShowDescriptionPreview)
   })
 
   it('borrows the global config for in-use statuses the project does not define', () => {

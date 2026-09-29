@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added Ctrl+S (Cmd+S on macOS) to save changes to the current saved view
 - Boards can now put their columns by priority, assignee, tag, type, project, or a custom field
 - Board columns can now be reordered and hidden, and empty columns left out
+- Added the "Fields" menu for choosing table columns, kanban card fields, and timeline labels
+- Table columns can now be resized by dragging the edge of their header
 - Person notes can now set their avatar color with a `color` property
 
 ### Changed
@@ -35,6 +37,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Board cards now follow the sort order of the view
 - Changing a saved view now marks it unsaved instead of switching back to all tasks
 - Search text is no longer saved with a view. Saved views that searched now filter by title.
+
+### Removed
+
+- Removed the "Show subtasks" and "Show description preview" settings in favor of "Fields". Boards keep their choice.
 
 ### Fixed
 

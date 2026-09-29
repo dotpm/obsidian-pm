@@ -674,45 +674,92 @@ select.pm-group-field {
   padding-top: 4px;
   border-top: 1px solid var(--background-modifier-border);
 }
-.pm-group-columns {
+.pm-vis-list {
   display: flex;
   flex-direction: column;
 }
-.pm-group-column {
+.pm-vis-row {
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 4px;
+  min-height: 28px;
+  padding: 0 4px;
   border-radius: var(--radius-s);
   font-size: var(--font-ui-smaller);
 }
-.pm-group-column:hover {
+.pm-vis-row:hover {
   background: var(--background-modifier-hover);
 }
-.pm-group-column.is-dragging {
+.pm-vis-row.is-dragging {
   opacity: 0.5;
 }
-.pm-group-column.is-hidden .pm-group-column-label {
+.pm-vis-row.is-hidden .pm-vis-label {
   color: var(--text-faint);
 }
-.pm-group-column.is-empty .pm-group-count {
+.pm-vis-row.is-quiet .pm-vis-detail {
   font-style: italic;
 }
-.pm-group-glyph {
+.pm-vis-grip {
+  display: inline-flex;
+  width: 14px;
+  color: var(--text-faint);
+  cursor: grab;
+  --icon-size: 14px;
+}
+.pm-vis-row:not([draggable]) .pm-vis-grip {
+  cursor: default;
+}
+.pm-vis-glyph {
   display: inline-flex;
   --pm-glyph-size: 12px;
   --icon-size: 12px;
 }
-.pm-group-column-label {
+.pm-vis-label {
   flex: 1;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
 }
-.pm-group-count {
+.pm-vis-detail {
   color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
-.pm-group-eye {
+.pm-vis-detail.is-editable {
+  cursor: text;
+}
+input.pm-vis-detail-input {
+  width: 56px;
+  height: 22px;
+  font-size: var(--font-ui-smaller);
+}
+.pm-vis-eye {
   --icon-size: 14px;
+}
+.pm-vis-lock {
+  display: inline-flex;
+  padding: 0 6px;
+  color: var(--text-faint);
+  --icon-size: 12px;
+}
+
+.pm-fields-tabs {
+  display: flex;
+  margin-bottom: 4px;
+}
+.pm-fields-tabs button {
+  flex: 1;
+  font-size: var(--font-ui-smaller);
+}
+.pm-fields-hidden-head {
+  margin-top: 4px;
+  padding-top: 6px;
+  border-top: 1px solid var(--background-modifier-border);
+}
+.pm-fields-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 4px;
+  margin-top: 4px;
+  padding-top: 4px;
+  border-top: 1px solid var(--background-modifier-border);
 }

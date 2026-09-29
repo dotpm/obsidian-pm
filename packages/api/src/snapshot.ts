@@ -6,6 +6,7 @@ import type {
   GanttWeekLabel,
   LineBorders,
   PriorityIconSet,
+  ViewFields,
   ViewMode
 } from '@dotpm/core'
 import type { ProjectResource, TaskResource } from './contract'
@@ -28,6 +29,8 @@ export interface SnapshotView {
   sort: SortRule[]
   /** Absent on a page exported before boards could group by other fields; read through `hydrateGroup`. */
   group?: GroupState
+  /** Absent on a page exported before views chose their fields; read through `hydrateFields`. */
+  fields?: ViewFields
   ganttGranularity: GanttGranularity
 }
 
@@ -36,7 +39,8 @@ export interface SnapshotSettings {
   showTagColors: boolean
   showSubtreeConnections: boolean
   lineBorders: LineBorders
-  kanbanShowSubtasks: boolean
+  /** Only on a version 1 page, where the board's subtask cards were a setting rather than a field. */
+  kanbanShowSubtasks?: boolean
   ganttWeekLabel: GanttWeekLabel
   dateFormat: string
 }

@@ -6,12 +6,22 @@ import { renderDueChip } from './dueChip'
 import { renderTagChip } from './tagChip'
 import { renderTimeChip } from './timeChip'
 
+/** A custom field's value as a card shows it. */
+export interface CardFieldValue {
+  name: string
+  text: string
+}
+
 export interface KanbanCardProps {
+  /** The card fields to show, in order (`priority`, `tags`, `cf:<id>`...). */
+  fields: string[]
   people: AvatarPerson[]
   task: Task
   priorityColor?: string
   descriptionPreview?: string
   parentTitle?: string
+  /** Keyed by field id, `cf:<id>`. A field without a value here shows nothing. */
+  customValues?: Record<string, CardFieldValue>
   /** Leading slot in the footer, filled when a card has to say where it is from. */
   renderSource?: (parent: HTMLElement) => void
   loggedHours: number
@@ -33,7 +43,8 @@ export class KanbanCard {
     card.dataset.taskId = task.id
     this.el = card
 
-    if (props.priorityColor) {
+    const { fields } = props
+    if (props.priorityColor && fields.includes('priority')) {
       const priorityBar = card.createDiv('pm-kanban-card-priority-bar')
       priorityBar.setCssStyles({ background: props.priorityColor })
     }
@@ -71,30 +82,34 @@ export class KanbanCard {
         .setTooltip(t('chip.recurringTooltip'))
     }
 
-    if (props.descriptionPreview) {
-      body.createDiv({ cls: 'pm-kanban-card-description', text: props.descriptionPreview })
-    }
-
-    renderTimeChip(body, props.loggedHours, task.timeEstimate ?? 0, 'sm')
-
-    if (task.tags.length) {
-      const tagsEl = body.createDiv('pm-kanban-card-tags')
-      for (const tag of task.tags.slice(0, 3)) {
-        renderTagChip(tagsEl, tag, props.showTagColors)
+    const footer = body.createDiv('pm-kanban-card-footer')
+    for (const field of fields) {
+      if (field === 'description' && props.descriptionPreview) {
+        body.createDiv({ cls: 'pm-kanban-card-description', text: props.descriptionPreview })
+      } else if (field === 'time') {
+        renderTimeChip(body, props.loggedHours, task.timeEstimate ?? 0, 'sm')
+      } else if (field === 'tags' && task.tags.length) {
+        const tagsEl = body.createDiv('pm-kanban-card-tags')
+        for (const tag of task.tags.slice(0, 3)) {
+          renderTagChip(tagsEl, tag, props.showTagColors)
+        }
+      } else if (field === 'progress' && task.progress > 0) {
+        new ProgressBar(body).setSize('sm').setValue(task.progress)
+      } else if (field === 'project') {
+        props.renderSource?.(footer)
+      } else if (field === 'assignees') {
+        new AvatarStack(footer).setPeople(props.people).setMax(3).setSize('sm')
+      } else if (field === 'due' && task.due) {
+        renderDueChip(footer, formatDateShort(task.due), props.overdue ? 'overdue' : 'normal', 'sm')
+      } else if (props.customValues?.[field]?.text) {
+        const { name, text } = props.customValues[field]
+        const row = body.createDiv('pm-kanban-card-field')
+        row.createSpan({ cls: 'pm-kanban-card-field-name', text: name })
+        row.createSpan({ cls: 'pm-kanban-card-field-value', text })
       }
     }
-
-    if (task.progress > 0) {
-      new ProgressBar(body).setSize('sm').setValue(task.progress)
-    }
-
-    const footer = body.createDiv('pm-kanban-card-footer')
-    props.renderSource?.(footer)
-    new AvatarStack(footer).setPeople(props.people).setMax(3).setSize('sm')
-
-    if (task.due) {
-      renderDueChip(footer, formatDateShort(task.due), props.overdue ? 'overdue' : 'normal', 'sm')
-    }
+    if (footer.childElementCount) body.appendChild(footer)
+    else footer.remove()
 
     card.addEventListener('dragstart', (e) => {
       e.dataTransfer?.setData('text/plain', task.id)

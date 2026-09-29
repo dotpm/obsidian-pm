@@ -183,6 +183,15 @@ export interface GroupState {
   columns?: Record<string, GroupColumns>
 }
 
+/** Which fields one presentation shows, in order, and the widths in px the table's columns were dragged to. */
+export interface FieldList {
+  visible: string[]
+  widths?: Record<string, number>
+}
+
+/** Per view mode. A mode left out shows its default fields. */
+export type ViewFields = Partial<Record<ViewMode, FieldList>>
+
 export interface SavedView {
   id: string
   name: string
@@ -190,6 +199,7 @@ export interface SavedView {
   /** Empty keeps the order the tasks are stored in. */
   sort: SortRule[]
   group?: GroupState
+  fields?: ViewFields
   viewMode?: ViewMode
   ganttGranularity?: GanttGranularity
   /** The view a scope opens with. At most one per scope. */
@@ -205,6 +215,7 @@ export interface PerProjectFilter {
   activeSavedViewId: string | null
   sort: SortRule[]
   group: GroupState
+  fields: ViewFields
   ganttGranularity: GanttGranularity
 }
 
@@ -229,8 +240,6 @@ export interface ProjectConfig {
   autoArchiveDays?: number
   showSubtreeConnections?: boolean
   lineBorders?: LineBorders
-  kanbanShowSubtasks?: boolean
-  kanbanShowDescriptionPreview?: boolean
 }
 
 /**
@@ -248,8 +257,6 @@ export interface ResolvedProjectConfig {
   autoArchiveDays: number
   showSubtreeConnections: boolean
   lineBorders: LineBorders
-  kanbanShowSubtasks: boolean
-  kanbanShowDescriptionPreview: boolean
 }
 
 export interface PriorityConfig {
@@ -306,8 +313,6 @@ export interface PMSettings {
   pullForwardOnEarlyFinish: boolean
   showSubtreeConnections: boolean
   lineBorders: LineBorders
-  kanbanShowSubtasks: boolean
-  kanbanShowDescriptionPreview: boolean
   showTagColors: boolean
   /** Moment-style tokens for every date label. Empty follows the interface language. */
   dateFormat: string
@@ -398,8 +403,6 @@ export const DEFAULT_SETTINGS: PMSettings = {
   globalTeamMembers: [],
   showSubtreeConnections: true,
   lineBorders: 'none',
-  kanbanShowSubtasks: false,
-  kanbanShowDescriptionPreview: false,
   showTagColors: true,
   dateFormat: '',
   notificationsEnabled: true,

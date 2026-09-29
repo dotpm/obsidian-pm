@@ -39,9 +39,7 @@ export function resolveProjectConfig(
     pullForwardOnEarlyFinish: config?.pullForwardOnEarlyFinish ?? settings.pullForwardOnEarlyFinish,
     autoArchiveDays: config?.autoArchiveDays ?? settings.autoArchiveDays,
     showSubtreeConnections: config?.showSubtreeConnections ?? settings.showSubtreeConnections,
-    lineBorders: config?.lineBorders ?? settings.lineBorders,
-    kanbanShowSubtasks: config?.kanbanShowSubtasks ?? settings.kanbanShowSubtasks,
-    kanbanShowDescriptionPreview: config?.kanbanShowDescriptionPreview ?? settings.kanbanShowDescriptionPreview
+    lineBorders: config?.lineBorders ?? settings.lineBorders
   }
 }
 

@@ -8,11 +8,13 @@ import {
   type CustomFieldDef,
   type GroupState,
   type SortRule,
-  type FilterState
+  type FilterState,
+  type ViewFields
 } from '@dotpm/core'
 import { ChipButton } from '#primitives/ChipButton'
 import { renderBreadcrumb } from './Breadcrumb'
 import { FilterBar } from './FilterBar'
+import { openFieldsPopover } from './fieldsPopover'
 import { openGroupPopover } from './groupPopover'
 import { openSavedViewsPopover, type SavedViewsProps } from './savedViewsPopover'
 import type { BoardColumn } from '../../views/boardColumns'
@@ -402,9 +404,9 @@ describe('group popover', () => {
   it('switches the field, hides empty columns and hides one by its eye', () => {
     const group: GroupState = { field: 'status' }
     const onChange = open(group)
-    const row = document.body.findAll('.pm-group-column')
-    expect(row.map((r) => r.find('.pm-group-count')?.textContent)).toEqual(['1', '1', 'empty'])
-    row[1].querySelector<HTMLButtonElement>('.pm-group-eye')?.click()
+    const row = document.body.findAll('.pm-vis-row')
+    expect(row.map((r) => r.find('.pm-vis-detail')?.textContent)).toEqual(['1', '1', 'empty'])
+    row[1].querySelector<HTMLButtonElement>('.pm-vis-eye')?.click()
     expect(group.columns?.status?.hidden).toEqual(['doing'])
     document.body.querySelector<HTMLInputElement>('.pm-group-pop input[type=checkbox]')?.click()
     expect(group.hideEmpty).toBe(true)
@@ -422,10 +424,71 @@ describe('group popover', () => {
     open(group)
     document.body.querySelector<HTMLButtonElement>('.pm-group-head button')?.click()
     expect(group.columns?.status?.hidden).toBeUndefined()
-    const rows = document.body.findAll('.pm-group-column')
+    const rows = document.body.findAll('.pm-vis-row')
     rows[2].dispatchEvent(new Event('dragstart'))
     rows[0].dispatchEvent(new Event('drop'))
     expect(group.columns?.status?.order).toEqual(['done', 'todo', 'doing'])
+  })
+})
+
+describe('fields popover', () => {
+  const catalog = { customFields: [{ id: 'client', name: 'Client', type: 'text' as const }], multi: false }
+  const open = (fields: ViewFields, mode: 'table' | 'kanban' = 'table') => {
+    const onChange = vi.fn<() => void>()
+    openFieldsPopover(document.body.createEl('button'), { mode, fields, catalog, onChange })
+    return onChange
+  }
+  const labels = (): (string | undefined)[] =>
+    document.body.findAll('.pm-fields-body > .pm-vis-list:first-child .pm-vis-label').map((el) => el.textContent ?? '')
+
+  it('lists the table columns with their widths, the title locked', () => {
+    open({})
+    expect(labels()).toEqual(['Task', 'Status', 'Priority', 'Assignees', 'Due', 'Progress', 'Time', 'Client'])
+    const first = document.body.find('.pm-vis-row')
+    expect(first?.find('.pm-vis-lock')).not.toBeNull()
+    expect(first?.find('.pm-vis-detail')?.textContent).toBe('fill')
+    expect(document.body.findAll('.pm-vis-detail')[1].textContent).toBe('130')
+  })
+
+  it('hides a field by its eye and shows it again at the end', () => {
+    const fields: ViewFields = {}
+    const onChange = open(fields)
+    document.body.findAll('.pm-vis-row')[1].querySelector<HTMLButtonElement>('.pm-vis-eye')?.click()
+    expect(fields.table?.visible).not.toContain('status')
+    expect(document.body.find('.pm-fields-hidden-head')).not.toBeNull()
+    document.body.find('.pm-vis-row.is-hidden')?.querySelector<HTMLButtonElement>('.pm-vis-eye')?.click()
+    expect(fields.table?.visible.at(-1)).toBe('status')
+    expect(onChange).toHaveBeenCalledTimes(2)
+  })
+
+  it('forgets a list put back to the defaults', () => {
+    const fields: ViewFields = { kanban: { visible: ['priority', 'time', 'tags', 'progress', 'assignees'] } }
+    open(fields, 'kanban')
+    const due = document.body.findAll('.pm-vis-row.is-hidden').find((row) => row.dataset.id === 'due')
+    due?.querySelector<HTMLButtonElement>('.pm-vis-eye')?.click()
+    expect(fields.kanban).toBeUndefined()
+  })
+
+  it('reorders by dragging, hides all and resets widths', () => {
+    const fields: ViewFields = { table: { visible: ['title', 'status', 'due'], widths: { due: 70 } } }
+    open(fields)
+    const rows = document.body.findAll('.pm-vis-row')
+    rows[2].dispatchEvent(new Event('dragstart'))
+    rows[1].dispatchEvent(new Event('drop'))
+    expect(fields.table?.visible).toEqual(['due', 'status'])
+    const [reset, hideAll] = document.body.findAll('.pm-fields-foot button') as HTMLButtonElement[]
+    reset.click()
+    expect(fields.table?.widths).toBeUndefined()
+    hideAll.click()
+    expect(fields.table?.visible).toEqual([])
+    expect(labels()).toEqual(['Task'])
+  })
+
+  it('switches to another presentation by its tab', () => {
+    open({})
+    document.body.findAll('.pm-fields-tabs button')[2].click()
+    expect(labels()).toEqual(['Task'])
+    expect(document.body.find('.pm-vis-detail')).toBeNull()
   })
 })
 

@@ -3,6 +3,7 @@ import type {
   DateBucket,
   FilterCondition,
   FilterState,
+  FieldList,
   GroupColumns,
   GroupState,
   PriorityConfig,
@@ -13,6 +14,7 @@ import type {
   SortRule,
   StatusConfig,
   Task,
+  ViewFields,
   ViewMode
 } from '../types'
 import {
@@ -156,6 +158,28 @@ export function hydrateGroup(raw: unknown): GroupState {
   return group
 }
 
+const FIELD_MODES: ViewMode[] = ['table', 'gantt', 'kanban']
+
+export function hydrateFields(raw: unknown): ViewFields {
+  const r = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {}
+  const fields: ViewFields = {}
+  for (const mode of FIELD_MODES) {
+    const entry = r[mode]
+    if (!entry || typeof entry !== 'object') continue
+    const e = entry as Record<string, unknown>
+    if (!Array.isArray(e.visible)) continue
+    const list: FieldList = { visible: e.visible.filter((id): id is string => typeof id === 'string') }
+    if (e.widths && typeof e.widths === 'object') {
+      const widths = Object.entries(e.widths as Record<string, unknown>).filter(
+        (pair): pair is [string, number] => typeof pair[1] === 'number' && Number.isFinite(pair[1]) && pair[1] > 0
+      )
+      if (widths.length) list.widths = Object.fromEntries(widths.map(([id, px]) => [id, Math.round(px)]))
+    }
+    fields[mode] = list
+  }
+  return fields
+}
+
 export function hydrateSavedViews(raw: unknown[]): SavedView[] {
   if (!Array.isArray(raw)) return []
   return raw
@@ -172,6 +196,7 @@ export function hydrateSavedViews(raw: unknown[]): SavedView[] {
         filter: hydrateFilter(v.filter),
         sort: hydrateSort(v),
         ...(v.group ? { group: hydrateGroup(v.group) } : {}),
+        ...(v.fields ? { fields: hydrateFields(v.fields) } : {}),
         ...(validViewMode ? { viewMode: validViewMode } : {}),
         ...(granularity ? { ganttGranularity: granularity } : {}),
         ...(v.isDefault === true ? { isDefault: true } : {})
@@ -301,10 +326,6 @@ function hydrateProjectConfig(raw: unknown): ProjectConfig | undefined {
     r.lineBorders === 'both'
   ) {
     config.lineBorders = r.lineBorders
-  }
-  if (typeof r.kanbanShowSubtasks === 'boolean') config.kanbanShowSubtasks = r.kanbanShowSubtasks
-  if (typeof r.kanbanShowDescriptionPreview === 'boolean') {
-    config.kanbanShowDescriptionPreview = r.kanbanShowDescriptionPreview
   }
   return Object.keys(config).length ? config : undefined
 }

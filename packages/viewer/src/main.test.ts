@@ -26,7 +26,6 @@ function snapshot(): Snapshot {
       showTagColors: true,
       showSubtreeConnections: true,
       lineBorders: 'none',
-      kanbanShowSubtasks: false,
       ganttWeekLabel: 'weekNumber',
       dateFormat: ''
     },
@@ -105,6 +104,16 @@ describe('viewer', () => {
     old.version = 1
     Object.assign(old.view, { sort: undefined, sortKey: 'due', sortDir: 'desc' })
     expect(viewModelFromSnapshot(old).sort).toEqual([{ key: 'due', dir: 'desc' }])
+  })
+
+  it('reads the fields a page carries, and the subtask cards setting of a version 1 page', () => {
+    const page = snapshot()
+    page.view.fields = { table: { visible: ['title', 'due'] } }
+    expect(viewModelFromSnapshot(page).fields).toEqual({ table: { visible: ['title', 'due'] } })
+    const old = snapshot()
+    old.version = 1
+    old.settings.kanbanShowSubtasks = true
+    expect(viewModelFromSnapshot(old).fields.kanban?.visible).toContain('subtasks')
   })
 
   it('reads the filter of a version 1 page, which held fixed facets', () => {

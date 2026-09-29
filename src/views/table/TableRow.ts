@@ -6,6 +6,7 @@ import {
   isTerminalStatus,
   stringifyCustomValue,
   type CustomFieldDef,
+  type Project,
   totalLoggedHours
 } from '@dotpm/core'
 import {
@@ -89,6 +90,86 @@ export function renderTaskRow(tbody: HTMLElement, flat: TableTreeRow, ctx: Table
     })
   })
 
+  const customFields = ctx.scope.customFields()
+  for (const column of ctx.columns) {
+    switch (column) {
+      case 'title':
+        renderTitleCell(row, flat, project, ctx)
+        break
+      case 'project':
+        new ProjectCell(row, {
+          title: project.title,
+          color: project.color,
+          onClick: safeAsync(() => ctx.plugin.router.openProjectLink(project.filePath))
+        })
+        break
+      case 'status':
+        new StatusCell(row, {
+          task,
+          statuses: ctx.statuses,
+          onChange: safeAsync(async (status) => {
+            await ctx.plugin.store.updateTask(project, task.id, { status })
+            await ctx.onRefresh()
+          })
+        })
+        break
+      case 'priority':
+        new PriorityCell(row, {
+          task,
+          priorities: ctx.priorities,
+          priorityIcons: ctx.priorityIcons,
+          onChange: safeAsync(async (priority) => {
+            await ctx.plugin.store.updateTask(project, task.id, { priority })
+            await ctx.onRefresh()
+          })
+        })
+        break
+      case 'assignees':
+        new AssigneesCell(row, linkedRefs(ctx.plugin.app, task.assignees, task.filePath ?? project.filePath))
+        break
+      case 'due':
+        new DueDateCell(row, {
+          task,
+          urgency: dueUrgency(task, ctx.statuses),
+          onSave: async (val) => {
+            await ctx.plugin.store.updateTask(project, task.id, { due: val })
+            await ctx.plugin.store.scheduleAfterChange(project, task.id)
+            await ctx.onRefresh()
+          }
+        })
+        break
+      case 'progress':
+        new ProgressCell(row, {
+          value: task.progress,
+          color: statusConfig?.color ?? 'var(--interactive-accent)',
+          onSave: async (progress) => {
+            await ctx.plugin.store.updateTask(project, task.id, { progress })
+            await ctx.onRefresh()
+          }
+        })
+        break
+      case 'time':
+        new TimeCell(row, { logged: totalLoggedHours(task), estimate: task.timeEstimate ?? 0 })
+        break
+      default: {
+        const cf = customFields.find((field) => `cf:${field.id}` === column)
+        const source = task.filePath ?? project.filePath
+        new CustomFieldCell(row, cf ? customFieldValue(ctx.plugin.app, cf, task.customFields[cf.id], source) : EMPTY)
+      }
+    }
+  }
+
+  new ActionsCell(row, {
+    onClick: (e) => {
+      const menu = new Menu()
+      buildTaskContextMenu(menu, task, { plugin: ctx.plugin, project, onRefresh: ctx.onRefresh })
+      menu.showAtMouseEvent(e)
+    }
+  })
+}
+
+function renderTitleCell(row: HTMLElement, flat: TableTreeRow, project: Project, ctx: TableContext): void {
+  const { task } = flat
   new TitleCell(row, {
     task,
     treeGuides: ctx.showSubtreeConnections ? flat.guides : null,
@@ -115,69 +196,9 @@ export function renderTaskRow(tbody: HTMLElement, flat: TableTreeRow, ctx: Table
       })
     }
   })
-
-  if (ctx.scope.isMulti) {
-    new ProjectCell(row, {
-      title: project.title,
-      color: project.color,
-      onClick: safeAsync(() => ctx.plugin.router.openProjectLink(project.filePath))
-    })
-  }
-
-  new StatusCell(row, {
-    task,
-    statuses: ctx.statuses,
-    onChange: safeAsync(async (status) => {
-      await ctx.plugin.store.updateTask(project, task.id, { status })
-      await ctx.onRefresh()
-    })
-  })
-
-  new PriorityCell(row, {
-    task,
-    priorities: ctx.priorities,
-    priorityIcons: ctx.priorityIcons,
-    onChange: safeAsync(async (priority) => {
-      await ctx.plugin.store.updateTask(project, task.id, { priority })
-      await ctx.onRefresh()
-    })
-  })
-
-  new AssigneesCell(row, linkedRefs(ctx.plugin.app, task.assignees, task.filePath ?? project.filePath))
-
-  new DueDateCell(row, {
-    task,
-    urgency: dueUrgency(task, ctx.statuses),
-    onSave: async (val) => {
-      await ctx.plugin.store.updateTask(project, task.id, { due: val })
-      await ctx.plugin.store.scheduleAfterChange(project, task.id)
-      await ctx.onRefresh()
-    }
-  })
-
-  new ProgressCell(row, {
-    value: task.progress,
-    color: statusConfig?.color ?? 'var(--interactive-accent)',
-    onSave: async (progress) => {
-      await ctx.plugin.store.updateTask(project, task.id, { progress })
-      await ctx.onRefresh()
-    }
-  })
-  new TimeCell(row, { logged: totalLoggedHours(task), estimate: task.timeEstimate ?? 0 })
-
-  for (const cf of ctx.scope.customFields()) {
-    const value = customFieldValue(ctx.plugin.app, cf, task.customFields[cf.id], task.filePath ?? project.filePath)
-    new CustomFieldCell(row, value)
-  }
-
-  new ActionsCell(row, {
-    onClick: (e) => {
-      const menu = new Menu()
-      buildTaskContextMenu(menu, task, { plugin: ctx.plugin, project, onRefresh: ctx.onRefresh })
-      menu.showAtMouseEvent(e)
-    }
-  })
 }
+
+const EMPTY: CustomFieldValue = { kind: 'text', text: '' }
 
 const WIKILINK = /^\[\[.+\]\]$/
 

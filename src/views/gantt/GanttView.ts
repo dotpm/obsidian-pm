@@ -2,6 +2,8 @@ import type { Scope } from 'obsidian'
 import type PMPlugin from '#main'
 import {
   type Task,
+  type ViewFields,
+  shownFields,
   type GanttGranularity,
   type TaskQuery,
   type FlatTask,
@@ -69,7 +71,8 @@ export class GanttView implements SubView {
     private onRefresh: () => Promise<void>,
     private query: TaskQuery,
     private granularity: GanttGranularity,
-    private keyScope: Scope
+    private keyScope: Scope,
+    private fields: ViewFields
   ) {}
 
   destroy(): void {
@@ -283,6 +286,12 @@ export class GanttView implements SubView {
       plugin: this.plugin,
       scope: this.scope,
       statuses: this.scope.config.statuses,
+      labelFields: shownFields(this.fields, 'gantt', this.scope.fieldCatalog()).filter((id) => id !== 'title'),
+      labelSource: {
+        statuses: this.scope.config.statuses,
+        priorities: this.scope.config.priorities,
+        customFields: this.scope.customFields()
+      },
       flatTasks: this.flatTasks,
       drag: this.drag,
       link: this.link,

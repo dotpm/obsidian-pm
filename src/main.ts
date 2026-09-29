@@ -9,6 +9,7 @@ import {
   makeDefaultSort,
   hydrateFilter,
   hydrateSort,
+  legacyBoardFields,
   type PMSettings,
   type Project,
   type Task,
@@ -58,7 +59,7 @@ import {
 import { Notifier } from './components/Notifier'
 import { AutoArchiver } from './components/AutoArchiver'
 import { IdRepair } from './components/IdRepair'
-import { migrateProjects, migrateProjectLayout, migrateTaskRefs } from './migration'
+import { migrateBoardCardConfig, migrateProjects, migrateProjectLayout, migrateTaskRefs } from './migration'
 import { LocalApi } from './api/LocalApi'
 import { exportViewAsHtml } from './export/exportView'
 import { generateToken, LocalApiServer } from './api/LocalApiServer'
@@ -435,7 +436,16 @@ export default class PMPlugin extends Plugin {
     }
 
     // Sort was held by the table alone and had one key, the timeline scale was one setting
-    // for every view, and a filter was a fixed set of facets before it became conditions.
+    // for every view, a filter was a fixed set of facets before it became conditions, and
+    // what a board card shows was two settings.
+    const legacyBoard = (saved ?? {}) as { kanbanShowSubtasks?: boolean; kanbanShowDescriptionPreview?: boolean }
+    const boardFields = legacyBoardFields(!!legacyBoard.kanbanShowSubtasks, !!legacyBoard.kanbanShowDescriptionPreview)
+    for (const key of ['kanbanShowSubtasks', 'kanbanShowDescriptionPreview']) {
+      if (key in this.settings) {
+        Reflect.deleteProperty(this.settings, key)
+        migrated = true
+      }
+    }
     for (const entry of Object.values(this.settings.projectFilters)) {
       if (!Array.isArray(entry.filter.conditions)) {
         entry.filter = hydrateFilter(entry.filter)
@@ -449,6 +459,10 @@ export default class PMPlugin extends Plugin {
       }
       if (!entry.group) {
         entry.group = makeDefaultGroup()
+        migrated = true
+      }
+      if (!entry.fields) {
+        entry.fields = structuredClone(boardFields)
         migrated = true
       }
       if (!entry.ganttGranularity) {
@@ -577,6 +591,7 @@ export default class PMPlugin extends Plugin {
     await migrateProjects(this)
     await migrateProjectLayout(this)
     await migrateTaskRefs(this)
+    await migrateBoardCardConfig(this)
     await this.idRepair.check()
     await this.cleanupStaleProjectFilters()
     this.notifier.check()
@@ -777,6 +792,7 @@ export default class PMPlugin extends Plugin {
       activeSavedViewId: null,
       sort: makeDefaultSort(),
       group: makeDefaultGroup(),
+      fields: {},
       ganttGranularity: this.settings.ganttGranularity
     }
     await this.saveSettings()

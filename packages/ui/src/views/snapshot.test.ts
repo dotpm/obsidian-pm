@@ -24,9 +24,7 @@ const CONFIG: ResolvedProjectConfig = {
   pullForwardOnEarlyFinish: false,
   autoArchiveDays: 0,
   showSubtreeConnections: true,
-  lineBorders: 'none',
-  kanbanShowSubtasks: false,
-  kanbanShowDescriptionPreview: false
+  lineBorders: 'none'
 }
 
 function model(overrides: Partial<ViewModel> = {}): ViewModel {
@@ -74,13 +72,13 @@ function model(overrides: Partial<ViewModel> = {}): ViewModel {
       showTagColors: true,
       showSubtreeConnections: true,
       lineBorders: 'none',
-      kanbanShowSubtasks: false,
       ganttWeekLabel: 'weekNumber',
       ganttGranularity: 'week'
     },
     filter: makeDefaultFilter(),
     sort: [{ key: 'title', dir: 'asc' }],
     group: makeDefaultGroup(),
+    fields: {},
     personColors: {},
     ...overrides
   }
@@ -107,6 +105,18 @@ describe('snapshot table', () => {
     expect(rows).toEqual(['b', 'm', 'a', 'c'])
     expect(host.querySelector('tr[data-task-id="a"] .pm-task-title-text')?.textContent).toBe('Parent')
     expect(host.querySelector('tr[data-task-id="b"]')?.classList.contains('pm-table-row--done')).toBe(true)
+  })
+
+  it('shows the columns the view chose, in its order and at its widths', () => {
+    const host = document.body.createDiv()
+    renderSnapshotTable(
+      host,
+      model({ fields: { table: { visible: ['due', 'cf:sprint', 'title'], widths: { due: 75 } } } })
+    )
+    const headers = Array.from(host.querySelectorAll<HTMLElement>('thead th'))
+    expect(headers.map((th) => th.textContent?.trim())).toEqual(['', 'Task ↑', 'Due', 'Sprint'])
+    expect(headers[2].style.width).toBe('75px')
+    expect(host.querySelectorAll('tr[data-task-id="a"] td').length).toBe(4)
   })
 
   it('writes date fields the way the due column does', () => {
@@ -152,6 +162,16 @@ describe('snapshot kanban', () => {
   })
 })
 
+describe('snapshot kanban fields', () => {
+  it('deals subtasks their own cards and shows the fields the view chose', () => {
+    const host = document.body.createDiv()
+    renderSnapshotKanban(host, model({ fields: { kanban: { visible: ['subtasks', 'cf:sprint'] } } }))
+    expect(host.querySelector('[data-task-id="c"]')).not.toBeNull()
+    expect(host.querySelector('[data-task-id="a"] .pm-kanban-card-field')?.textContent).toBe('SprintS1')
+    expect(host.querySelector('.pm-kanban-card-footer')).toBeNull()
+  })
+})
+
 describe('snapshot kanban grouping', () => {
   it('draws the columns of the field the view grouped by, leaving hidden ones out', () => {
     const host = document.body.createDiv()
@@ -175,5 +195,13 @@ describe('snapshot gantt', () => {
     expect(host.querySelector('.pm-gantt-header-svg text')).not.toBeNull()
     const buttons = Array.from(host.querySelectorAll('.pm-gantt-controls button')).map((b) => b.textContent)
     expect(buttons).toEqual(['Day', 'Week', 'Month', 'Quarter', 'Year'])
+    expect(host.querySelector('.pm-gantt-bar-aside')).toBeNull()
+  })
+
+  it('writes the label fields the view chose beside each bar', () => {
+    const host = document.body.createDiv()
+    renderSnapshotGantt(host, model({ fields: { gantt: { visible: ['title', 'progress', 'cf:sprint'] } } }))
+    const asides = Array.from(host.querySelectorAll('.pm-gantt-bar-aside')).map((el) => el.textContent)
+    expect(asides).toContain('40%, S1')
   })
 })

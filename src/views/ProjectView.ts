@@ -8,8 +8,10 @@ import {
   type SortRule,
   type GroupState,
   type TaskQuery,
+  type ViewFields,
   type ViewMode,
   flattenTasks,
+  shownFields,
   GANTT_GRANULARITIES,
   bestConditionToDrop,
   countActiveFilters,
@@ -36,10 +38,12 @@ import {
   type ScopeSpec
 } from '#store'
 import {
+  boardCandidates,
   boardColumns,
   ChipButton,
   EmptyState,
   groupableFields,
+  openFieldsPopover,
   openGroupPopover,
   type BoardColumn,
   FilterBar,
@@ -118,6 +122,7 @@ export class ProjectView extends ItemView {
   activeSavedViewId: string | null = null
   sort: SortRule[] = makeDefaultSort()
   group: GroupState = makeDefaultGroup()
+  fields: ViewFields = {}
   granularity: GanttGranularity
   private subview: SubView | null = null
   private headerEl!: HTMLElement
@@ -131,6 +136,7 @@ export class ProjectView extends ItemView {
   private filterButton: ChipButton | null = null
   private sortButton: ChipButton | null = null
   private groupButton: ChipButton | null = null
+  private fieldsButton: ChipButton | null = null
   private saveViewButton: ChipButton | null = null
   private keyScope: Scope
   private pendingRefresh: Promise<void> | null = null
@@ -173,6 +179,7 @@ export class ProjectView extends ItemView {
       filter: structuredClone(this.query.filter),
       sort: structuredClone(this.sort),
       group: structuredClone(this.group),
+      fields: structuredClone(this.fields),
       ganttGranularity: this.granularity
     }
   }
@@ -320,6 +327,7 @@ export class ProjectView extends ItemView {
       this.activeSavedViewId = saved.activeSavedViewId
       this.sort = saved.sort
       this.group = saved.group
+      this.fields = saved.fields
       this.granularity = saved.ganttGranularity
       return
     }
@@ -327,6 +335,7 @@ export class ProjectView extends ItemView {
     this.activeSavedViewId = null
     this.sort = makeDefaultSort()
     this.group = makeDefaultGroup()
+    this.fields = {}
     this.granularity = this.plugin.settings.ganttGranularity
     // A scope seen for the first time opens with its starred view, and keeps it from then on.
     const starred = this.savedViews().find((view) => view.isDefault)
@@ -341,6 +350,7 @@ export class ProjectView extends ItemView {
     this.activeSavedViewId = view.id
     this.sort = structuredClone(view.sort)
     if (view.group) this.group = structuredClone(view.group)
+    if (view.fields) this.fields = structuredClone(view.fields)
     if (view.ganttGranularity) this.granularity = view.ganttGranularity
     if (view.viewMode) this.currentView = view.viewMode
   }
@@ -357,6 +367,7 @@ export class ProjectView extends ItemView {
       filter: t('header.changedFilter'),
       sort: t('header.changedSort'),
       group: t('header.changedGroup'),
+      fields: t('header.changedFields'),
       mode: t('header.mode'),
       scale: t('header.scale')
     }
@@ -364,6 +375,7 @@ export class ProjectView extends ItemView {
       filter: this.query.filter,
       sort: this.sort,
       group: this.group,
+      fields: this.fields,
       mode: this.currentView,
       granularity: this.granularity
     }
@@ -377,6 +389,7 @@ export class ProjectView extends ItemView {
       activeSavedViewId: this.activeSavedViewId,
       sort: this.sort,
       group: this.group,
+      fields: this.fields,
       ganttGranularity: this.granularity
     }
     await this.plugin.saveSettings()
@@ -458,6 +471,14 @@ export class ProjectView extends ItemView {
         .setLabel(setup ? filterFieldLabel(this.group.field, setup.ctx.customFields) : t('header.group'))
         .setDetail(hidden ? tn('header.hiddenCount', hidden) : '')
         .setActive(this.group.field !== makeDefaultGroup().field)
+    }
+    if (this.fieldsButton && this.projectScope) {
+      const changed = this.fields[this.currentView] !== undefined
+      // Counted against the defaults, so fields a mode never shows unless asked don't read as hidden.
+      const catalog = this.projectScope.fieldCatalog()
+      const shown = shownFields(this.fields, this.currentView, catalog)
+      const hidden = shownFields({}, this.currentView, catalog).filter((id) => !shown.includes(id)).length
+      this.fieldsButton.setDetail(changed && hidden ? tn('header.hiddenCount', hidden) : '').setActive(changed)
     }
     if (this.sortButton) {
       const [first] = this.sort
@@ -660,6 +681,7 @@ export class ProjectView extends ItemView {
         canSave:
           countActiveFilters(this.query.filter) > 0 ||
           !sameValue(this.sort, makeDefaultSort()) ||
+          Object.keys(this.fields).length > 0 ||
           this.currentView !== this.projectScope?.config.defaultView,
         storageNote:
           this.projectScope?.spec.kind === 'project' && primary
@@ -711,7 +733,11 @@ export class ProjectView extends ItemView {
       })
     this.sortButton = null
     this.groupButton = null
-    if (this.currentView === 'gantt') return
+    this.fieldsButton = null
+    if (this.currentView === 'gantt') {
+      this.renderFieldsButton(parent)
+      return
+    }
     const sortButton = new ChipButton(parent).setAriaLabel(t('header.sort'))
     const sorted = (): void => {
       this.syncHeader()
@@ -730,10 +756,37 @@ export class ProjectView extends ItemView {
       })
     })
     this.sortButton = sortButton
-    if (this.currentView !== 'kanban') return
-    const groupButton = new ChipButton(parent).setIcon('group').setAriaLabel(t('header.group'))
-    groupButton.onClick(() => this.openGroup(groupButton.el))
-    this.groupButton = groupButton
+    if (this.currentView === 'kanban') {
+      const groupButton = new ChipButton(parent).setIcon('group').setAriaLabel(t('header.group'))
+      groupButton.onClick(() => this.openGroup(groupButton.el))
+      this.groupButton = groupButton
+    }
+    this.renderFieldsButton(parent)
+  }
+
+  private renderFieldsButton(parent: HTMLElement): void {
+    const button = new ChipButton(parent)
+      .setIcon('columns-3')
+      .setLabel(t('header.fields'))
+      .setAriaLabel(t('header.fields'))
+    button.onClick(() => {
+      const scope = this.projectScope
+      if (!scope) return
+      openFieldsPopover(button.el, {
+        mode: this.currentView,
+        fields: this.fields,
+        catalog: scope.fieldCatalog(),
+        onChange: () => this.handleFieldsChange()
+      })
+    })
+    this.fieldsButton = button
+  }
+
+  /** Rebuilt rather than refreshed, so the table keeps its scroll position while its columns change. */
+  private handleFieldsChange(): void {
+    this.syncHeader()
+    this.renderCurrentView()
+    void this.persistFilter()
   }
 
   private groupSetup() {
@@ -746,7 +799,7 @@ export class ProjectView extends ItemView {
     const setup = this.groupSetup()
     const scope = this.projectScope
     if (!setup || !scope) return []
-    const candidates = scope.config.kanbanShowSubtasks ? setup.tasks : scope.tasks()
+    const candidates = boardCandidates(scope.tasks(), shownFields(this.fields, 'kanban', scope.fieldCatalog()))
     const shown = candidates.filter((task) => matchesQuery(task, this.query, setup.ctx))
     return boardColumns(setup, this.group, shown)
   }
@@ -921,6 +974,7 @@ export class ProjectView extends ItemView {
       filter: structuredClone(this.query.filter),
       sort: structuredClone(this.sort),
       group: structuredClone(this.group),
+      fields: structuredClone(this.fields),
       viewMode: this.currentView,
       ganttGranularity: this.granularity,
       ...(isDefault ? { isDefault: true } : {})
@@ -940,6 +994,7 @@ export class ProjectView extends ItemView {
     sv.viewMode = this.currentView
     sv.sort = structuredClone(this.sort)
     sv.group = structuredClone(this.group)
+    sv.fields = structuredClone(this.fields)
     sv.ganttGranularity = this.granularity
     this.activeSavedViewId = sv.id
     await this.persistSavedViews(views)
@@ -1038,7 +1093,9 @@ export class ProjectView extends ItemView {
             this.syncHeader()
             await this.persistFilter()
           }),
-          this.keyScope
+          this.keyScope,
+          this.fields,
+          () => this.handleFieldsChange()
         )
         if (savedTableScrollTop !== null) table.setPendingScrollTop(savedTableScrollTop)
         this.subview = table
@@ -1052,7 +1109,8 @@ export class ProjectView extends ItemView {
           () => this.refreshProject(),
           this.query,
           this.granularity,
-          this.keyScope
+          this.keyScope,
+          this.fields
         )
         if (savedGanttScroll) gantt.setPendingScroll(savedGanttScroll)
         if (savedGanttLabelWidth !== null) gantt.setLabelWidth(savedGanttLabelWidth)
@@ -1068,6 +1126,7 @@ export class ProjectView extends ItemView {
           this.query,
           this.sort,
           this.group,
+          this.fields,
           (anchor) => this.openGroup(anchor)
         )
         break

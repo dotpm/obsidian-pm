@@ -357,6 +357,23 @@ describe('project round-trip', () => {
     expect(project.savedViews[1].group).toBeUndefined()
   })
 
+  it('reads saved fields and drops what it cannot use', () => {
+    const fields = {
+      table: { visible: ['title', 3, 'due'], widths: { due: 88.4, status: -5, time: 'wide' } },
+      kanban: { visible: 'tags' },
+      calendar: { visible: ['due'] }
+    }
+    const fm = {
+      savedViews: [
+        { id: 'v1', name: 'F', fields },
+        { id: 'v2', name: 'None' }
+      ]
+    }
+    const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')
+    expect(project.savedViews[0].fields).toEqual({ table: { visible: ['title', 'due'], widths: { due: 88 } } })
+    expect(project.savedViews[1].fields).toBeUndefined()
+  })
+
   it('drops a timeline scale it does not know', () => {
     const fm = { savedViews: [{ id: 'v1', name: 'Odd', ganttGranularity: 'decade' }] }
     const project = hydrateProjectFromFrontmatter(fm, '', 'Projects/P.md', 'P')

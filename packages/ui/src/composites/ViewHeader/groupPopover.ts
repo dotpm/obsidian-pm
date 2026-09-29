@@ -1,8 +1,8 @@
-import { setIcon, setTooltip } from '#platform'
 import { Checkbox } from '#primitives/Checkbox'
 import { Popover } from '#primitives/Popover'
 import { type GroupState, t } from '@dotpm/core'
 import { renderGlyph } from '../properties/optionList'
+import { renderVisibilityList } from '../visibilityList'
 import type { BoardColumn } from '../../views/boardColumns'
 
 export interface GroupPopoverProps {
@@ -22,7 +22,6 @@ export function openGroupPopover(anchor: HTMLElement, props: GroupPopoverProps):
   const pop = new Popover({ anchor, width: 300 })
   const body = pop.contentEl.createDiv('pm-group-pop')
   const { group } = props
-  let dragFrom: string | null = null
 
   const prefs = () => {
     group.columns ??= {}
@@ -66,49 +65,30 @@ export function openGroupPopover(anchor: HTMLElement, props: GroupPopoverProps):
       changed()
     })
 
-    const list = body.createDiv('pm-group-columns')
-    for (const column of columns) {
-      const isHidden = prefs().hidden?.includes(column.id) ?? false
-      const row = list.createDiv({ cls: 'pm-group-column', attr: { draggable: 'true' } })
-      row.toggleClass('is-hidden', column.hidden)
-      setIcon(row.createSpan('pm-sort-grip'), 'grip-vertical')
-      renderGlyph(row.createSpan('pm-group-glyph'), { icon: column.icon, color: column.color })
-      row.createSpan({ cls: 'pm-group-column-label', text: column.label })
-      const count = row.createSpan({ cls: 'pm-group-count', text: String(column.tasks.length) })
-      if (!column.tasks.length) {
-        count.setText(t('header.emptyColumn'))
-        row.addClass('is-empty')
-      }
-      const label = isHidden ? t('header.showColumn') : t('header.hideColumn')
-      const eye = row.createEl('button', { cls: 'clickable-icon pm-group-eye', attr: { 'aria-label': label } })
-      setIcon(eye, isHidden ? 'eye-off' : 'eye')
-      setTooltip(eye, label)
-      eye.addEventListener('click', () => {
+    renderVisibilityList(body, {
+      rows: columns.map((column) => ({
+        id: column.id,
+        label: column.label,
+        hidden: prefs().hidden?.includes(column.id) ?? false,
+        detail: column.tasks.length ? String(column.tasks.length) : t('header.emptyColumn'),
+        quiet: !column.tasks.length,
+        glyph: (el) => renderGlyph(el, { icon: column.icon, color: column.color })
+      })),
+      showLabel: t('header.showColumn'),
+      hideLabel: t('header.hideColumn'),
+      onToggle: (id) => {
         const hidden = new Set(prefs().hidden ?? [])
-        if (isHidden) hidden.delete(column.id)
-        else hidden.add(column.id)
+        if (hidden.has(id)) hidden.delete(id)
+        else hidden.add(id)
         if (hidden.size) prefs().hidden = [...hidden]
         else delete prefs().hidden
         changed()
-      })
-
-      row.addEventListener('dragstart', () => {
-        dragFrom = column.id
-        row.addClass('is-dragging')
-      })
-      row.addEventListener('dragend', () => row.removeClass('is-dragging'))
-      row.addEventListener('dragover', (e) => e.preventDefault())
-      row.addEventListener('drop', (e) => {
-        e.preventDefault()
-        const from = dragFrom
-        dragFrom = null
-        if (from === null || from === column.id) return
-        const ids = columns.map((c) => c.id).filter((id) => id !== from)
-        ids.splice(ids.indexOf(column.id), 0, from)
+      },
+      onReorder: (ids) => {
         prefs().order = ids
         changed()
-      })
-    }
+      }
+    })
   }
 
   render()

@@ -202,24 +202,6 @@ export class PMSettingTab extends PluginSettingTab {
       },
       {
         type: 'group',
-        heading: t('settings.board.heading'),
-        items: [
-          {
-            name: t('settings.kanbanShowSubtasks.name'),
-            desc: t('settings.kanbanShowSubtasks.desc'),
-            aliases: ['kanban'],
-            control: { type: 'toggle', key: 'kanbanShowSubtasks' }
-          },
-          {
-            name: t('settings.kanbanShowDescriptionPreview.name'),
-            desc: t('settings.kanbanShowDescriptionPreview.desc'),
-            aliases: ['kanban'],
-            control: { type: 'toggle', key: 'kanbanShowDescriptionPreview' }
-          }
-        ]
-      },
-      {
-        type: 'group',
         heading: t('settings.scheduling.heading'),
         items: [
           {

@@ -9,6 +9,11 @@ import {
   type PriorityIconSet,
   type StatusConfig,
   type FlatTask,
+  type ViewFields,
+  SORT_KEYS,
+  columnWidth,
+  tidyFields,
+  viewFieldLabel,
   flattenTasks,
   findTaskById,
   applyTaskFilterFlat,
@@ -59,12 +64,20 @@ export interface TableContext {
   showSubtreeConnections: boolean
   lineBorders: LineBorders
   collapsedIds: ReadonlySet<string>
+  /** The field ids the table shows, in order, and the view's fields their widths come from. */
+  columns: string[]
+  fields: ViewFields
   state: TableState
   onRefresh: () => Promise<void>
   onSelectionChange: () => void
   onBulkDelete: () => void
   onSortChange: () => void
+  /** A column was resized, or dragged narrow enough to hide. */
+  onFieldsChange: () => void
 }
+
+/** A column dragged narrower than this hides instead. */
+const HIDE_BELOW = 24
 
 export function renderTable(ctx: TableContext): void {
   const wrapper = ctx.container.createDiv('pm-table-wrapper')
@@ -100,17 +113,7 @@ export function renderTable(ctx: TableContext): void {
     ctx.onSelectionChange()
   })
 
-  const cols: { key: SortKey | null; label: string; width?: string }[] = [
-    { key: null, label: '', width: '32px' },
-    { key: 'title', label: t('columns.task'), width: 'auto' },
-    ...(ctx.scope.isMulti ? [{ key: null, label: t('columns.project'), width: '130px' } as const] : []),
-    { key: 'status', label: t('columns.status'), width: '130px' },
-    { key: 'priority', label: t('columns.priority'), width: '110px' },
-    { key: 'assignees', label: t('columns.assignees'), width: '140px' },
-    { key: 'due', label: t('columns.due'), width: '110px' },
-    { key: 'progress', label: t('columns.progress'), width: '120px' },
-    { key: null, label: t('columns.time'), width: '90px' }
-  ]
+  hrow.createEl('th').setCssStyles({ width: '32px' })
   const sortableHeaders: { key: SortKey; th: HTMLElement }[] = []
   const paintSortIndicators = () => {
     for (const { key, th } of sortableHeaders) {
@@ -126,17 +129,20 @@ export function renderTable(ctx: TableContext): void {
     }
   }
 
-  for (const col of cols) {
+  const customFields = ctx.scope.customFields()
+  for (const id of ctx.columns) {
+    const label = viewFieldLabel(id, customFields)
     const th = hrow.createEl('th')
-    if (col.width) th.setCssStyles({ width: col.width })
-    if (col.key) {
+    const width = columnWidth(ctx.fields, id)
+    th.setCssStyles({ width: width === undefined ? 'auto' : `${width}px` })
+    const key = SORT_KEYS.find((k) => k === id)
+    if (key) {
       th.addClass('pm-table-th-sortable')
       th.setAttribute('role', 'button')
-      th.setAttribute('aria-label', `Sort by ${col.label}`)
-      th.createSpan({ text: col.label })
-      sortableHeaders.push({ key: col.key, th })
+      th.setAttribute('aria-label', `Sort by ${label}`)
+      th.createSpan({ text: label })
+      sortableHeaders.push({ key, th })
       th.addEventListener('click', (e) => {
-        const key = col.key as SortKey
         const { sort } = ctx.state
         const at = sort.findIndex((rule) => rule.key === key)
         if (e.shiftKey) {
@@ -152,15 +158,11 @@ export function renderTable(ctx: TableContext): void {
         ctx.onSortChange()
       })
     } else {
-      th.setText(col.label)
+      th.setText(label)
     }
+    if (width !== undefined) attachColumnResize(th, id, ctx)
   }
   paintSortIndicators()
-
-  for (const cf of ctx.scope.customFields()) {
-    const th = hrow.createEl('th', { text: cf.name })
-    th.setCssStyles({ width: '120px' })
-  }
 
   // Actions column, which must stay last.
   const actionsTh = hrow.createEl('th')
@@ -181,6 +183,48 @@ export function renderTable(ctx: TableContext): void {
     ctx.state.renderWindow?.()
   })
   ctx.state.resizeObserver.observe(wrapper)
+}
+
+/**
+ * Dragging a header's right edge sets that column's width in the view; letting go below
+ * `HIDE_BELOW` hides the column instead.
+ */
+function attachColumnResize(th: HTMLElement, id: string, ctx: TableContext): void {
+  th.addClass('pm-table-th-resizable')
+  const handle = th.createDiv({ cls: 'pm-table-resize', attr: { 'aria-label': t('table.resizeColumn') } })
+  handle.addEventListener('click', (e) => e.stopPropagation())
+  handle.addEventListener('pointerdown', (down: PointerEvent) => {
+    down.preventDefault()
+    down.stopPropagation()
+    handle.setPointerCapture(down.pointerId)
+    const startWidth = th.offsetWidth
+    let width = startWidth
+    th.addClass('is-resizing')
+    const move = (e: PointerEvent): void => {
+      width = Math.max(0, Math.round(startWidth + e.clientX - down.clientX))
+      th.setCssStyles({ width: `${width}px` })
+      th.toggleClass('is-hiding', width < HIDE_BELOW)
+    }
+    const up = (): void => {
+      handle.removeEventListener('pointermove', move)
+      handle.removeEventListener('pointerup', up)
+      handle.removeEventListener('pointercancel', up)
+      th.removeClass('is-resizing', 'is-hiding')
+      if (width === startWidth) return
+      const list = (ctx.fields.table ??= { visible: [...ctx.columns] })
+      if (width < HIDE_BELOW) {
+        list.visible = ctx.columns.filter((column) => column !== id)
+        if (list.widths) Reflect.deleteProperty(list.widths, id)
+      } else {
+        list.widths = { ...list.widths, [id]: width }
+      }
+      tidyFields(ctx.fields, ctx.scope.fieldCatalog())
+      ctx.onFieldsChange()
+    }
+    handle.addEventListener('pointermove', move)
+    handle.addEventListener('pointerup', up)
+    handle.addEventListener('pointercancel', up)
+  })
 }
 
 export function refreshTableBody(ctx: TableContext): void {
@@ -282,7 +326,7 @@ function renderWindowRows(ctx: TableContext): void {
   if (!tbody) return
 
   const rows = state.visibleRows
-  const colCount = 10 + ctx.scope.customFields().length + (ctx.scope.isMulti ? 1 : 0)
+  const colCount = ctx.columns.length + 3
   const { start, end } = computeWindow(state)
   state.windowStart = start
   state.windowEnd = end

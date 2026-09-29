@@ -3,6 +3,7 @@ import { type Task, t } from '@dotpm/core'
 import {
   svgEl,
   safeAsync,
+  barAsideText,
   barColor,
   drawDependencyArrows,
   drawMilestoneDiamond,
@@ -39,7 +40,15 @@ export function renderTaskBar(g: SVGGElement, task: Task, row: number, _depth: n
     return
   }
 
-  const drawn = drawTaskBar(g, ctx, ctx.statuses, task, row, color)
+  const drawn = drawTaskBar(
+    g,
+    ctx,
+    ctx.statuses,
+    task,
+    row,
+    color,
+    barAsideText(task, ctx.labelFields, ctx.labelSource)
+  )
   if (!drawn) return
   const { barGroup, rect, x, y, width, height } = drawn
 

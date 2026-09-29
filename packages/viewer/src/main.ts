@@ -4,8 +4,10 @@ import { isSnapshot, tasksFromResources, type Snapshot } from '@dotpm/api'
 import {
   type ViewMode,
   hydrateFilter,
+  hydrateFields,
   hydrateGroup,
   hydrateSort,
+  legacyBoardFields,
   locale,
   setDateFormat,
   setLocale,
@@ -49,15 +51,16 @@ export function viewModelFromSnapshot(snapshot: Snapshot): ViewModel {
         pullForwardOnEarlyFinish: false,
         autoArchiveDays: 0,
         showSubtreeConnections: snapshot.settings.showSubtreeConnections,
-        lineBorders: snapshot.settings.lineBorders,
-        kanbanShowSubtasks: snapshot.settings.kanbanShowSubtasks,
-        kanbanShowDescriptionPreview: false
+        lineBorders: snapshot.settings.lineBorders
       }
     })),
     settings: { ...snapshot.settings, ganttGranularity: snapshot.view.ganttGranularity },
     filter: hydrateFilter(snapshot.view.filter),
     sort: hydrateSort(snapshot.view as unknown as Record<string, unknown>),
     group: hydrateGroup(snapshot.view.group),
+    fields: snapshot.view.fields
+      ? hydrateFields(snapshot.view.fields)
+      : legacyBoardFields(snapshot.settings.kanbanShowSubtasks === true, false),
     personColors: snapshot.personColors ?? {}
   }
 }

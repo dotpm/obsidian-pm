@@ -412,14 +412,6 @@ export class ProjectEditView extends ItemView {
       { value: 'vertical', label: t('settings.lineBorders.vertical') },
       { value: 'both', label: t('settings.lineBorders.both') }
     ])
-    row(t('projectEdit.kanbanSubtasks'), 'kanbanShowSubtasks', [
-      { value: true, label: t('common.show') },
-      { value: false, label: t('common.hide') }
-    ])
-    row(t('projectEdit.kanbanPreview'), 'kanbanShowDescriptionPreview', [
-      { value: true, label: t('common.show') },
-      { value: false, label: t('common.hide') }
-    ])
   }
 
   /**

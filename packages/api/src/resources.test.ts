@@ -13,9 +13,7 @@ const CONFIG: ResolvedProjectConfig = {
   pullForwardOnEarlyFinish: false,
   autoArchiveDays: 0,
   showSubtreeConnections: true,
-  lineBorders: 'none',
-  kanbanShowSubtasks: false,
-  kanbanShowDescriptionPreview: false
+  lineBorders: 'none'
 }
 
 function rejects(fn: () => unknown, message: string): void {

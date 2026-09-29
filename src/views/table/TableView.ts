@@ -1,7 +1,7 @@
 import { Notice, type KeymapEventHandler, type Scope } from 'obsidian'
 import { confirmDialog } from '#ui/ModalFactory'
 import type PMPlugin from '#main'
-import { t, tn, type TaskQuery, type Project, type SortRule } from '@dotpm/core'
+import { t, tn, type TaskQuery, type Project, type SortRule, type ViewFields, shownFields } from '@dotpm/core'
 import type { ProjectScope } from '#store'
 import { safeAsync } from '@dotpm/ui'
 import type { SubView } from '../SubView'
@@ -27,7 +27,9 @@ export class TableView implements SubView {
     query: TaskQuery,
     sort: SortRule[],
     private onSortChange: () => void,
-    private keyScope: Scope
+    private keyScope: Scope,
+    private fields: ViewFields,
+    private onFieldsChange: () => void
   ) {
     this.state = {
       sort,
@@ -221,6 +223,8 @@ export class TableView implements SubView {
       showSubtreeConnections: config.showSubtreeConnections,
       lineBorders: config.lineBorders,
       collapsedIds: collapsedTaskIds(this.plugin.settings, this.scope.projects),
+      columns: shownFields(this.fields, 'table', this.scope.fieldCatalog()),
+      fields: this.fields,
       state: this.state,
       onRefresh: this.onRefresh,
       onSelectionChange: () => {
@@ -228,7 +232,8 @@ export class TableView implements SubView {
         this.updateBulkBar()
       },
       onBulkDelete: safeAsync(() => this.handleBulkAction({ type: 'delete' })),
-      onSortChange: this.onSortChange
+      onSortChange: this.onSortChange,
+      onFieldsChange: this.onFieldsChange
     }
   }
 }

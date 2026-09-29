@@ -1,11 +1,22 @@
-import { type Task, dueUrgency, flattenTasks, getPriorityConfig, matchesQuery, totalLoggedHours } from '@dotpm/core'
+import {
+  type Task,
+  dueUrgency,
+  flattenTasks,
+  getPriorityConfig,
+  matchesQuery,
+  shownFields,
+  totalLoggedHours
+} from '@dotpm/core'
 import { KanbanColumn, type KanbanCardData } from '../composites/KanbanColumn'
 import { compareTasks } from './tableSort'
 import { boardColumns } from './boardColumns'
+import { boardCandidates, cardCustomValues, descriptionPreview } from './boardCards'
 import { renderProjectChip } from '../composites/projectChip'
 import {
   allTasks,
   configOf,
+  customFieldColumns,
+  fieldCatalogOf,
   filterContextOf,
   filterSetupOf,
   isMulti,
@@ -26,7 +37,7 @@ function parentTitle(model: ViewModel, taskId: string): string | undefined {
   return undefined
 }
 
-function cardData(model: ViewModel, task: Task): KanbanCardData {
+function cardData(model: ViewModel, task: Task, fields: string[]): KanbanCardData {
   const config = configOf(model, task.id)
   const priorityConfig = getPriorityConfig(config.priorities, task.priority)
   const owner = isMulti(model) ? projectOf(model, task.id) : null
@@ -35,7 +46,9 @@ function cardData(model: ViewModel, task: Task): KanbanCardData {
     people: task.assignees.map((raw) => personOf(model, raw)),
     priorityColor:
       priorityConfig && task.priority !== 'medium' && task.priority !== 'low' ? priorityConfig.color : undefined,
-    parentTitle: model.settings.kanbanShowSubtasks && task.type === 'subtask' ? parentTitle(model, task.id) : undefined,
+    parentTitle: fields.includes('subtasks') && task.type === 'subtask' ? parentTitle(model, task.id) : undefined,
+    descriptionPreview: fields.includes('description') ? descriptionPreview(task.description) : undefined,
+    customValues: cardCustomValues(task, customFieldColumns(model), fields),
     renderSource: owner
       ? (el) => renderProjectChip(el, { title: owner.title, color: owner.color, onClick: noop })
       : undefined,
@@ -50,9 +63,8 @@ export function renderSnapshotKanban(container: HTMLElement, model: ViewModel): 
   const config = mergedConfig(model)
   container.addClass('pm-kanban-view')
   const board = container.createDiv('pm-kanban-board')
-  const candidates = model.settings.kanbanShowSubtasks
-    ? flattenTasks(allTasks(model)).map((f) => f.task)
-    : allTasks(model)
+  const fields = shownFields(model.fields, 'kanban', fieldCatalogOf(model))
+  const candidates = boardCandidates(allTasks(model), fields)
   const query = queryOf(model)
   const ctx = filterContextOf(model)
   const tasks = candidates
@@ -61,7 +73,8 @@ export function renderSnapshotKanban(container: HTMLElement, model: ViewModel): 
   for (const column of boardColumns(filterSetupOf(model), model.group, tasks).filter((c) => !c.hidden)) {
     new KanbanColumn(board, {
       column,
-      cards: column.tasks.map((task) => cardData(model, task)),
+      fields,
+      cards: column.tasks.map((task) => cardData(model, task, fields)),
       onCardClick: noop,
       onCardContextMenu: noop,
       onCardDragStart: noop,

@@ -16,6 +16,7 @@ function state(overrides: Partial<ViewState> = {}): ViewState {
     filter: structuredClone(view.filter),
     sort: structuredClone(view.sort),
     group: makeDefaultGroup(),
+    fields: {},
     mode: 'table',
     granularity: 'week',
     ...overrides
@@ -47,6 +48,15 @@ describe('viewDifferences', () => {
     expect(viewDifferences(view, state({ group: byPriority }))).toEqual([])
     const grouped: SavedView = { ...view, group: makeDefaultGroup() }
     expect(viewDifferences(grouped, state({ group: byPriority }))).toEqual(['group'])
+  })
+
+  it('compares the fields only when the view saved them', () => {
+    const narrow = { table: { visible: ['title'] } }
+    expect(viewDifferences(view, state({ fields: narrow }))).toEqual([])
+    expect(viewDifferences({ ...view, fields: {} }, state({ fields: narrow }))).toEqual(['fields'])
+    expect(viewDifferences({ ...view, fields: narrow }, state({ fields: { table: { visible: ['title'] } } }))).toEqual(
+      []
+    )
   })
 
   it('does not care about a mode or scale the view never named', () => {

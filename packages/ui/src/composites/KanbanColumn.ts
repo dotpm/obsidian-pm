@@ -2,7 +2,7 @@ import { setIcon } from '#platform'
 import type { Task } from '@dotpm/core'
 import { formatBadgeText, isIconName } from '#icons'
 import { safeAsync } from '#dom'
-import { KanbanCard } from './KanbanCard'
+import { KanbanCard, type CardFieldValue } from './KanbanCard'
 import type { AvatarPerson } from '#primitives/AvatarStack'
 
 /** What a column stands for: a status, a priority, a person, a tag... */
@@ -19,6 +19,7 @@ export interface KanbanCardData {
   priorityColor?: string
   descriptionPreview?: string
   parentTitle?: string
+  customValues?: Record<string, CardFieldValue>
   renderSource?: (parent: HTMLElement) => void
   loggedHours: number
   overdue: boolean
@@ -27,6 +28,8 @@ export interface KanbanCardData {
 
 export interface KanbanColumnProps {
   column: KanbanColumnHead
+  /** What every card shows, in order. */
+  fields: string[]
   cards: KanbanCardData[]
   onCardClick: (task: Task) => void
   onCardContextMenu: (task: Task, e: MouseEvent) => void
@@ -72,11 +75,13 @@ export class KanbanColumn {
 
     for (const card of props.cards) {
       new KanbanCard(cardsEl, {
+        fields: props.fields,
         task: card.task,
         people: card.people,
         priorityColor: card.priorityColor,
         descriptionPreview: card.descriptionPreview,
         parentTitle: card.parentTitle,
+        customValues: card.customValues,
         renderSource: card.renderSource,
         loggedHours: card.loggedHours,
         overdue: card.overdue,
