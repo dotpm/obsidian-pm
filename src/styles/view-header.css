@@ -138,11 +138,6 @@
 .pm-vh--tuned .pm-vh-row > .pm-vh-tune {
   display: flex;
 }
-.pm-tune-section + .pm-tune-section {
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px solid var(--background-modifier-border);
-}
 .pm-tune-row {
   display: flex;
   align-items: center;
@@ -152,9 +147,6 @@
 }
 .pm-tune-pop .pm-pop-item-note {
   max-width: 50%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .pm-crumbs {
@@ -399,17 +391,9 @@ input.pm-search-box-input:focus {
 }
 .pm-filter-list-row .pm-pop-item-note {
   max-width: 60%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .pm-filter-list-remove {
   --icon-size: 14px;
-}
-.pm-filter-list-foot {
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px solid var(--background-modifier-border);
 }
 .pm-filter-bar-close {
   --icon-size: 14px;
@@ -485,30 +469,14 @@ button.pm-filter-chip-remove {
 .pm-saved-view-action {
   --icon-size: 14px;
 }
-.pm-saved-views-foot {
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px solid var(--background-modifier-border);
-}
 
 .pm-pop-list button.pm-switcher-row {
   padding-left: calc(9px + var(--pm-depth, 0) * 16px);
 }
 button.pm-switcher-all {
-  margin-top: 4px;
-  border-top: 1px solid var(--background-modifier-border);
   border-radius: 0;
 }
 
-.pm-filter-pop-head {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 4px 6px;
-  font-weight: 600;
-  font-size: var(--font-ui-small);
-  --icon-size: 14px;
-}
 .pm-filter-pop-ops {
   display: flex;
   flex-wrap: wrap;
@@ -525,6 +493,9 @@ button.pm-switcher-all {
   gap: 6px;
 }
 .pm-pop-item-note {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: var(--text-faint);
   font-variant-numeric: tabular-nums;
 }
@@ -605,11 +576,6 @@ button.pm-switcher-all {
   white-space: normal;
 }
 
-.pm-sort-pop-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
 .pm-sort-row {
   display: flex;
   align-items: center;
@@ -645,9 +611,6 @@ select.pm-sort-dir {
 .pm-sort-pop-foot {
   display: flex;
   align-items: center;
-  margin-top: 4px;
-  border-top: 1px solid var(--background-modifier-border);
-  padding-top: 4px;
 }
 .pm-sort-add {
   flex: 1;
@@ -678,14 +641,6 @@ select.pm-sort-dir {
 select.pm-group-field {
   height: 26px;
   font-size: var(--font-ui-smaller);
-}
-.pm-group-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px solid var(--background-modifier-border);
 }
 .pm-vis-list {
   display: flex;
@@ -763,18 +718,10 @@ input.pm-vis-detail-input {
   flex: 1;
   font-size: var(--font-ui-smaller);
 }
-.pm-fields-hidden-head {
-  margin-top: 4px;
-  padding-top: 6px;
-  border-top: 1px solid var(--background-modifier-border);
-}
 .pm-fields-foot {
   display: flex;
   justify-content: flex-end;
   gap: 4px;
-  margin-top: 4px;
-  padding-top: 4px;
-  border-top: 1px solid var(--background-modifier-border);
 }
 
 .pm-stepper {

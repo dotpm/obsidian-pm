@@ -24,6 +24,7 @@ import {
   t,
   valueKey
 } from '@dotpm/core'
+import { renderPopHead, renderPopSearch } from '../popoverParts'
 import { renderOptionRow } from '../properties/optionList'
 
 /** Everything the filter bar and its popover read to name fields and offer values. */
@@ -248,7 +249,7 @@ export function renderFilterPanel(
       onPick: () => showFields(showList)
     })
     if (!filter.conditions.length && !filter.showArchived) return
-    const clear = body.createDiv('pm-filter-list-foot')
+    const clear = body.createDiv('pm-filter-list-foot pm-pop-section')
     renderOptionRow(clear, {
       label: t('filter.clearAll'),
       icon: 'x',
@@ -264,14 +265,13 @@ export function renderFilterPanel(
   const showFields = (back?: () => void): void => {
     body.empty()
     if (back) {
-      const head = body.createDiv('pm-filter-pop-head')
-      new IconButton(head).setIcon('chevron-left').setTooltip(t('filter.back')).onClick(back)
-      head.createSpan({ cls: 'pm-filter-pop-title', text: t('filter.addFilter') })
+      renderPopHead(body, {
+        title: t('filter.addFilter'),
+        variant: 'title',
+        back: { label: t('filter.back'), onClick: back }
+      })
     }
-    const search = body.createEl('input', {
-      cls: 'pm-pop-field',
-      attr: { placeholder: t('filter.filterBy'), spellcheck: 'false' }
-    })
+    const search = renderPopSearch(body, t('filter.filterBy'), () => renderList())
     const list = body.createDiv('pm-pop-list')
     const fields = offeredFields(setup)
     const renderList = (): void => {
@@ -307,7 +307,6 @@ export function renderFilterPanel(
         })
       }
     }
-    search.addEventListener('input', renderList)
     search.addEventListener('keydown', (e) => {
       if (e.key !== 'Enter') return
       list.querySelector<HTMLButtonElement>('button')?.click()
@@ -340,11 +339,11 @@ export function renderFilterPanel(
     }
 
     body.empty()
-    const head = body.createDiv('pm-filter-pop-head')
-    if (back) {
-      new IconButton(head).setIcon('chevron-left').setTooltip(t('filter.back')).onClick(back)
-    }
-    head.createSpan({ cls: 'pm-filter-pop-title', text: filterFieldLabel(field, setup.ctx.customFields) })
+    renderPopHead(body, {
+      title: filterFieldLabel(field, setup.ctx.customFields),
+      variant: 'title',
+      back: back && { label: t('filter.back'), onClick: back }
+    })
 
     const ops = body.createDiv('pm-filter-pop-ops')
     const valueEl = body.createDiv('pm-filter-pop-value')
@@ -470,13 +469,7 @@ function renderChecklist(
   commit: () => void
 ): void {
   const options = valueOptions(setup, field)
-  const search =
-    options.length > 8
-      ? parent.createEl('input', {
-          cls: 'pm-pop-field',
-          attr: { placeholder: t('filter.findValue'), spellcheck: 'false' }
-        })
-      : null
+  const search = options.length > 8 ? renderPopSearch(parent, t('filter.findValue'), () => render()) : null
   const list = parent.createDiv('pm-pop-list')
   const selected = (): string[] => (Array.isArray(draft.value) ? draft.value.map(String) : [])
   const keyOf = (id: string): string => valueKey(field, id, setup.ctx)
@@ -504,7 +497,6 @@ function renderChecklist(
       })
     }
   }
-  search?.addEventListener('input', render)
   render()
   search?.focus()
 }

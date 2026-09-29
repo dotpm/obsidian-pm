@@ -24,8 +24,9 @@ export function renderTunePanel(
   anchor: HTMLElement
 ): void {
   const body = parent.createDiv('pm-tune-pop')
-  for (const items of sections.filter((section) => section.length)) {
-    const list = body.createDiv('pm-pop-list pm-tune-section')
+  for (const [index, items] of sections.filter((section) => section.length).entries()) {
+    const list = body.createDiv('pm-pop-list')
+    list.toggleClass('pm-pop-section', index > 0)
     for (const item of items) {
       const { control, onOpen } = item
       if (control) {

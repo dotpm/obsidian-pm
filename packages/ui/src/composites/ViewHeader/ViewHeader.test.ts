@@ -258,8 +258,8 @@ describe('FilterBar', () => {
       'is Overdue'
     ])
     rows()[1].find('.pm-pop-item')?.click()
-    expect(document.body.find('.pm-filter-pop-title')?.textContent).toBe('Due date')
-    document.body.find('.pm-filter-pop-head .pm-icon-btn')?.click()
+    expect(document.body.find('.pm-pop-title')?.textContent).toBe('Due date')
+    document.body.find('.pm-pop-head--title .pm-icon-btn')?.click()
     expect(rows().length).toBe(2)
 
     rows()[0].find('.pm-filter-list-remove')?.click()
@@ -271,8 +271,8 @@ describe('FilterBar', () => {
   it('opens the list on the field picker while nothing applies, with a way back', () => {
     const filter = makeDefaultFilter()
     openFilterPopover(document.body.createDiv(), setupFor(filter), noop, 'list')
-    expect(document.body.find('.pm-filter-pop-title')?.textContent).toBe('Add filter')
-    document.body.find('.pm-filter-pop-head .pm-icon-btn')?.click()
+    expect(document.body.find('.pm-pop-title')?.textContent).toBe('Add filter')
+    document.body.find('.pm-pop-head--title .pm-icon-btn')?.click()
     expect(document.body.find('.pm-pop-item--accent')?.textContent).toContain('Add filter')
     expect(document.body.find('.pm-filter-list-foot')).toBeNull()
   })
@@ -475,7 +475,7 @@ describe('sort popover', () => {
     const onReset = vi.fn<() => void>()
     open([], onReset)
     expect(document.body.find('.pm-sort-pop .pm-pop-empty')).not.toBeNull()
-    document.body.querySelector<HTMLButtonElement>('.pm-sort-pop-reset')?.click()
+    document.body.querySelector<HTMLButtonElement>('.pm-sort-pop .pm-pop-head-action')?.click()
     expect(onReset).toHaveBeenCalled()
   })
 })
@@ -524,7 +524,7 @@ describe('group popover', () => {
   it('shows every hidden column again and reorders by dragging', () => {
     const group: GroupState = { field: 'status', columns: { status: { hidden: ['todo'] } } }
     open(group)
-    document.body.querySelector<HTMLButtonElement>('.pm-group-head button')?.click()
+    document.body.querySelector<HTMLButtonElement>('.pm-group-pop .pm-pop-head-action')?.click()
     expect(group.columns?.status?.hidden).toBeUndefined()
     const rows = document.body.findAll('.pm-vis-row')
     rows[2].dispatchEvent(new Event('dragstart'))
@@ -557,7 +557,7 @@ describe('fields popover', () => {
     const onChange = open(fields)
     document.body.findAll('.pm-vis-row')[1].querySelector<HTMLButtonElement>('.pm-vis-eye')?.click()
     expect(fields.table?.visible).not.toContain('status')
-    expect(document.body.find('.pm-fields-hidden-head')).not.toBeNull()
+    expect(document.body.find('.pm-fields-pop .pm-pop-head.pm-pop-section')).not.toBeNull()
     document.body.find('.pm-vis-row.is-hidden')?.querySelector<HTMLButtonElement>('.pm-vis-eye')?.click()
     expect(fields.table?.visible.at(-1)).toBe('status')
     expect(onChange).toHaveBeenCalledTimes(2)
@@ -793,7 +793,7 @@ describe('ViewHeader', () => {
       ['Filter', '5'],
       ['Sort', 'Priority +1']
     ])
-    expect(document.body.findAll('.pm-tune-section').length).toBe(2)
+    expect(document.body.findAll('.pm-tune-pop .pm-pop-list').length).toBe(2)
     expect(control).toHaveBeenCalledWith(document.body.find('.pm-tune-row'))
     rows[0].click()
     expect(onOpen).toHaveBeenCalledWith(header.tune.el)

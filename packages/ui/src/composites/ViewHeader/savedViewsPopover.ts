@@ -4,6 +4,7 @@ import { Checkbox } from '#primitives/Checkbox'
 import { IconButton } from '#primitives/IconButton'
 import { Popover } from '#primitives/Popover'
 import { locale, t } from '@dotpm/core'
+import { renderPopSearch } from '../popoverParts'
 import { renderOptionRow } from '../properties/optionList'
 
 export interface SavedViewItem {
@@ -50,7 +51,7 @@ export function renderSavedViewsPanel(parent: HTMLElement, props: SavedViewsProp
     safeAsync(action)()
   }
 
-  const foot = createDiv('pm-saved-views-foot')
+  const foot = createDiv('pm-saved-views-foot pm-pop-section')
   const openForm = (): void => {
     foot.empty()
     foot.createDiv({ cls: 'pm-pop-heading', text: t('header.saveAsNewTitle') })
@@ -94,12 +95,7 @@ export function renderSavedViewsPanel(parent: HTMLElement, props: SavedViewsProp
   }
 
   const search =
-    props.views.length >= SEARCH_FROM
-      ? body.createEl('input', {
-          cls: 'pm-pop-field',
-          attr: { placeholder: t('header.findView'), spellcheck: 'false' }
-        })
-      : null
+    props.views.length >= SEARCH_FROM ? renderPopSearch(body, t('header.findView'), () => renderList()) : null
   const list = body.createDiv('pm-pop-list')
 
   const beginRename = (main: HTMLButtonElement, view: SavedViewItem): void => {
@@ -176,7 +172,6 @@ export function renderSavedViewsPanel(parent: HTMLElement, props: SavedViewsProp
     if (!props.views.length) list.createDiv({ cls: 'pm-pop-empty', text: t('header.noViewsHint') })
   }
 
-  search?.addEventListener('input', renderList)
   renderList()
 
   body.appendChild(foot)
