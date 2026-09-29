@@ -49,8 +49,13 @@ export function safeAsync<A extends unknown[]>(fn: (...args: A) => Promise<void>
   }
 }
 
-/** Opens a menu under a button rather than at the pointer, so keyboard activation places it too. */
-export function showMenuBelow(menu: PlatformMenu, anchor: HTMLElement): void {
+/**
+ * Opens a menu under a button rather than at the pointer, so keyboard activation places it
+ * too. `align: 'right'` lines the menu's right edge up with the button's, for a button at the
+ * end of a row.
+ */
+export function showMenuBelow(menu: PlatformMenu, anchor: HTMLElement, align: 'left' | 'right' = 'left'): void {
   const rect = anchor.getBoundingClientRect()
-  menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 })
+  if (align === 'right') menu.showAtPosition({ x: rect.right, y: rect.bottom + 4, left: true })
+  else menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 })
 }

@@ -31,7 +31,8 @@ export interface PlatformMenu {
   addItem(build: (item: PlatformMenuItem) => unknown): this
   addSeparator(): this
   showAtMouseEvent(e: MouseEvent): this
-  showAtPosition(position: { x: number; y: number }): this
+  /** `left` opens the menu to the left of `x`, so its right edge sits there. */
+  showAtPosition(position: { x: number; y: number; left?: boolean }): this
   hide(): this
 }
 

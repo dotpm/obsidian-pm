@@ -162,9 +162,10 @@ class DomMenu implements PlatformMenu {
     return this.showAtPosition({ x: e.clientX, y: e.clientY })
   }
 
-  showAtPosition(position: { x: number; y: number }): this {
-    this.el.setCssProps({ left: `${position.x}px`, top: `${position.y}px` })
+  showAtPosition(position: { x: number; y: number; left?: boolean }): this {
     document.body.appendChild(this.el)
+    const x = position.left ? position.x - this.el.offsetWidth : position.x
+    this.el.setCssProps({ left: `${x}px`, top: `${position.y}px` })
     return this
   }
 

@@ -1120,7 +1120,7 @@ export class ProjectView extends ItemView {
     const add = new SplitButton(parent).setIcon('plus').setLabel(t('projectView.addTask'))
     add.onClick(() => this.addTask(add.el))
     if (this.currentView === 'gantt') {
-      add.onMenu(t('header.moreToAdd'), () => {
+      add.onMenu(t('header.moreToAdd'), (anchor) => {
         const menu = new Menu()
         menu.addItem((item) =>
           item
@@ -1128,7 +1128,7 @@ export class ProjectView extends ItemView {
             .setIcon('diamond')
             .onClick(() => this.addTask(add.el, { type: 'milestone' }))
         )
-        showMenuBelow(menu, add.el)
+        showMenuBelow(menu, anchor, 'right')
       })
     }
   }
