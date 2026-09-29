@@ -10,6 +10,7 @@ import {
   type SortRule,
   type FilterState,
   type NonWorkingDays,
+  type ProjectListFilter,
   type ViewFields
 } from '@dotpm/core'
 import { ChipButton } from '#primitives/ChipButton'
@@ -18,6 +19,7 @@ import { FilterBar } from './FilterBar'
 import { openFieldsPopover } from './fieldsPopover'
 import { openGroupPopover } from './groupPopover'
 import { openNonWorkingDaysPopover } from './nonWorkingDaysPopover'
+import { openProjectFilterPopover } from './projectFilterPopover'
 import { openSavedViewsPopover, type SavedViewsProps } from './savedViewsPopover'
 import type { BoardColumn } from '../../views/boardColumns'
 import { SearchBox } from './SearchBox'
@@ -523,6 +525,29 @@ describe('non-working days popover', () => {
     input.dispatchEvent(new Event('change'))
     expect(onHolidaysChange).toHaveBeenLastCalledWith(['2026-12-24', '2026-12-31'])
     expect(document.body.findAll('.pm-days-chip')).toHaveLength(2)
+  })
+})
+
+describe('project filter popover', () => {
+  it('checks progress stages and tags, then clears them', () => {
+    const filter: ProjectListFilter = {}
+    const onChange = vi.fn<() => void>()
+    openProjectFilterPopover(document.body.createEl('button'), {
+      filter,
+      progress: { 'not-started': 2, 'in-progress': 5, complete: 1 },
+      tags: [{ tag: 'client', count: 3 }],
+      onChange
+    })
+    const rows = (): HTMLElement[] => document.body.findAll('.pm-project-filter .pm-pop-item')
+    expect(rows().map((row) => row.find('.pm-pop-item-note')?.textContent)).toEqual(['2', '5', '1', '3'])
+    rows()[2].click()
+    rows()[3].click()
+    expect(filter).toEqual({ progress: ['complete'], tags: ['client'] })
+    rows()[3].click()
+    expect(filter).toEqual({ progress: ['complete'] })
+    document.body.find('.pm-project-filter .pm-sort-pop-reset')?.click()
+    expect(filter).toEqual({})
+    expect(onChange).toHaveBeenCalledTimes(4)
   })
 })
 

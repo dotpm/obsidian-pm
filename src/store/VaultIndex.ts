@@ -27,6 +27,8 @@ export interface ProjectRef {
   icon: string
   color: string
   teamMembers: string[]
+  /** The note's `tags` property, without the leading `#`. */
+  tags: string[]
   /** The fields this project declares itself, before anything is inherited. */
   customFields: CustomFieldDef[]
   /** Where its `parent` link points, before cycles are taken out. Use `parentOf`. */
@@ -477,6 +479,9 @@ export class VaultIndex {
       icon: str(frontmatter.icon, '\u{1F4CB}'),
       color: readColor(frontmatter.color) ?? DEFAULT_PROJECT_COLOR,
       teamMembers: stringList(frontmatter.teamMembers),
+      tags: (typeof frontmatter.tags === 'string' ? frontmatter.tags.split(/[\s,]+/) : stringList(frontmatter.tags))
+        .map((tag) => tag.replace(/^#/, ''))
+        .filter(Boolean),
       customFields: customFieldList(frontmatter.customFields),
       parentPath: resolveVaultLink(this.app, frontmatter.parent, path),
       archived: frontmatter.archived === true,

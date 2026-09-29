@@ -192,6 +192,44 @@ export interface FieldList {
 /** Per view mode. A mode left out shows its default fields. */
 export type ViewFields = Partial<Record<ViewMode, FieldList>>
 
+export const PROJECT_SORT_KEYS = ['title', 'progress', 'due'] as const
+export type ProjectSortKey = (typeof PROJECT_SORT_KEYS)[number]
+
+export interface ProjectSortRule {
+  key: ProjectSortKey
+  dir: SortDir
+}
+
+export const PROJECT_PROGRESS = ['not-started', 'in-progress', 'complete'] as const
+export type ProjectProgress = (typeof PROJECT_PROGRESS)[number]
+
+/** Values within one list match with OR; the lists combine with AND. An absent list matches every project. */
+export interface ProjectListFilter {
+  tags?: string[]
+  progress?: ProjectProgress[]
+}
+
+export type ProjectGroupBy = 'none' | 'folder' | 'tag'
+
+/** What the project list shows. Archived projects follow `PMSettings.showArchivedProjects`. */
+export interface ProjectListState {
+  filter: ProjectListFilter
+  /** Empty keeps the order of the project tree. */
+  sort: ProjectSortRule[]
+  group: ProjectGroupBy
+  activeViewId: string | null
+}
+
+export interface ProjectListView {
+  id: string
+  name: string
+  filter: ProjectListFilter
+  sort: ProjectSortRule[]
+  group: ProjectGroupBy
+  showArchived: boolean
+  isDefault?: boolean
+}
+
 /** Days a timeline leaves out of its axis. Holidays are the dates in `PMSettings.holidays`. */
 export interface NonWorkingDays {
   weekends?: boolean
@@ -342,6 +380,8 @@ export interface PMSettings {
   collapsedProjects: string[]
   /** Whether the project list shows archived projects. */
   showArchivedProjects: boolean
+  projectList: ProjectListState
+  projectListViews: ProjectListView[]
   /** A localhost HTTP and MCP server for other tools on this machine. Desktop only. */
   localApiEnabled: boolean
   localApiPort: number
@@ -431,6 +471,8 @@ export const DEFAULT_SETTINGS: PMSettings = {
   collapsedTasks: {},
   collapsedProjects: [],
   showArchivedProjects: false,
+  projectList: makeDefaultProjectList(),
+  projectListViews: [],
   localApiEnabled: false,
   localApiPort: LOCAL_API_PORT_BASE,
   localApiToken: '',
@@ -488,6 +530,10 @@ export function makeProject(title: string, filePath: string): Project {
     savedViews: [],
     taskIndex: new Map()
   }
+}
+
+export function makeDefaultProjectList(): ProjectListState {
+  return { filter: {}, sort: [], group: 'none', activeViewId: null }
 }
 
 export function makeDefaultGroup(): GroupState {

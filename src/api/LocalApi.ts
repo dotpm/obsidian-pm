@@ -37,6 +37,7 @@ function refOf(project: Project): ProjectRef {
     icon: project.icon,
     color: project.color,
     teamMembers: project.teamMembers,
+    tags: [],
     customFields: project.customFields,
     parentPath: project.parentPath,
     archived: project.archived === true,
