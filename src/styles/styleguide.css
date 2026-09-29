@@ -49,3 +49,11 @@
 .pm-sg-narrow {
   width: 300px;
 }
+
+.pm-sg-row > .pm-sg-pop {
+  position: static;
+  align-self: flex-start;
+  width: var(--pop-width);
+  max-height: none;
+  animation: none;
+}
