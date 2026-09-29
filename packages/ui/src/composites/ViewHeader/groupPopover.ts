@@ -9,6 +9,8 @@ export interface GroupPopoverProps {
   fields: { id: string; label: string }[]
   /** Edited in place. */
   group: GroupState
+  /** The field the columns stand for now, which is the default when `group.field` isn't offered. */
+  field: () => string
   /** The columns as the board would draw them now, asked again after every change. */
   columns: () => BoardColumn[]
   onChange: () => void
@@ -24,8 +26,9 @@ export function renderGroupPanel(parent: HTMLElement, props: GroupPopoverProps):
 
   const prefs = () => {
     group.columns ??= {}
-    group.columns[group.field] ??= {}
-    return group.columns[group.field]
+    const key = props.field()
+    group.columns[key] ??= {}
+    return group.columns[key]
   }
 
   const changed = (): void => {
@@ -39,7 +42,7 @@ export function renderGroupPanel(parent: HTMLElement, props: GroupPopoverProps):
     byRow.createSpan({ cls: 'pm-group-label', text: t('header.columnsBy') })
     const field = byRow.createEl('select', { cls: 'dropdown pm-group-field' })
     for (const option of props.fields) {
-      field.createEl('option', { value: option.id, text: option.label }).selected = option.id === group.field
+      field.createEl('option', { value: option.id, text: option.label }).selected = option.id === props.field()
     }
     field.addEventListener('change', () => {
       group.field = field.value

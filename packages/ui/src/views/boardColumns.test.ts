@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_PRIORITIES, DEFAULT_STATUSES, makeDefaultFilter, makeTask, type GroupState } from '@dotpm/core'
 import type { FilterSetup } from '../composites/ViewHeader/filterPopover'
-import { boardColumns, groupableFields } from './boardColumns'
+import { boardColumns, boardField, groupableFields } from './boardColumns'
 
 const tasks = [
   makeTask({ id: 'a', status: 'todo', priority: 'high', assignees: ['Ada'], tags: ['web'] }),
@@ -41,6 +41,15 @@ describe('boardColumns', () => {
       ['Bo', 'b', false],
       ['', 'c', false]
     ])
+  })
+
+  it('falls back to status columns when the field is a custom field this scope no longer has', () => {
+    const group: GroupState = { field: 'cf:removed', columns: { status: { hidden: ['done'] } } }
+    expect(boardField(setup, group)).toBe('status')
+    const columns = boardColumns(setup, group, tasks)
+    expect(columns.map((c) => c.id)).toEqual(DEFAULT_STATUSES.map((s) => s.id))
+    expect(columns.find((c) => c.id === 'done')?.hidden).toBe(true)
+    expect(boardField(setup, { field: 'cf:client' })).toBe('cf:client')
   })
 
   it('offers every option of a custom select, plus a column for tasks without a value', () => {
