@@ -189,21 +189,88 @@ function countFor(setup: FilterSetup, field: string, id: string): number {
 
 /**
  * The field picker, which drills into one field's operator and value, or straight into
- * the condition at `editIndex`. Every edit applies at once: a condition joins the filter
- * as soon as it narrows anything and leaves it when its values are cleared.
+ * the condition at `start`. With `start` set to `'list'` it opens on the applied
+ * conditions instead, for when the filter bar has no room for its chips; with none applied
+ * yet it opens on the picker, which leads back to that list. Every edit
+ * applies at once: a condition joins the filter as soon as it narrows anything and leaves
+ * it when its values are cleared.
  */
 export function openFilterPopover(
   anchor: HTMLElement,
   setup: FilterSetup,
   onChange: () => void,
-  editIndex?: number
+  start?: number | 'list'
 ): Popover {
   const pop = new Popover({ anchor, width: 300 })
   const body = pop.contentEl.createDiv('pm-filter-pop')
   const { filter } = setup
 
-  const showFields = (): void => {
+  const showList = (): void => {
     body.empty()
+    const list = body.createDiv('pm-pop-list')
+    const remove = (row: HTMLElement, label: string, onRemove: () => void): void => {
+      const button = row.createEl('button', {
+        cls: 'clickable-icon pm-filter-list-remove',
+        attr: { 'aria-label': t('filter.remove', { label }) }
+      })
+      setIcon(button, 'x')
+      button.addEventListener('click', () => {
+        onRemove()
+        onChange()
+        showList()
+      })
+    }
+    filter.conditions.forEach((condition, index) => {
+      const label = filterFieldLabel(condition.field, setup.ctx.customFields)
+      const { op, value } = describeCondition(setup, condition)
+      const row = list.createDiv('pm-filter-list-row')
+      renderOptionRow(row, {
+        label,
+        icon: filterFieldIcon(condition.field, setup.ctx.customFields),
+        note: `${op} ${value}`.trim(),
+        onPick: () => showEditor(index, condition.field, showList)
+      })
+      remove(row, label, () => filter.conditions.splice(index, 1))
+    })
+    if (filter.showArchived) {
+      const row = list.createDiv('pm-filter-list-row')
+      renderOptionRow(row, {
+        label: t('common.archived'),
+        icon: 'archive',
+        note: t('filter.included'),
+        onPick: () => showFields(showList)
+      })
+      remove(row, t('common.archived'), () => (filter.showArchived = false))
+    }
+    renderOptionRow(list, {
+      label: t('filter.addFilter'),
+      icon: 'plus',
+      accent: true,
+      onPick: () => showFields(showList)
+    })
+    if (!filter.conditions.length && !filter.showArchived) return
+    const clear = body.createDiv('pm-filter-list-foot')
+    renderOptionRow(clear, {
+      label: t('filter.clearAll'),
+      icon: 'x',
+      onPick: () => {
+        filter.conditions = []
+        filter.showArchived = false
+        onChange()
+        showList()
+      }
+    })
+  }
+
+  const showFields = (back?: () => void): void => {
+    body.empty()
+    if (back) {
+      const head = body.createDiv('pm-filter-pop-head')
+      const button = head.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': t('filter.back') } })
+      setIcon(button, 'chevron-left')
+      button.addEventListener('click', back)
+      head.createSpan({ cls: 'pm-filter-pop-title', text: t('filter.addFilter') })
+    }
     const search = body.createEl('input', {
       cls: 'pm-pop-field',
       attr: { placeholder: t('filter.filterBy'), spellcheck: 'false' }
@@ -227,7 +294,7 @@ export function openFilterPopover(
           label: filterFieldLabel(field, setup.ctx.customFields),
           icon: filterFieldIcon(field, setup.ctx.customFields),
           selected: index >= 0,
-          onPick: () => showEditor(index >= 0 ? index : null, field, true)
+          onPick: () => showEditor(index >= 0 ? index : null, field, () => showFields(back))
         })
       }
       if (!q) {
@@ -252,7 +319,7 @@ export function openFilterPopover(
     search.focus()
   }
 
-  const showEditor = (index: number | null, field: string, fromList: boolean): void => {
+  const showEditor = (index: number | null, field: string, back?: () => void): void => {
     const kind = filterKind(field, setup.ctx.customFields)
     if (!kind) return
     let at = index
@@ -277,10 +344,10 @@ export function openFilterPopover(
 
     body.empty()
     const head = body.createDiv('pm-filter-pop-head')
-    if (fromList) {
-      const back = head.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': t('filter.back') } })
-      setIcon(back, 'chevron-left')
-      back.addEventListener('click', showFields)
+    if (back) {
+      const button = head.createEl('button', { cls: 'clickable-icon', attr: { 'aria-label': t('filter.back') } })
+      setIcon(button, 'chevron-left')
+      button.addEventListener('click', back)
     }
     head.createSpan({ cls: 'pm-filter-pop-title', text: filterFieldLabel(field, setup.ctx.customFields) })
 
@@ -375,8 +442,11 @@ export function openFilterPopover(
     if (at === null) commit()
   }
 
-  if (editIndex !== undefined && filter.conditions[editIndex]) {
-    showEditor(editIndex, filter.conditions[editIndex].field, false)
+  if (start === 'list') {
+    if (filter.conditions.length || filter.showArchived) showList()
+    else showFields(showList)
+  } else if (start !== undefined && filter.conditions[start]) {
+    showEditor(start, filter.conditions[start].field)
   } else {
     showFields()
   }

@@ -17,13 +17,15 @@ import { ChipButton } from '#primitives/ChipButton'
 import { renderBreadcrumb } from './Breadcrumb'
 import { FilterBar } from './FilterBar'
 import { openFieldsPopover } from './fieldsPopover'
+import { openFilterPopover, type FilterSetup } from './filterPopover'
 import { openGroupPopover } from './groupPopover'
 import { openNonWorkingDaysPopover } from './nonWorkingDaysPopover'
 import { openProjectFilterPopover } from './projectFilterPopover'
 import { openSavedViewsPopover, type SavedViewsProps } from './savedViewsPopover'
 import type { BoardColumn } from '../../views/boardColumns'
-import { SearchBox } from './SearchBox'
+import { openSearchPopover, SearchBox } from './SearchBox'
 import { openSortPopover, type SortField } from './sortPopover'
+import type { TuneItem } from './tunePopover'
 import { ViewHeader } from './ViewHeader'
 
 function noop(): void {}
@@ -39,14 +41,20 @@ const TASKS = [
   makeTask({ id: 'c', status: 'done', archived: true })
 ]
 
-function mountBar(filter: FilterState, onChange = vi.fn<() => void>()): FilterBar {
-  return new FilterBar(document.body.createDiv(), {
+function setupFor(filter: FilterState): FilterSetup {
+  return {
     filter,
     tasks: TASKS,
     ctx: { statuses: DEFAULT_STATUSES, customFields: FIELDS },
     priorities: DEFAULT_PRIORITIES,
     priorityIcons: 'chevrons',
-    projects: [],
+    projects: []
+  }
+}
+
+function mountBar(filter: FilterState, onChange = vi.fn<() => void>()): FilterBar {
+  return new FilterBar(document.body.createDiv(), {
+    ...setupFor(filter),
     summary: '1 of 3 shown',
     onChange,
     onClose: noop
@@ -77,6 +85,17 @@ describe('ChipButton', () => {
     ])
     button.setBadge('')
     expect(button.el.find('.pm-chip-btn-badge')).toBeNull()
+  })
+
+  it('is square only while its icon is all it shows', () => {
+    const button = new ChipButton(document.body).setIcon('sliders-horizontal').setLabel('')
+    expect(button.el.hasClass('pm-chip-btn--icon-only')).toBe(true)
+    button.setBadge('3')
+    expect(button.el.hasClass('pm-chip-btn--icon-only')).toBe(false)
+    button.setBadge('')
+    expect(button.el.hasClass('pm-chip-btn--icon-only')).toBe(true)
+    button.setLabel('Filter')
+    expect(button.el.hasClass('pm-chip-btn--icon-only')).toBe(false)
   })
 })
 
@@ -199,6 +218,49 @@ describe('FilterBar', () => {
     input.value = 'copy'
     input.dispatchEvent(new Event('input'))
     expect(filter.conditions).toEqual([{ field: 'title', op: 'contains', value: 'copy' }])
+  })
+
+  it('names how many filters apply on the button that stands in for the chips', () => {
+    const filter: FilterState = { showArchived: true, conditions: [{ field: 'status', op: 'any', value: ['todo'] }] }
+    const bar = mountBar(filter)
+    expect(bar.el.find('.pm-filter-bar-list')?.textContent).toBe('2 filters')
+    bar.el.find('.pm-filter-bar-clear')?.click()
+    expect(bar.el.find('.pm-filter-bar-list')?.textContent).toBe('Add filter')
+  })
+
+  it('lists the applied conditions, edits one and goes back to the list', () => {
+    const onChange = vi.fn<() => void>()
+    const filter: FilterState = {
+      showArchived: false,
+      conditions: [
+        { field: 'status', op: 'any', value: ['todo'] },
+        { field: 'due', op: 'bucket', value: 'overdue' }
+      ]
+    }
+    openFilterPopover(document.body.createDiv(), setupFor(filter), onChange, 'list')
+    const rows = (): HTMLElement[] => document.body.findAll('.pm-filter-list-row')
+    expect(rows().map((row) => row.find('.pm-pop-item-note')?.textContent)).toEqual([
+      `is ${DEFAULT_STATUSES[0].label}`,
+      'is Overdue'
+    ])
+    rows()[1].find('.pm-pop-item')?.click()
+    expect(document.body.find('.pm-filter-pop-title')?.textContent).toBe('Due date')
+    document.body.find('.pm-filter-pop-head button')?.click()
+    expect(rows().length).toBe(2)
+
+    rows()[0].find('.pm-filter-list-remove')?.click()
+    expect(filter.conditions.map((c) => c.field)).toEqual(['due'])
+    expect(rows().length).toBe(1)
+    expect(onChange).toHaveBeenCalledTimes(1)
+  })
+
+  it('opens the list on the field picker while nothing applies, with a way back', () => {
+    const filter = makeDefaultFilter()
+    openFilterPopover(document.body.createDiv(), setupFor(filter), noop, 'list')
+    expect(document.body.find('.pm-filter-pop-title')?.textContent).toBe('Add filter')
+    document.body.find('.pm-filter-pop-head button')?.click()
+    expect(document.body.find('.pm-pop-item--accent')?.textContent).toContain('Add filter')
+    expect(document.body.find('.pm-filter-list-foot')).toBeNull()
   })
 })
 
@@ -615,22 +677,57 @@ describe('SearchBox', () => {
     input.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     expect(box.el.hasClass('is-open')).toBe(false)
   })
+
+  it('shows a query set elsewhere without reporting it back', () => {
+    const onChange = vi.fn<(value: string) => void>()
+    const box = new SearchBox(document.body, { value: '', label: 'Search', placeholder: '', clearLabel: '', onChange })
+    box.setValue('copy')
+    expect(box.el.querySelector<HTMLInputElement>('input')?.value).toBe('copy')
+    expect(box.el.hasClass('is-open')).toBe(true)
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('opens in a popover with the field focused', () => {
+    openSearchPopover(document.body.createDiv(), {
+      value: 'copy',
+      label: 'Search',
+      placeholder: '',
+      clearLabel: '',
+      onChange: noop
+    })
+    const input = document.body.querySelector<HTMLInputElement>('.pm-pop .pm-search-box-input')
+    expect(input?.value).toBe('copy')
+    expect(document.activeElement).toBe(input)
+  })
 })
 
 describe('ViewHeader', () => {
-  it('steps through the compact levels until the row fits', () => {
+  const LEVELS = ['pm-vh--icons', 'pm-vh--tuned', 'pm-vh--folded', 'pm-vh--tight', 'pm-vh--terse', 'pm-vh--bare']
+
+  /** A header whose row fits once `fitsAt` is applied. */
+  function mountHeader(fitsAt: string): ViewHeader {
     const header = new ViewHeader(document.body)
     const row = header.el.find('.pm-vh-row')
     if (!row) throw new Error('no row')
     Object.defineProperty(row, 'clientWidth', { value: 400 })
-    Object.defineProperty(row, 'scrollWidth', {
-      get: () => (header.el.hasClass('pm-vh--terse') ? 380 : header.el.hasClass('pm-vh--icons') ? 450 : 600)
-    })
+    Object.defineProperty(row, 'scrollWidth', { get: () => (header.el.hasClass(fitsAt) ? 380 : 600) })
+    return header
+  }
+
+  const applied = (header: ViewHeader): string[] => LEVELS.filter((level) => header.el.hasClass(level))
+
+  it('steps through the compact levels until the row fits', () => {
+    const header = mountHeader('pm-vh--folded').setTuneItems(() => [])
     header.fit()
-    expect(header.el.hasClass('pm-vh--icons')).toBe(true)
-    expect(header.el.hasClass('pm-vh--terse')).toBe(true)
-    expect(header.el.hasClass('pm-vh--folded')).toBe(false)
+    expect(applied(header)).toEqual(['pm-vh--icons', 'pm-vh--tuned', 'pm-vh--folded'])
     expect(header.el.hasClass('pm-vh--measuring')).toBe(false)
+    header.destroy()
+  })
+
+  it('skips folding into Tune when the view gives it nothing to list', () => {
+    const header = mountHeader('pm-vh--folded')
+    header.fit()
+    expect(applied(header)).toEqual(['pm-vh--icons', 'pm-vh--folded'])
     header.destroy()
   })
 
@@ -638,6 +735,33 @@ describe('ViewHeader', () => {
     const header = new ViewHeader(document.body)
     header.fit()
     expect(header.el.hasClass('pm-vh--icons')).toBe(false)
+    header.destroy()
+  })
+
+  it('lists the controls with their state and opens the one picked from the Tune button', () => {
+    const onOpen = vi.fn<(anchor: HTMLElement) => void>()
+    const control = vi.fn<(parent: HTMLElement) => void>()
+    const items: TuneItem[][] = [
+      [
+        { icon: 'list-filter', label: 'Filter', state: '5', onOpen },
+        { icon: 'arrow-down-up', label: 'Sort', state: 'Priority +1', onOpen: noop }
+      ],
+      [{ icon: 'zoom-in', label: 'Zoom', control }]
+    ]
+    const header = new ViewHeader(document.body).setTuneItems(() => items)
+    header.tune.el.click()
+    const rows = document.body.findAll('.pm-tune-pop .pm-pop-item')
+    expect(
+      rows.map((row) => [row.find('.pm-pop-item-label')?.textContent, row.find('.pm-pop-item-note')?.textContent])
+    ).toEqual([
+      ['Filter', '5'],
+      ['Sort', 'Priority +1']
+    ])
+    expect(document.body.findAll('.pm-tune-section').length).toBe(2)
+    expect(control).toHaveBeenCalledWith(document.body.find('.pm-tune-row'))
+    rows[0].click()
+    expect(onOpen).toHaveBeenCalledWith(header.tune.el)
+    expect(document.body.find('.pm-tune-pop')).toBeNull()
     header.destroy()
   })
 })

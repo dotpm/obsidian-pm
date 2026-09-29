@@ -1,6 +1,6 @@
 import { setIcon } from '#platform'
 import { FilterChip } from '#primitives/FilterChip'
-import { filterFieldIcon, filterFieldLabel, t } from '@dotpm/core'
+import { filterFieldIcon, filterFieldLabel, t, tn } from '@dotpm/core'
 import { describeCondition, openFilterPopover, type FilterSetup } from './filterPopover'
 
 export interface FilterBarProps extends FilterSetup {
@@ -13,13 +13,16 @@ export interface FilterBarProps extends FilterSetup {
  * The applied filters as one chip per condition, a "+ Filter" picker, the shown count and
  * Clear all. Conditions combine with AND, the values inside one with OR. It edits
  * `filter` in place and reports each change through `onChange`. Chips are updated in
- * place, so a popover anchored to one stays put while it edits that condition.
+ * place, so a popover anchored to one stays put while it edits that condition. In a narrow
+ * header the chips give way to one button naming how many filters apply, which opens them
+ * as a list.
  */
 export class FilterBar {
   el: HTMLElement
   private chipsEl: HTMLElement
   private chips: FilterChip[] = []
   private archivedChip: FilterChip
+  private listBtn: HTMLButtonElement
   private addBtn: HTMLButtonElement
   private summaryEl: HTMLElement
   private clearBtn: HTMLButtonElement
@@ -29,6 +32,10 @@ export class FilterBar {
     private props: FilterBarProps
   ) {
     this.el = parentEl.createDiv('pm-filter-bar')
+    this.listBtn = this.el.createEl('button', { cls: 'pm-filter-bar-list' })
+    this.listBtn.addEventListener('click', () =>
+      openFilterPopover(this.listBtn, this.props, () => this.changed(), 'list')
+    )
     this.chipsEl = this.el.createDiv('pm-filter-bar-chips')
     this.archivedChip = new FilterChip(this.chipsEl)
       .setField(t('common.archived'), 'archive')
@@ -66,9 +73,15 @@ export class FilterBar {
     this.summaryEl.setText(text)
   }
 
-  /** Opens the field picker, as the header's Filter button does. */
+  /** Opens the field picker, as the header's Filter button does, or the list when the chips are folded. */
   openPicker(): void {
-    openFilterPopover(this.addBtn, this.props, () => this.changed())
+    const folded = !this.addBtn.offsetParent && !!this.listBtn.offsetParent
+    openFilterPopover(
+      folded ? this.listBtn : this.addBtn,
+      this.props,
+      () => this.changed(),
+      folded ? 'list' : undefined
+    )
   }
 
   private changed(): void {
@@ -100,6 +113,8 @@ export class FilterBar {
     })
     for (const extra of this.chips.splice(filter.conditions.length)) extra.el.remove()
     this.archivedChip.el.toggleClass('pm-hidden', !filter.showArchived)
+    const count = filter.conditions.length + (filter.showArchived ? 1 : 0)
+    this.listBtn.setText(count ? tn('filter.count', count) : t('filter.addFilter'))
     this.clearBtn.toggleClass('pm-hidden', filter.conditions.length === 0 && !filter.showArchived)
   }
 }

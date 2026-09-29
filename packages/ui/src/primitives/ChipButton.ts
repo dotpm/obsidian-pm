@@ -18,7 +18,7 @@ export class ChipButton {
 
   setLabel(text: string): this {
     this.labelEl.setText(text)
-    this.el.toggleClass('pm-chip-btn--icon-only', !text)
+    this.order()
     return this
   }
 
@@ -35,6 +35,7 @@ export class ChipButton {
     if (!text) {
       this.badgeEl?.remove()
       this.badgeEl = null
+      this.order()
       return this
     }
     this.badgeEl ??= this.el.createSpan('pm-chip-btn-badge')
@@ -48,6 +49,7 @@ export class ChipButton {
     if (!text) {
       this.detailEl?.remove()
       this.detailEl = null
+      this.order()
       return this
     }
     this.detailEl ??= this.el.createSpan('pm-chip-btn-detail')
@@ -61,6 +63,7 @@ export class ChipButton {
     if (!shown) {
       this.chevronEl?.remove()
       this.chevronEl = null
+      this.order()
       return this
     }
     if (!this.chevronEl) {
@@ -106,9 +109,12 @@ export class ChipButton {
     return this
   }
 
+  /** Puts the parts in their fixed order, and makes the button square while its icon is all it shows. */
   private order(): void {
     for (const part of [this.iconEl, this.labelEl, this.detailEl, this.badgeEl, this.chevronEl]) {
       if (part) this.el.appendChild(part)
     }
+    const iconOnly = !this.labelEl.textContent && !this.detailEl && !this.badgeEl && !this.chevronEl
+    this.el.toggleClass('pm-chip-btn--icon-only', iconOnly)
   }
 }
