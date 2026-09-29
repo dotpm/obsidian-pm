@@ -141,7 +141,7 @@ function rangeText(from: string, to: string): string {
 /** The operator and value words a chip shows for a condition. */
 export function describeCondition(setup: FilterSetup, condition: FilterCondition): { op: string; value: string } {
   const { value } = condition
-  const values = Array.isArray(value) ? value.map(String) : []
+  const values = Array.isArray(value) ? value.map((v) => (v === null ? '' : String(v))) : []
   const op = opLabel(condition.op, values.length)
   switch (condition.op) {
     case 'any':
@@ -407,12 +407,11 @@ export function renderFilterPanel(
               cls: 'pm-pop-field',
               attr: { placeholder: t('filter.valuePlaceholder') }
             })
-            input.value = current[i] === undefined ? '' : String(current[i])
+            input.value = current[i] === undefined || current[i] === null ? '' : String(current[i])
             inputs.push(input)
             input.addEventListener('change', () => {
-              draft.value = isDate
-                ? inputs.map((el) => el.value)
-                : inputs.map((el) => (el.value === '' ? NaN : Number(el.value))).filter((n) => Number.isFinite(n))
+              const numbers = inputs.map((el) => (el.value === '' ? null : Number(el.value)))
+              draft.value = isDate ? inputs.map((el) => el.value) : numbers.some((n) => n !== null) ? numbers : []
               commit()
             })
           }

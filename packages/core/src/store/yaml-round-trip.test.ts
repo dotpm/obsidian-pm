@@ -259,7 +259,8 @@ describe('project round-trip', () => {
     const p = makeProject('P', 'Projects/P.md')
     const conditions: FilterCondition[] = [
       { field: 'due', op: 'between', value: ['', '2026-01-31'] },
-      { field: 'start', op: 'between', value: ['2026-01-01', ''] }
+      { field: 'start', op: 'between', value: ['2026-01-01', ''] },
+      { field: 'cf:estimate', op: 'between', value: [null, 5] }
     ]
     p.savedViews = [{ id: 'v1', name: 'Open ends', filter: { conditions, showArchived: false }, sort: [] }]
 
