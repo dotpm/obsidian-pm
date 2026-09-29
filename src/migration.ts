@@ -64,7 +64,7 @@ export async function migrateBoardCardConfig(plugin: PMPlugin): Promise<void> {
       activeSavedViewId: null,
       sort: makeDefaultSort(),
       group: makeDefaultGroup(),
-      fields: {},
+      fields: structuredClone(plugin.settings.defaultFields),
       ganttGranularity: plugin.settings.ganttGranularity,
       nonWorkingDays: {}
     })

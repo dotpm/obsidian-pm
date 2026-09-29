@@ -294,6 +294,15 @@ describe('migrateBoardCardConfig', () => {
     expect(frontmatter(app)?.config).toBeUndefined()
   })
 
+  it('starts a project never opened from the global setting for a key the note leaves out', async () => {
+    const { plugin, settings } = await vaultWith(['  kanbanShowSubtasks: false'])
+    settings.defaultFields = { kanban: { visible: ['priority', 'description', 'subtasks'] } }
+    await migrateBoardCardConfig(plugin)
+    const visible = settings.projectFilters['project:Projects/Roadmap/Roadmap.md'].fields.kanban?.visible
+    expect(visible).toContain('description')
+    expect(visible).not.toContain('subtasks')
+  })
+
   it('leaves a note without the old keys alone', async () => {
     const { plugin, settings } = await vaultWith(['  autoSchedule: true'])
     await migrateBoardCardConfig(plugin)

@@ -402,7 +402,7 @@ export class ProjectView extends ItemView {
     this.activeSavedViewId = null
     this.sort = makeDefaultSort()
     this.group = makeDefaultGroup()
-    this.fields = {}
+    this.fields = structuredClone(this.plugin.settings.defaultFields)
     this.nonWorkingDays = {}
     this.granularity = this.plugin.settings.ganttGranularity
     // A scope seen for the first time opens with its starred view, and keeps it from then on.
