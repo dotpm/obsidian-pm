@@ -79,6 +79,16 @@ export class ChipButton {
     return this
   }
 
+  /**
+   * `raised` carries core button chrome; `flat` has none until hovered, for a button inside
+   * a panel or a bar; `outline` is a thin border, for one of a set of choices.
+   */
+  setVariant(variant: 'raised' | 'flat' | 'outline'): this {
+    this.el.toggleClass('pm-chip-btn--flat', variant === 'flat')
+    this.el.toggleClass('pm-chip-btn--outline', variant === 'outline')
+    return this
+  }
+
   setShape(shape: 'rounded' | 'pill'): this {
     this.el.toggleClass('pm-chip-btn--pill', shape === 'pill')
     return this

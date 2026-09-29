@@ -59,6 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed tasks failing to save or losing their description after renaming their project ([#359](https://github.com/dotpm/obsidian-pm/issues/359))
 - Fixed saved views losing their sort when saved, updated, or opened outside the table
 - Fixed the page for a missing task showing an icon name instead of the icon
+- Fixed icon buttons such as row actions and remove buttons not responding to Enter or Space
 
 ## [2.5.2] - 2026-09-21
 
