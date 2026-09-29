@@ -8,6 +8,11 @@ export class IconButton {
     this.button = createExtraButton(parentEl)
     this.el = this.button.extraSettingsEl
     this.el.addClass('pm-icon-btn')
+    this.el.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      e.preventDefault()
+      this.el.click()
+    })
   }
 
   setIcon(name: string): this {

@@ -61,6 +61,7 @@ button.pm-chip-btn,
 
 /* The etched input-shadow chrome comes from app.css. */
 button.pm-chip-btn {
+  gap: 4px;
   height: auto;
   padding: 4px 10px;
   color: var(--text-muted);
@@ -72,12 +73,29 @@ button.pm-chip-btn:focus-visible {
   outline: 2px solid var(--interactive-accent);
   outline-offset: 2px;
 }
+button.pm-chip-btn--flat,
+button.pm-chip-btn--outline {
+  background: transparent;
+  box-shadow: none;
+}
+button.pm-chip-btn--outline {
+  border: 1px solid var(--background-modifier-border);
+}
+button.pm-chip-btn--flat:hover,
+button.pm-chip-btn--outline:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+button.pm-chip-btn--outline.pm-chip-btn--active {
+  border-color: transparent;
+}
 button.pm-chip-btn--active {
   background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
   color: var(--text-accent);
 }
 button.pm-chip-btn--active:hover {
   background: color-mix(in srgb, var(--interactive-accent) 18%, transparent);
+  color: var(--text-accent);
 }
 
 .pm-table-row--selected {

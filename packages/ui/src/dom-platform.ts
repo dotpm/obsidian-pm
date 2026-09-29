@@ -78,7 +78,7 @@ class DomExtraButton implements PlatformExtraButton {
   extraSettingsEl: HTMLElement
 
   constructor(parent: HTMLElement) {
-    this.extraSettingsEl = parent.createDiv({ cls: ['clickable-icon', 'extra-setting-button'] })
+    this.extraSettingsEl = parent.createDiv({ cls: ['clickable-icon', 'extra-setting-button'], attr: { tabindex: 0 } })
   }
 
   setIcon(icon: string): this {
