@@ -749,6 +749,7 @@ export class ProjectView extends ItemView {
         !sameValue(this.sort, makeDefaultSort()) ||
         Object.keys(this.fields).length > 0 ||
         this.currentView !== this.projectScope?.config.defaultView,
+      builtInName: t('header.allTasks'),
       storageNote:
         this.projectScope?.spec.kind === 'project' && primary
           ? t('header.storedInNote', { name: primary.title })

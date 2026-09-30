@@ -534,6 +534,7 @@ export class DashboardView extends ItemView {
       changes: this.viewChanges(),
       canSave: !sameValue({ ...this.state, activeViewId: null }, makeDefaultProjectList()),
       storageNote: t('header.storedInSettings'),
+      builtInName: t('header.allProjects'),
       onSelect: (id) => {
         const view = views.find((v) => v.id === id)
         if (view) this.applyView(view)

@@ -296,6 +296,7 @@ describe('saved views popover', () => {
     changes: [],
     canSave: true,
     storageNote: 'Kept in the note of Alpha.',
+    builtInName: 'All projects',
     onSelect: vi.fn<(id: string | null) => void>(),
     onSave: vi.fn<(name: string, isDefault: boolean) => Promise<void>>(async () => {}),
     onUpdate: vi.fn<(id: string) => Promise<void>>(async () => {}),
@@ -313,7 +314,7 @@ describe('saved views popover', () => {
   it('lists the built-in view first, marks the active one and stars the default', () => {
     openSavedViewsPopover(document.body.createEl('button'), props())
     const mains = document.body.findAll('.pm-saved-view-main')
-    expect(mains.map((row) => row.find('.pm-pop-item-label')?.textContent)).toEqual(['All tasks', 'Mine', 'Roadmap'])
+    expect(mains.map((row) => row.find('.pm-pop-item-label')?.textContent)).toEqual(['All projects', 'Mine', 'Roadmap'])
     expect(mains.map((row) => !row.find('.pm-pop-check')?.hasClass('pm-pop-check--hidden'))).toEqual([
       false,
       false,
