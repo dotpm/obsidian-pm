@@ -147,7 +147,8 @@ export class GanttView implements SubView {
     this.flatTasks = flattenTasks(activeTasks, this.collapsedIds).filter((f) => f.visible || f.depth === 0)
     this.cfg = buildTimelineConfig(activeTasks, this.granularity, {
       zoom: this.zoom,
-      isHidden: nonWorkingDay(this.nonWorkingDays, this.plugin.settings.holidays)
+      isHidden: nonWorkingDay(this.nonWorkingDays, this.plugin.settings.holidays),
+      minWidth: this.container.clientWidth - this.labelWidth
     })
 
     this.renderGantt()

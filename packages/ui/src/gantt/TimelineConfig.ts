@@ -45,6 +45,8 @@ export interface TimelineOptions {
   zoom?: number
   /** Days the axis leaves out, a day at a time. */
   isHidden?: (date: Temporal.PlainDate) => boolean
+  /** Width in pixels the shown days must at least fill; the range runs on past the last task until they do. */
+  minWidth?: number
 }
 
 /** The days `days` leaves out: Saturdays and Sundays, and the listed holidays. */
@@ -112,13 +114,20 @@ export function buildTimelineConfig(
   }
 
   const dayWidth = (DAY_WIDTH[granularity] * clampZoom(options.zoom ?? 100)) / 100
-  const totalDays = endDate.since(startDate, { largestUnit: 'days' }).days
-  const hidden = new Uint8Array(totalDays)
-  const columns = new Int32Array(totalDays + 1)
-  for (let i = 0; i < totalDays; i++) {
-    hidden[i] = options.isHidden?.(startDate.add({ days: i })) ? 1 : 0
-    columns[i + 1] = columns[i] + (hidden[i] ? 0 : 1)
+  const span = endDate.since(startDate, { largestUnit: 'days' }).days
+  const minColumns = Math.ceil((options.minWidth ?? 0) / dayWidth)
+  const hiddenFlags: number[] = []
+  let shownDays = 0
+  for (let i = 0; i < span || shownDays < minColumns; i++) {
+    const isHidden = options.isHidden?.(startDate.add({ days: i })) ? 1 : 0
+    hiddenFlags.push(isHidden)
+    shownDays += 1 - isHidden
   }
+  const totalDays = hiddenFlags.length
+  endDate = startDate.add({ days: totalDays })
+  const hidden = Uint8Array.from(hiddenFlags)
+  const columns = new Int32Array(totalDays + 1)
+  for (let i = 0; i < totalDays; i++) columns[i + 1] = columns[i] + (hidden[i] ? 0 : 1)
   return {
     startDate,
     endDate,
