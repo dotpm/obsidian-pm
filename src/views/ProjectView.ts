@@ -1014,7 +1014,8 @@ export class ProjectView extends ItemView {
               this.handleFilterMutation()
               changed()
             },
-            'list'
+            'list',
+            { showClear: false }
           )
       })
     }

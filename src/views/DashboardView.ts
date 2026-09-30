@@ -267,7 +267,8 @@ export class DashboardView extends ItemView {
             const count = countProjectFilters(this.state.filter)
             return count ? String(count) : ''
           },
-          render: (parent, changed) => renderProjectFilterPanel(parent, this.filterProps(changed))
+          render: (parent, changed) =>
+            renderProjectFilterPanel(parent, { ...this.filterProps(changed), showClear: false })
         },
         {
           id: 'sort',

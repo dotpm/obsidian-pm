@@ -10,6 +10,8 @@ export interface ProjectFilterProps {
   progress: Record<ProjectProgress, number>
   tags: { tag: string; count: number }[]
   onChange: () => void
+  /** False leaves Clear all out, for a host that has its own. */
+  showClear?: boolean
 }
 
 const progressLabel = (stage: ProjectProgress): string =>
@@ -40,15 +42,18 @@ export function renderProjectFilterPanel(parent: HTMLElement, props: ProjectFilt
     body.empty()
     renderPopHead(body, {
       title: t('columns.progress'),
-      action: {
-        label: t('filter.clearAll'),
-        disabled: countProjectFilters(filter) === 0,
-        onClick: () => {
-          filter.tags = undefined
-          filter.progress = undefined
-          changed()
-        }
-      }
+      action:
+        props.showClear === false
+          ? undefined
+          : {
+              label: t('filter.clearAll'),
+              disabled: countProjectFilters(filter) === 0,
+              onClick: () => {
+                filter.tags = undefined
+                filter.progress = undefined
+                changed()
+              }
+            }
     })
     for (const stage of PROJECT_PROGRESS) {
       renderOptionRow(body, {

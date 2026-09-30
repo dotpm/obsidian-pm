@@ -195,13 +195,15 @@ function countFor(setup: FilterSetup, field: string, id: string): number {
  * conditions instead, for when the filter bar has no room for its chips; with none applied
  * yet it opens on the picker, which leads back to that list. Every edit
  * applies at once: a condition joins the filter as soon as it narrows anything and leaves
- * it when its values are cleared.
+ * it when its values are cleared. `showClear: false` leaves Clear all out of the list, for
+ * a host that has its own.
  */
 export function renderFilterPanel(
   parent: HTMLElement,
   setup: FilterSetup,
   onChange: () => void,
-  start?: number | 'list'
+  start?: number | 'list',
+  { showClear = true }: { showClear?: boolean } = {}
 ): void {
   const body = parent.createDiv('pm-filter-pop')
   const { filter } = setup
@@ -248,7 +250,7 @@ export function renderFilterPanel(
       accent: true,
       onPick: () => showFields(showList)
     })
-    if (!filter.conditions.length && !filter.showArchived) return
+    if (!showClear || (!filter.conditions.length && !filter.showArchived)) return
     const clear = body.createDiv('pm-filter-list-foot pm-pop-section')
     renderOptionRow(clear, {
       label: t('filter.clearAll'),

@@ -211,7 +211,9 @@ export function renderPanelSections({ section, row }: GalleryLayout): void {
           label: 'Filter',
           badge: () => '1',
           render: (parent, changed) =>
-            renderFilterPanel(parent, setupWith([{ field: 'status', op: 'any', value: ['todo'] }]), changed, 'list')
+            renderFilterPanel(parent, setupWith([{ field: 'status', op: 'any', value: ['todo'] }]), changed, 'list', {
+              showClear: false
+            })
         },
         {
           id: 'sort',

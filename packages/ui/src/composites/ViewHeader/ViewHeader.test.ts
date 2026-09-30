@@ -20,10 +20,10 @@ import { SplitButton } from '#primitives/SplitButton'
 import { renderBreadcrumb } from './Breadcrumb'
 import { FilterBar } from './FilterBar'
 import { openFieldsPopover } from './fieldsPopover'
-import { openFilterPopover, type FilterSetup } from './filterPopover'
+import { openFilterPopover, renderFilterPanel, type FilterSetup } from './filterPopover'
 import { openGroupPopover } from './groupPopover'
 import { openNonWorkingDaysPopover } from './nonWorkingDaysPopover'
-import { openProjectFilterPopover } from './projectFilterPopover'
+import { openProjectFilterPopover, renderProjectFilterPanel } from './projectFilterPopover'
 import { openSavedViewsPopover, type SavedViewsProps } from './savedViewsPopover'
 import type { BoardColumn } from '../../views/boardColumns'
 import { openSearchPopover, SearchBox } from './SearchBox'
@@ -274,6 +274,13 @@ describe('FilterBar', () => {
     expect(document.body.find('.pm-pop-title')?.textContent).toBe('Add filter')
     document.body.find('.pm-pop-head--title .pm-icon-btn')?.click()
     expect(document.body.find('.pm-pop-item--accent')?.textContent).toContain('Add filter')
+    expect(document.body.find('.pm-filter-list-foot')).toBeNull()
+  })
+
+  it('leaves Clear all out of the list for a host that has its own', () => {
+    const filter: FilterState = { showArchived: false, conditions: [{ field: 'status', op: 'any', value: ['todo'] }] }
+    renderFilterPanel(document.body.createDiv(), setupFor(filter), noop, 'list', { showClear: false })
+    expect(document.body.findAll('.pm-filter-list-row').length).toBe(1)
     expect(document.body.find('.pm-filter-list-foot')).toBeNull()
   })
 })
@@ -646,6 +653,17 @@ describe('project filter popover', () => {
     document.body.find('.pm-project-filter .pm-chip-btn')?.click()
     expect(filter).toEqual({})
     expect(onChange).toHaveBeenCalledTimes(4)
+  })
+
+  it('leaves Clear all out for a host that has its own', () => {
+    renderProjectFilterPanel(document.body.createDiv(), {
+      filter: { progress: ['complete'] },
+      progress: { 'not-started': 2, 'in-progress': 5, complete: 1 },
+      tags: [],
+      onChange: noop,
+      showClear: false
+    })
+    expect(document.body.find('.pm-project-filter .pm-pop-head-action')).toBeNull()
   })
 })
 
