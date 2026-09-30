@@ -148,6 +148,7 @@ export function renderPanelSections({ section, row }: GalleryLayout): void {
     views,
     canSave: true,
     storageNote: 'Saved in the project note, so it syncs with the vault.',
+    builtInName: 'All tasks',
     onSelect: noop,
     onSave: noopAsync,
     onUpdate: noopAsync,

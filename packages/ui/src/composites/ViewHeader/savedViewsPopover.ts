@@ -24,6 +24,8 @@ export interface SavedViewsProps {
   canSave: boolean
   /** Where a new view is kept, so the reader knows whether it syncs. */
   storageNote: string
+  /** The built-in view at the top of the list, which shows everything: "All tasks", "All projects". */
+  builtInName: string
   onSelect: (id: string | null) => void
   onSave: (name: string, isDefault: boolean) => Promise<void>
   onUpdate: (id: string) => Promise<void>
@@ -149,7 +151,7 @@ export function renderSavedViewsPanel(parent: HTMLElement, props: SavedViewsProp
     list.empty()
     const query = search?.value.trim().toLowerCase() ?? ''
     if (!query) {
-      const all = renderRow(list, t('header.allTasks'), props.activeId === null, undefined, () => props.onSelect(null))
+      const all = renderRow(list, props.builtInName, props.activeId === null, undefined, () => props.onSelect(null))
       all.row.createSpan({ cls: 'pm-saved-view-note', text: t('header.builtIn') })
     }
     const rows: { el: HTMLElement; id: string }[] = []
