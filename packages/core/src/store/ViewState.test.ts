@@ -92,11 +92,7 @@ describe('sameValue', () => {
 })
 
 describe('withDefault', () => {
-  const views = [
-    { id: 'a', isDefault: true },
-    { id: 'b' },
-    { id: 'c', isDefault: true }
-  ]
+  const views = [{ id: 'a', isDefault: true }, { id: 'b' }, { id: 'c', isDefault: true }]
 
   it('stars one view and clears the rest', () => {
     expect(withDefault(views, 'b')).toEqual([{ id: 'a' }, { id: 'b', isDefault: true }, { id: 'c' }])
