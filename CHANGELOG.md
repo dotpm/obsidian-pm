@@ -55,6 +55,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Fixed a task note opened with "Open as note" never opening in the task editor again
 - Fixed project names wrapping under their icons when the project list is narrow
+- Fixed the timeline ending before the right edge of the pane when zoomed out
 - Fixed projects, statuses, and priorities with an invalid color breaking the color picker
 - Fixed tasks failing to save or losing their description after renaming their project ([#359](https://github.com/dotpm/obsidian-pm/issues/359))
 - Fixed saved views losing their sort when saved, updated, or opened outside the table

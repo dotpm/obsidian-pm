@@ -24,6 +24,15 @@ describe('buildTimelineConfig', () => {
     expect(cfg.startDate.day).toBe(1)
   })
 
+  it('runs on past the tasks until the shown days fill the minimum width', () => {
+    const minWidth = 20000
+    const hideWeekends = nonWorkingDay({ weekends: true }, [])
+    const cfg = buildTimelineConfig(tasks, 'year', { zoom: 50, isHidden: hideWeekends, minWidth })
+    expect(cfg.totalWidth).toBeGreaterThanOrEqual(minWidth)
+    expect(cfg.totalWidth - cfg.dayWidth).toBeLessThan(minWidth)
+    expect(cfg.endDate.since(cfg.startDate, { largestUnit: 'days' }).days).toBe(cfg.totalDays)
+  })
+
   it('gives a year column less width than a quarter column', () => {
     expect(buildTimelineConfig(tasks, 'year').dayWidth).toBeLessThan(buildTimelineConfig(tasks, 'quarter').dayWidth)
   })
