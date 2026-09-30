@@ -25,6 +25,10 @@ export interface ProjectListRow {
   isLastChild: boolean
   /** Sub-projects that made it into the list. */
   childCount: number
+  /** Whether its sub-projects are hidden right now; never while a query is on, which opens them all. */
+  collapsed: boolean
+  /** False while a query is on, since the query decides what shows. */
+  collapsible: boolean
 }
 
 export interface ProjectListGroup {
@@ -115,8 +119,17 @@ export function arrangeProjects(
     list.forEach((item, i) => {
       const isLastChild = i === list.length - 1
       const children = ordered(item.children)
-      rows.push({ item, depth: trail.length, guides: trail, isLastChild, childCount: children.length })
-      if (children.length && (active || !isCollapsed(item.path))) flatten(item.children, [...trail, !isLastChild], rows)
+      const collapsed = children.length > 0 && !active && isCollapsed(item.path)
+      rows.push({
+        item,
+        depth: trail.length,
+        guides: trail,
+        isLastChild,
+        childCount: children.length,
+        collapsed,
+        collapsible: !active
+      })
+      if (children.length && !collapsed) flatten(item.children, [...trail, !isLastChild], rows)
     })
     return rows
   }

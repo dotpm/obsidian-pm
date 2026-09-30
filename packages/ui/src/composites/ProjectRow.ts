@@ -27,7 +27,8 @@ export interface ProjectRowProps {
   /** Formatted by the caller; empty when nothing in the project has a date. */
   dueLabel: string
   dueUrgency: DueUrgency
-  onToggleCollapsed: () => void
+  /** Leave it out while the list can't collapse, such as during a search: the row then has no toggle. */
+  onToggleCollapsed?: () => void
   onClick: () => void
   onContextMenu: (e: MouseEvent) => void
   onActions: (e: MouseEvent) => void
@@ -44,10 +45,11 @@ export class ProjectRow {
     this.el.style.setProperty('--depth', String(props.depth))
 
     const expand = this.el.createEl('td', { cls: 'pm-table-cell-expand' })
-    if (props.childCount > 0) {
+    const { onToggleCollapsed } = props
+    if (props.childCount > 0 && onToggleCollapsed) {
       new CollapseToggle(expand, {
         collapsed: props.collapsed,
-        onToggle: () => props.onToggleCollapsed(),
+        onToggle: onToggleCollapsed,
         subject: t('collapse.subProjects')
       })
     }

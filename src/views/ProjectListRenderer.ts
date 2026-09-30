@@ -108,7 +108,7 @@ function renderRow(ctx: ProjectListContext, tbody: HTMLElement, row: ProjectList
     treeGuides: ctx.plugin.settings.showSubtreeConnections ? row.guides : null,
     isLastChild: row.isLastChild,
     childCount: row.childCount,
-    collapsed: ctx.plugin.isProjectCollapsed(item.path),
+    collapsed: row.collapsed,
     archived: index.isArchived(item.path),
     tasksDone: item.done,
     tasksTotal: item.total,
@@ -116,10 +116,12 @@ function renderRow(ctx: ProjectListContext, tbody: HTMLElement, row: ProjectList
     members: linkedRefs(ctx.plugin.app, ref.teamMembers, ref.path),
     dueLabel: formatDateShort(item.latestDue),
     dueUrgency: dateUrgency(item.latestDue, item.overdue > 0),
-    onToggleCollapsed: safeAsync(async () => {
-      await ctx.plugin.toggleProjectCollapsed(item.path)
-      ctx.redraw()
-    }),
+    onToggleCollapsed: row.collapsible
+      ? safeAsync(async () => {
+          await ctx.plugin.toggleProjectCollapsed(item.path)
+          ctx.redraw()
+        })
+      : undefined,
     onClick: safeAsync(() => ctx.openProject(item.path)),
     onContextMenu: (e) => openProjectContextMenu(ctx, ref, e),
     onActions: (e) => openProjectContextMenu(ctx, ref, e)

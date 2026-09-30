@@ -60,6 +60,14 @@ describe('arrangeProjects', () => {
     expect(titles(arrangeProjects(roots, state(), 'board', collapsed))).toEqual([['Acme', 'Onboarding']])
   })
 
+  it('shows a parent a query opened as open, with no toggle until the query clears', () => {
+    const collapsed = (path: string): boolean => path === 'Acme.md'
+    const acme = (text: string) =>
+      arrangeProjects(roots, state(), text, collapsed).groups[0].rows.find((row) => row.item.path === 'Acme.md')
+    expect(acme('')).toMatchObject({ collapsed: true, collapsible: true })
+    expect(acme('board')).toMatchObject({ collapsed: false, collapsible: false })
+  })
+
   it('keeps a match under its parents and counts only the matches', () => {
     const result = arrangeProjects(roots, state({ filter: { progress: ['complete'] } }), '', never)
     expect(titles(result)).toEqual([['Acme', 'Checkout']])
