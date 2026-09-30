@@ -1,5 +1,6 @@
 import { ButtonComponent, Menu, Component, ItemView, MarkdownRenderer, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
+import { addTabPageItems, refreshTabTitle } from '#ui/tab'
 import {
   type Project,
   type ResolvedProjectConfig,
@@ -83,27 +84,7 @@ export class ProjectOverviewView extends ItemView {
     super.onPaneMenu(menu, source)
     const project = this.project
     if (!project) return
-    menu.addItem((item) =>
-      item
-        .setSection('open')
-        .setTitle(t('project.openTasks'))
-        .setIcon('table')
-        .onClick(safeAsync(() => this.plugin.router.openScope({ kind: 'project', path: project.filePath }, this.leaf)))
-    )
-    menu.addItem((item) =>
-      item
-        .setSection('open')
-        .setTitle(t('project.edit'))
-        .setIcon('settings')
-        .onClick(safeAsync(() => this.plugin.router.openProjectEdit(project.filePath, this.leaf)))
-    )
-    menu.addItem((item) =>
-      item
-        .setSection('open')
-        .setTitle(t('project.openAsNote'))
-        .setIcon('file-text')
-        .onClick(safeAsync(() => this.plugin.openAsMarkdown(project.filePath, this.leaf)))
-    )
+    addTabPageItems(menu, this.plugin, this.leaf, project.filePath, ['tasks', 'edit', 'note'])
   }
 
   async setState(state: ProjectOverviewState, result: unknown): Promise<void> {
@@ -125,7 +106,7 @@ export class ProjectOverviewView extends ItemView {
     this.register(
       this.plugin.store.onProjectChanged((path) => {
         if (path !== this.project?.filePath) return
-        ;(this.leaf as WorkspaceLeaf & { updateHeader?: () => void }).updateHeader?.()
+        refreshTabTitle(this.leaf)
         this.render()
       })
     )
@@ -147,7 +128,7 @@ export class ProjectOverviewView extends ItemView {
   private async loadProject(): Promise<void> {
     const path = this.state.filePath
     this.project = path ? await this.plugin.store.loadProjectByPath(path) : null
-    ;(this.leaf as WorkspaceLeaf & { updateHeader?: () => void }).updateHeader?.()
+    refreshTabTitle(this.leaf)
     if (!this.project) {
       this.renderMissing()
       return

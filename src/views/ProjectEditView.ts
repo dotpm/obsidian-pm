@@ -1,5 +1,6 @@
 import { ButtonComponent, Menu, ItemView, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
+import { addTabPageItems, refreshTabTitle } from '#ui/tab'
 import {
   type CustomFieldDef,
   type PriorityConfig,
@@ -67,27 +68,7 @@ export class ProjectEditView extends ItemView {
     super.onPaneMenu(menu, source)
     const project = this.project
     if (!project) return
-    menu.addItem((item) =>
-      item
-        .setSection('open')
-        .setTitle(t('project.openOverview'))
-        .setIcon('gauge')
-        .onClick(safeAsync(() => this.plugin.router.openProjectOverview(project.filePath, this.leaf)))
-    )
-    menu.addItem((item) =>
-      item
-        .setSection('open')
-        .setTitle(t('project.openTasks'))
-        .setIcon('table')
-        .onClick(safeAsync(() => this.plugin.router.openScope({ kind: 'project', path: project.filePath }, this.leaf)))
-    )
-    menu.addItem((item) =>
-      item
-        .setSection('open')
-        .setTitle(t('project.openAsNote'))
-        .setIcon('file-text')
-        .onClick(safeAsync(() => this.plugin.openAsMarkdown(project.filePath, this.leaf)))
-    )
+    addTabPageItems(menu, this.plugin, this.leaf, project.filePath, ['overview', 'tasks', 'note'])
   }
 
   async setState(state: ProjectEditState, result: unknown): Promise<void> {
@@ -123,7 +104,7 @@ export class ProjectEditView extends ItemView {
       return
     }
     await this.plugin.store.loadProjectBody(this.project)
-    ;(this.leaf as WorkspaceLeaf & { updateHeader?: () => void }).updateHeader?.()
+    refreshTabTitle(this.leaf)
     this.render()
   }
 
@@ -190,7 +171,7 @@ export class ProjectEditView extends ItemView {
           if (!title || title === project.title) return
           this.save({ title })
           this.render()
-          ;(this.leaf as WorkspaceLeaf & { updateHeader?: () => void }).updateHeader?.()
+          refreshTabTitle(this.leaf)
         }
       })
       return cell

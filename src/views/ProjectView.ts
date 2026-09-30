@@ -1,5 +1,6 @@
 import { ItemView, Menu, Platform, Scope, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
+import { addTabPageItems, refreshTabTitle } from '#ui/tab'
 import {
   type GanttGranularity,
   type NonWorkingDays,
@@ -225,22 +226,7 @@ export class ProjectView extends ItemView {
     const scope = this.projectScope
     const primary = scope?.primary
     if (!scope || !primary) return
-    if (!scope.isMulti) {
-      menu.addItem((item) =>
-        item
-          .setSection('open')
-          .setTitle(t('project.openAsNote'))
-          .setIcon('file-text')
-          .onClick(safeAsync(() => this.plugin.openAsMarkdown(primary.filePath, this.leaf)))
-      )
-      menu.addItem((item) =>
-        item
-          .setSection('open')
-          .setTitle(t('project.settings'))
-          .setIcon('settings')
-          .onClick(safeAsync(() => this.plugin.router.openProjectEdit(primary.filePath)))
-      )
-    }
+    if (!scope.isMulti) addTabPageItems(menu, this.plugin, this.leaf, primary.filePath, ['note', 'edit'])
     menu.addItem((item) =>
       item
         .setSection('action')
@@ -343,7 +329,7 @@ export class ProjectView extends ItemView {
     }
     // A settings edit may have changed a palette, which the scope has resolved and kept.
     this.projectScope.invalidate()
-    ;(this.leaf as WorkspaceLeaf & { updateHeader?: () => void }).updateHeader?.()
+    refreshTabTitle(this.leaf)
     // Rebuilding the header would drop the caret out of the search box.
     if (this.headerEl.contains(activeDocument.activeElement)) this.syncHeader()
     else this.renderHeader()
@@ -368,7 +354,7 @@ export class ProjectView extends ItemView {
     this.loadFilterFromSettings()
     this.zoom = clampZoom(Number(this.app.loadLocalStorage(this.zoomKey())) || 100)
     this.queryBarOpen = countActiveFilters(this.query.filter) > 0
-    ;(this.leaf as WorkspaceLeaf & { updateHeader?: () => void }).updateHeader?.()
+    refreshTabTitle(this.leaf)
     this.renderHeader()
     this.renderCurrentView()
   }
