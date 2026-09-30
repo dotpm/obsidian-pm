@@ -1,7 +1,8 @@
 import { ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
+import { addTabPageItems } from '#ui/tab'
 import { type Task, flattenTasks, t } from '@dotpm/core'
-import { EmptyState, safeAsync } from '@dotpm/ui'
+import { EmptyState } from '@dotpm/ui'
 import { TaskEditor } from '#modals/TaskEditor'
 
 export const PM_TASK_VIEW_TYPE = 'pm-task'
@@ -44,13 +45,7 @@ export class TaskView extends ItemView {
     super.onPaneMenu(menu, source)
     const { filePath } = this.state
     if (!filePath || !this.editor) return
-    menu.addItem((item) =>
-      item
-        .setSection('open')
-        .setTitle(t('project.openAsNote'))
-        .setIcon('file-text')
-        .onClick(safeAsync(() => this.plugin.openAsMarkdown(filePath, this.leaf)))
-    )
+    addTabPageItems(menu, this.plugin, this.leaf, filePath, ['note'])
   }
 
   async setState(state: TaskViewState, result: unknown): Promise<void> {
