@@ -46,6 +46,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - In a narrow pane, the header now folds its controls into "View options" and filters into a count
 - On phones, the header now takes two rows and the add button floats over the view
 - Table column widths set on a phone now stay on that phone
+- Tasks opened in a tab now navigate like note tabs, with back and forward history
+- Ctrl-clicking a link in a task description now keeps the task editor open
 
 ### Removed
 
@@ -61,6 +63,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed saved views losing their sort when saved, updated, or opened outside the table
 - Fixed the page for a missing task showing an icon name instead of the icon
 - Fixed icon buttons such as row actions and remove buttons not responding to Enter or Space
+- Fixed links to notes in a task description not opening when tasks open in a tab ([#374](https://github.com/dotpm/obsidian-pm/issues/374))
 
 ## [2.5.2] - 2026-09-21
 

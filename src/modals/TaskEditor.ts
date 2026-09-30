@@ -193,13 +193,18 @@ export class TaskEditor {
   }
 
   /**
-   * Follows a link out of the editor: the surface goes away first, so a modal isn't left
-   * covering the note, and the edits are kept or dropped by the save-on-close setting.
+   * Follows a link out of the editor. A modal closes first so it isn't left covering the note,
+   * and its edits are kept or dropped by the save-on-close setting; a link opened in a new tab
+   * leaves it open and the page it covers stays active, so the new tab opens in the background.
    */
-  private openNote(link: string, event?: MouseEvent): void {
-    this.leave()
+  private async openNote(link: string, event?: MouseEvent): Promise<void> {
+    const paneType = event ? Keymap.isModEvent(event) : false
+    const modal = this.host.surface === 'modal'
+    if (modal && !paneType) this.leave()
+    const covered = modal && paneType ? this.app.workspace.getMostRecentLeaf() : null
     const sourcePath = this.task.filePath || this.project.filePath || ''
-    void this.app.workspace.openLinkText(link, sourcePath, event ? Keymap.isModEvent(event) : false)
+    await this.app.workspace.openLinkText(link, sourcePath, paneType)
+    if (covered) this.app.workspace.setActiveLeaf(covered, { focus: false })
   }
 
   /** A dependency leads to that task's editor, not to the markdown behind it. */
@@ -570,7 +575,7 @@ export class TaskEditor {
         if (link.classList.contains('internal-link')) {
           e.preventDefault()
           e.stopPropagation()
-          this.openNote(link.getAttribute('data-href') || link.getAttribute('href') || '', e)
+          void this.openNote(link.getAttribute('data-href') || link.getAttribute('href') || '', e)
           return
         }
         return
