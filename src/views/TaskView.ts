@@ -26,7 +26,7 @@ export class TaskView extends ItemView {
   constructor(leaf: WorkspaceLeaf, plugin: PMPlugin) {
     super(leaf)
     this.plugin = plugin
-    this.navigation = false
+    this.navigation = true
     this.keyScope = new Scope(this.app.scope)
     this.scope = this.keyScope
   }
