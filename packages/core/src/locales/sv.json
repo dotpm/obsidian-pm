@@ -275,6 +275,7 @@
   "header.showColumn": "Visa kolumn",
   "header.showField": "Visa fält",
   "header.showHiddenColumns": "Visa dolda kolumner",
+  "header.showProject": "Visa {title} i den här vyn",
   "header.showProjects.one": "Visa {count} projekt",
   "header.showProjects.other": "Visa {count} projekt",
   "header.showTasks.one": "Visa {count} uppgift",

@@ -301,6 +301,7 @@
   "header.showColumn": "Pokaż kolumnę",
   "header.showField": "Pokaż pole",
   "header.showHiddenColumns": "Pokaż ukryte kolumny",
+  "header.showProject": "Pokaż {title} w tym widoku",
   "header.showProjects.few": "Pokaż {count} projekty",
   "header.showProjects.many": "Pokaż {count} projektów",
   "header.showProjects.one": "Pokaż {count} projekt",

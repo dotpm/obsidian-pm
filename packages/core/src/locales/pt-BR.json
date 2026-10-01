@@ -288,6 +288,7 @@
   "header.showColumn": "Mostrar coluna",
   "header.showField": "Mostrar campo",
   "header.showHiddenColumns": "Mostrar colunas ocultas",
+  "header.showProject": "Mostrar {title} nesta visualização",
   "header.showProjects.many": "Mostrar {count} de projetos",
   "header.showProjects.one": "Mostrar {count} projeto",
   "header.showProjects.other": "Mostrar {count} projetos",

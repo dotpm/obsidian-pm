@@ -275,6 +275,7 @@
   "header.showColumn": "Spalte anzeigen",
   "header.showField": "Feld anzeigen",
   "header.showHiddenColumns": "Ausgeblendete Spalten anzeigen",
+  "header.showProject": "{title} in dieser Ansicht zeigen",
   "header.showProjects.one": "{count} Projekt anzeigen",
   "header.showProjects.other": "{count} Projekte anzeigen",
   "header.showTasks.one": "{count} Aufgabe anzeigen",
