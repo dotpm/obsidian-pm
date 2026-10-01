@@ -101,6 +101,7 @@ interface ProjectViewState {
   scope?: ScopeSpec
   /** How a project view was addressed before scopes; still accepted from saved layouts. */
   filePath?: string
+  anchor?: string
   [key: string]: unknown
 }
 
@@ -145,6 +146,8 @@ export class ProjectView extends ItemView {
   plugin: PMPlugin
   projectScope: ProjectScope | null = null
   private spec: ScopeSpec | null = null
+  /** The project last shown on its own, which "This project" returns to from a wider scope. */
+  private anchorPath: string | null = null
   currentView: ViewMode
   /** The saved filter plus the search text, which lives only as long as this view. */
   query: TaskQuery = { filter: makeDefaultFilter(), text: '' }
@@ -247,6 +250,7 @@ export class ProjectView extends ItemView {
 
   async setState(state: ProjectViewState, result: unknown): Promise<void> {
     const spec = specOf(state)
+    if (typeof state.anchor === 'string') this.anchorPath = state.anchor
     if (spec && (!this.spec || scopeKey(this.spec) !== scopeKey(spec))) {
       this.spec = spec
       await this.loadScope()
@@ -255,7 +259,11 @@ export class ProjectView extends ItemView {
   }
 
   getState(): ProjectViewState {
-    return { scope: this.spec ?? undefined, filePath: this.projectScope?.primary?.filePath }
+    return {
+      scope: this.spec ?? undefined,
+      filePath: this.projectScope?.primary?.filePath,
+      anchor: this.anchorPath ?? undefined
+    }
   }
 
   onOpen(): Promise<void> {
@@ -339,6 +347,7 @@ export class ProjectView extends ItemView {
   private async loadScope(): Promise<void> {
     this.ensureInitialized()
     if (!this.spec) return
+    if (this.spec.kind === 'project' || this.spec.kind === 'subtree') this.anchorPath = this.spec.path
     const paths = resolveScopePaths(this.spec, this.plugin.index)
     this.loadedPaths = paths
     const projects = await this.plugin.store.loadProjects(paths)
@@ -686,8 +695,9 @@ export class ProjectView extends ItemView {
   }
 
   private scopeOptions(scope: ProjectScope, primary: Project): { label: string; spec: ScopeSpec }[] {
-    const path = scope.spec.kind === 'vault' ? primary.filePath : scope.spec.path
-    const projectPath = scope.spec.kind === 'project' || scope.spec.kind === 'subtree' ? path : primary.filePath
+    const anchor = scope.projects.find((project) => project.filePath === this.anchorPath) ?? primary
+    const projectPath =
+      scope.spec.kind === 'project' || scope.spec.kind === 'subtree' ? scope.spec.path : anchor.filePath
     // A project owns its folder, so "the containing folder" is the one holding that folder.
     const own = projectFolderOf(this.app, projectPath)
     const folder = folderOf(own ?? projectPath)
@@ -719,7 +729,7 @@ export class ProjectView extends ItemView {
           item
             .setTitle(option.label)
             .setChecked(scope.key === scopeKey(option.spec))
-            .onClick(safeAsync(() => this.switchScope(option.spec)))
+            .onClick(safeAsync(() => this.goTo(option.spec, false)))
         )
       }
       showMenuBelow(menu, button.el)
