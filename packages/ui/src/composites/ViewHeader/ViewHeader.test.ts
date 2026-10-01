@@ -26,6 +26,7 @@ import { openGroupPopover } from './groupPopover'
 import { openNonWorkingDaysPopover } from './nonWorkingDaysPopover'
 import { openProjectFieldsPopover } from './projectFieldsPopover'
 import { openProjectFilterPopover, renderProjectFilterPanel } from './projectFilterPopover'
+import { openProjectSwitcher, type SwitcherProject } from './projectSwitcher'
 import { openSavedViewsPopover, type SavedViewsProps } from './savedViewsPopover'
 import type { BoardColumn } from '../../views/boardColumns'
 import { openSearchPopover, SearchBox } from './SearchBox'
@@ -933,5 +934,89 @@ describe('ViewHeader on a phone', () => {
     const header = new ViewHeader(document.body).setMoreMenu(noop)
     expect(header.el.find('.pm-vh-more')).toBeNull()
     header.destroy()
+  })
+})
+
+describe('project switcher', () => {
+  const projects: SwitcherProject[] = [
+    { path: 'web', title: 'Website', depth: 0, isCurrent: true },
+    { path: 'app', title: 'Mobile app', depth: 0 },
+    { path: 'brand', title: 'Brand', depth: 1 }
+  ]
+  const boxes = (): HTMLInputElement[] => document.body.findAll('.pm-switcher-line input') as HTMLInputElement[]
+  const tick = (box: HTMLInputElement): void => {
+    box.checked = !box.checked
+    box.dispatchEvent(new Event('change'))
+  }
+  const escape = (): void => {
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+  }
+
+  it('draws no checkboxes without a set of shown projects', () => {
+    openProjectSwitcher(document.body.createEl('button'), { projects, onPick: noop, onAllProjects: noop })
+    expect(boxes()).toHaveLength(0)
+    expect(document.body.findAll('.pm-switcher-row')).toHaveLength(3)
+  })
+
+  it('reports the checked projects once it closes, the ones already shown first', () => {
+    const onShow = vi.fn<(paths: string[]) => void>()
+    const shown = new Set(['web'])
+    openProjectSwitcher(document.body.createEl('button'), {
+      projects,
+      shown,
+      onShow,
+      onPick: noop,
+      onAllProjects: noop
+    })
+    expect(boxes().map((box) => box.checked)).toEqual([true, false, false])
+    tick(boxes()[2])
+    tick(boxes()[1])
+    expect(onShow).not.toHaveBeenCalled()
+    escape()
+    expect(onShow).toHaveBeenCalledExactlyOnceWith(['web', 'brand', 'app'])
+  })
+
+  it('keeps the last shown project checked', () => {
+    const onShow = vi.fn<(paths: string[]) => void>()
+    openProjectSwitcher(document.body.createEl('button'), {
+      projects,
+      shown: new Set(['web']),
+      onShow,
+      onPick: noop,
+      onAllProjects: noop
+    })
+    tick(boxes()[0])
+    expect(boxes()[0].checked).toBe(true)
+    escape()
+    expect(onShow).not.toHaveBeenCalled()
+  })
+
+  it('goes to a picked project instead of reporting the checks', () => {
+    const onShow = vi.fn<(paths: string[]) => void>()
+    const onPick = vi.fn<(path: string, newTab: boolean) => void>()
+    openProjectSwitcher(document.body.createEl('button'), {
+      projects,
+      shown: new Set(['web']),
+      onShow,
+      onPick,
+      onAllProjects: noop
+    })
+    tick(boxes()[1])
+    document.body.findAll('.pm-switcher-row')[2].click()
+    expect(onPick).toHaveBeenCalledExactlyOnceWith('brand', false)
+    expect(onShow).not.toHaveBeenCalled()
+  })
+
+  it('searches every project while the field holds a query', () => {
+    openProjectSwitcher(document.body.createEl('button'), {
+      projects,
+      searchable: [...projects, { path: 'far', title: 'Far away', depth: 0 }],
+      onPick: noop,
+      onAllProjects: noop
+    })
+    const search = document.body.find('input.pm-pop-field') as HTMLInputElement
+    search.value = 'far'
+    search.dispatchEvent(new Event('input'))
+    expect(document.body.findAll('.pm-switcher-row').map((row) => row.textContent)).toEqual(['Far away'])
   })
 })

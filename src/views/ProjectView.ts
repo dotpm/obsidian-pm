@@ -36,6 +36,7 @@ import {
   personKeyer,
   ProjectScope,
   projectFolderOf,
+  type ProjectRef,
   resolveScopePaths,
   scopeKey,
   type ScopeSpec
@@ -609,8 +610,15 @@ export class ProjectView extends ItemView {
   private renderContextSlot(parent: HTMLElement, scope: ProjectScope, primary: Project): void {
     const kind = scope.spec.kind
     const isProject = kind === 'project' || kind === 'subtree'
+    const icons: Record<ScopeSpec['kind'], string> = {
+      project: primary.icon,
+      subtree: primary.icon,
+      folder: 'folder',
+      picked: 'boxes',
+      vault: 'library'
+    }
     renderBreadcrumb(parent, {
-      icon: isProject ? primary.icon : kind === 'folder' ? 'folder' : 'library',
+      icon: icons[kind],
       color: isProject ? primary.color : undefined,
       ancestors: isProject
         ? this.plugin.index.ancestorRefs(primary.filePath).map((ref) => ({
@@ -619,7 +627,7 @@ export class ProjectView extends ItemView {
           }))
         : [],
       title: scope.label(),
-      onSwitch: isProject ? (anchor) => this.openSwitcher(anchor, primary) : undefined,
+      onSwitch: isProject || kind === 'picked' ? (anchor) => this.openSwitcher(anchor, scope, primary) : undefined,
       switchLabel: t('header.switchProject'),
       foldLabel: t('header.parentProjects'),
       mode: {
@@ -666,26 +674,44 @@ export class ProjectView extends ItemView {
     this.renderCurrentView()
   }
 
-  private openSwitcher(anchor: HTMLElement, primary: Project): void {
+  private openSwitcher(anchor: HTMLElement, scope: ProjectScope, primary: Project): void {
     const index = this.plugin.index
-    const parent = index.parentOf(primary.filePath)
+    const kind = scope.spec.kind
+    const current = scope.projects.find((project) => project.filePath === this.anchorPath) ?? primary
+    const switcherProject = (ref: ProjectRef, depth: number): SwitcherProject => ({
+      path: ref.path,
+      title: ref.title,
+      icon: ref.icon,
+      color: ref.color,
+      depth
+    })
+    const parent = index.parentOf(current.filePath)
     const siblings = parent ? index.childRefs(parent.path) : index.rootRefs()
     const projects: SwitcherProject[] = []
     if (parent) {
       projects.push({ path: parent.path, title: parent.title, depth: 0, isParent: true })
     }
     for (const ref of siblings) {
-      const isCurrent = ref.path === primary.filePath
-      projects.push({ path: ref.path, title: ref.title, icon: ref.icon, color: ref.color, depth: 0, isCurrent })
-      if (!isCurrent) continue
-      for (const child of index.childRefs(ref.path)) {
-        projects.push({ path: child.path, title: child.title, icon: child.icon, color: child.color, depth: 1 })
-      }
+      const isAnchor = ref.path === current.filePath
+      projects.push({ ...switcherProject(ref, 0), isCurrent: isAnchor && kind !== 'picked' })
+      if (!isAnchor) continue
+      for (const child of index.childRefs(ref.path)) projects.push(switcherProject(child, 1))
     }
-    const kind = this.projectScope?.spec.kind === 'subtree' ? 'subtree' : 'project'
+    const shown = kind === 'subtree' ? undefined : new Set(scope.projects.map((project) => project.filePath))
+    for (const project of scope.projects) {
+      if (kind !== 'picked' || projects.some((entry) => entry.path === project.filePath)) continue
+      const ref = index.projectRef(project.filePath)
+      if (ref) projects.push(switcherProject(ref, 0))
+    }
+    const goToKind = kind === 'subtree' ? 'subtree' : 'project'
     openProjectSwitcher(anchor, {
       projects,
-      onPick: safeAsync((path: string, newTab: boolean) => this.goTo({ kind, path }, newTab)),
+      searchable: index.projectRefs().map((ref) => switcherProject(ref, 0)),
+      shown,
+      onPick: safeAsync((path: string, newTab: boolean) => this.goTo({ kind: goToKind, path }, newTab)),
+      onShow: safeAsync((paths: string[]) =>
+        this.goTo(paths.length === 1 ? { kind: 'project', path: paths[0] } : { kind: 'picked', paths }, false)
+      ),
       onAllProjects: safeAsync(() => this.plugin.router.openDashboard())
     })
   }
@@ -716,7 +742,7 @@ export class ProjectView extends ItemView {
       .setLabel(scope.spec.kind === 'project' ? '' : tn('scope.projectCount', scope.projects.length))
       .setActive(scope.spec.kind !== 'project')
       .setAriaLabel(t('scope.change'))
-      .setTooltip(t('header.scope', { label: current?.label ?? t('scope.thisProject') }))
+      .setTooltip(t('header.scope', { label: current?.label ?? scope.label() }))
     button.el.addClass('pm-vh-scope')
     button.onClick(() => {
       const menu = new Menu()

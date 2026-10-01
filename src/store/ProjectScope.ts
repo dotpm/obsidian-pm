@@ -10,7 +10,8 @@ import {
   type Task,
   findTaskById,
   flattenTasks,
-  t
+  t,
+  tn
 } from '@dotpm/core'
 import type { TaskSource } from './TaskSource'
 import type { VaultIndex } from './VaultIndex'
@@ -20,10 +21,19 @@ export type ScopeSpec =
   | { kind: 'project'; path: string }
   | { kind: 'subtree'; path: string }
   | { kind: 'folder'; path: string }
+  | { kind: 'picked'; paths: string[] }
   | { kind: 'vault' }
 
+/** Note paths can't hold `|`, so it separates the paths of a picked scope. */
 export function scopeKey(spec: ScopeSpec): string {
-  return spec.kind === 'vault' ? 'vault' : `${spec.kind}:${spec.path}`
+  switch (spec.kind) {
+    case 'vault':
+      return 'vault'
+    case 'picked':
+      return `picked:${[...spec.paths].sort().join('|')}`
+    default:
+      return `${spec.kind}:${spec.path}`
+  }
 }
 
 /** The project paths a spec covers, in the order the views should show them. */
@@ -40,6 +50,8 @@ export function resolveScopePaths(spec: ScopeSpec, index: VaultIndex): string[] 
       const prefix = spec.path === '' ? '' : `${spec.path}/`
       return index.projectPaths().filter((path) => path.startsWith(prefix))
     }
+    case 'picked':
+      return spec.paths.filter((path) => index.projectRef(path))
     case 'vault':
       return index.projectPaths()
   }
@@ -108,6 +120,8 @@ export class ProjectScope {
         return this.primary ? t('scope.subtreeLabel', { title: this.primary.title }) : t('common.project')
       case 'folder':
         return this.spec.path.slice(this.spec.path.lastIndexOf('/') + 1) || t('scope.vault')
+      case 'picked':
+        return tn('scope.projectCount', this.projects.length)
       case 'vault':
         return t('scope.all')
     }

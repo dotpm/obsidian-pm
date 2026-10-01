@@ -262,6 +262,7 @@
   "header.showColumn": "列を表示",
   "header.showField": "フィールドを表示",
   "header.showHiddenColumns": "非表示の列を表示",
+  "header.showProject": "このビューに{title}を表示",
   "header.showProjects.other": "{count} 件のプロジェクトを表示",
   "header.showTasks.other": "{count} 件のタスクを表示",
   "header.shownOf": "{shown} / {total}",

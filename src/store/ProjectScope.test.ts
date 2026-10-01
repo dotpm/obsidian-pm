@@ -21,6 +21,11 @@ describe('scopeKey', () => {
     expect(scopeKey({ kind: 'subtree', path: 'A.md' })).toBe('subtree:A.md')
     expect(scopeKey({ kind: 'vault' })).toBe('vault')
   })
+
+  it('names a picked set by its paths in any order', () => {
+    expect(scopeKey({ kind: 'picked', paths: ['B.md', 'A.md'] })).toBe('picked:A.md|B.md')
+    expect(scopeKey({ kind: 'picked', paths: ['A.md', 'B.md'] })).toBe('picked:A.md|B.md')
+  })
 })
 
 describe('resolveScopePaths', () => {
@@ -67,6 +72,11 @@ describe('resolveScopePaths', () => {
 
   it('resolves the whole vault', () => {
     expect(resolveScopePaths({ kind: 'vault' }, index)).toHaveLength(4)
+  })
+
+  it('resolves picked projects in the order they were picked, without the ones gone', () => {
+    const spec = { kind: 'picked' as const, paths: ['Personal/Garden.md', 'Gone.md', 'Work/Platform.md'] }
+    expect(resolveScopePaths(spec, index)).toEqual(['Personal/Garden.md', 'Work/Platform.md'])
   })
 
   it('resolves a project that no longer exists to nothing', () => {
