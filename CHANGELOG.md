@@ -65,6 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed icon buttons such as row actions and remove buttons not responding to Enter or Space
 - Fixed links to notes in a task description not opening when tasks open in a tab ([#374](https://github.com/dotpm/obsidian-pm/issues/374))
 - Fixed long descriptions being cut off at the bottom while editing them in the task editor
+- Fixed "This project" opening a different project after widening the scope of the task views
 
 ## [2.5.2] - 2026-09-21
 
