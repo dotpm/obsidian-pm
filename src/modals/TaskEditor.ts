@@ -50,6 +50,7 @@ export class TaskEditor {
   private saved = false
   private persistPromise: Promise<void> | null = null
   private noteSuggest: NoteLinkSuggest | null = null
+  private descResizeObserver: ResizeObserver | null = null
   private shownExtras = new Set<string>()
   private saveKeyHandler: KeymapEventHandler | null = null
   private containerEl: HTMLElement | null = null
@@ -127,6 +128,8 @@ export class TaskEditor {
     }
     this.noteSuggest?.destroy()
     this.noteSuggest = null
+    this.descResizeObserver?.disconnect()
+    this.descResizeObserver = null
     this.containerEl?.empty()
   }
 
@@ -411,9 +414,19 @@ export class TaskEditor {
         ancestor = ancestor.parentElement
       }
       descArea.setCssProps({ '--desc-height': 'auto' })
-      descArea.setCssProps({ '--desc-height': descArea.scrollHeight + 'px' })
+      const borders = descArea.offsetHeight - descArea.clientHeight
+      descArea.setCssProps({ '--desc-height': descArea.scrollHeight + borders + 'px' })
       for (const [el, top] of saved) el.scrollTop = top
     }
+
+    let measuredWidth = 0
+    this.descResizeObserver?.disconnect()
+    this.descResizeObserver = new ResizeObserver(() => {
+      if (descArea.clientWidth === measuredWidth) return
+      measuredWidth = descArea.clientWidth
+      if (!descArea.classList.contains('pm-hidden')) autoResize()
+    })
+    this.descResizeObserver.observe(descArea)
 
     const hasContent = () => this.task.description.trim().length > 0
     const sourcePath = this.task.filePath || this.project.filePath || ''
