@@ -262,6 +262,7 @@
   "header.showColumn": "显示列",
   "header.showField": "显示字段",
   "header.showHiddenColumns": "显示隐藏的列",
+  "header.showProject": "在此视图中显示{title}",
   "header.showProjects.other": "显示 {count} 个项目",
   "header.showTasks.other": "显示 {count} 个任务",
   "header.shownOf": "{shown}/{total}",

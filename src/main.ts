@@ -542,8 +542,10 @@ export default class PMPlugin extends Plugin {
   private scopeKeyResolves(key: string): boolean {
     const separator = key.indexOf(':')
     if (separator === -1) return true
-    const path = key.slice(separator + 1)
-    return path === '' || this.app.vault.getAbstractFileByPath(path) !== null
+    return key
+      .slice(separator + 1)
+      .split('|')
+      .every((path) => path === '' || this.app.vault.getAbstractFileByPath(path) !== null)
   }
 
   /** Flags the note; sub-projects follow it without a write of their own. */

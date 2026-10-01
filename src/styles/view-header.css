@@ -473,6 +473,16 @@ button.pm-filter-chip-remove {
 .pm-pop-list button.pm-switcher-row {
   padding-left: calc(9px + var(--pm-depth, 0) * 16px);
 }
+.pm-switcher-line {
+  display: flex;
+  align-items: center;
+  padding-left: calc(9px + var(--pm-depth, 0) * 16px);
+}
+.pm-pop-list .pm-switcher-line button.pm-switcher-row {
+  flex: 1;
+  min-width: 0;
+  padding-left: 8px;
+}
 button.pm-switcher-all {
   border-radius: 0;
 }

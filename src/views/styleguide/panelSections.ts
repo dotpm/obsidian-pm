@@ -12,6 +12,7 @@ import {
 } from '@dotpm/core'
 import {
   type FilterSetup,
+  type SwitcherProject,
   type TuneItem,
   Stepper,
   boardColumns,
@@ -162,18 +163,20 @@ export function renderPanelSections({ section, row }: GalleryLayout): void {
   renderSavedViewsPanel(frame(savedRow, 300), { ...savedProps, activeId: 'v2', changes: [] }, noop)
 
   const switcher = section('Project switcher panel', 'panel-switcher')
+  const switcherProjects: SwitcherProject[] = [
+    { path: 'acme', title: 'Acme', depth: 0, isParent: true },
+    { path: 'web', title: 'Website redesign', icon: 'globe', color: '#5b8def', depth: 0, isCurrent: true },
+    { path: 'brand', title: 'Brand refresh', icon: 'palette', color: '#d96ba0', depth: 1 },
+    { path: 'app', title: 'Mobile app', icon: 'smartphone', color: '#6bb38f', depth: 0 }
+  ]
   renderProjectSwitcherPanel(
     frame(row(switcher, 'parent, siblings with the current one checked, its children'), 280),
-    {
-      projects: [
-        { path: 'acme', title: 'Acme', depth: 0, isParent: true },
-        { path: 'web', title: 'Website redesign', icon: 'globe', color: '#5b8def', depth: 0, isCurrent: true },
-        { path: 'brand', title: 'Brand refresh', icon: 'palette', color: '#d96ba0', depth: 1 },
-        { path: 'app', title: 'Mobile app', icon: 'smartphone', color: '#6bb38f', depth: 0 }
-      ],
-      onPick: noop,
-      onAllProjects: noop
-    },
+    { projects: switcherProjects, onPick: noop, onAllProjects: noop },
+    noop
+  )
+  renderProjectSwitcherPanel(
+    frame(row(switcher, 'with the projects in view checked, to show several at once'), 280),
+    { projects: switcherProjects, shown: new Set(['web', 'app']), onPick: noop, onAllProjects: noop },
     noop
   )
 

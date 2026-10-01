@@ -275,6 +275,7 @@
   "header.showColumn": "কলাম দেখান",
   "header.showField": "ফিল্ড দেখান",
   "header.showHiddenColumns": "লুকানো কলাম দেখান",
+  "header.showProject": "এই ভিউতে {title} দেখান",
   "header.showProjects.one": "{count}টি প্রজেক্ট দেখান",
   "header.showProjects.other": "{count}টি প্রজেক্ট দেখান",
   "header.showTasks.one": "{count}টি টাস্ক দেখান",

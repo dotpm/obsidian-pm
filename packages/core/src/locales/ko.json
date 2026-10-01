@@ -262,6 +262,7 @@
   "header.showColumn": "열 표시",
   "header.showField": "필드 표시",
   "header.showHiddenColumns": "숨겨진 열 표시",
+  "header.showProject": "이 뷰에 {title} 표시",
   "header.showProjects.other": "프로젝트 {count}개 표시",
   "header.showTasks.other": "작업 {count}개 표시",
   "header.shownOf": "{shown}/{total}",
