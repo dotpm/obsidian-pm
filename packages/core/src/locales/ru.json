@@ -301,6 +301,7 @@
   "header.showColumn": "Показать столбец",
   "header.showField": "Показать поле",
   "header.showHiddenColumns": "Показать скрытые столбцы",
+  "header.showProject": "Показать {title} в этом представлении",
   "header.showProjects.few": "Показать {count} проекта",
   "header.showProjects.many": "Показать {count} проектов",
   "header.showProjects.one": "Показать {count} проект",

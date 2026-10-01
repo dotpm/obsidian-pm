@@ -1,3 +1,4 @@
+import { Checkbox } from '#primitives/Checkbox'
 import { Popover } from '#primitives/Popover'
 import { t } from '@dotpm/core'
 import { renderPopSearch } from '../popoverParts'
@@ -16,6 +17,13 @@ export interface SwitcherProject {
 
 export interface ProjectSwitcherProps {
   projects: SwitcherProject[]
+  /** Searched instead of `projects` while the field holds a query. */
+  searchable?: SwitcherProject[]
+  /**
+   * The paths of the projects in view. When set, each row gets a checkbox that adds its
+   * project to this set or takes it out, edited in place; the last one can't be unchecked.
+   */
+  shown?: Set<string>
   onPick: (path: string, newTab: boolean) => void
   onAllProjects: () => void
 }
@@ -27,21 +35,25 @@ export function renderProjectSwitcherPanel(parent: HTMLElement, props: ProjectSw
   const renderList = () => {
     list.empty()
     const query = search.value.trim().toLowerCase()
-    for (const project of props.projects) {
+    const projects = query ? (props.searchable ?? props.projects) : props.projects
+    for (const project of projects) {
       if (query && !project.title.toLowerCase().includes(query)) continue
-      const row = renderOptionRow(list, {
+      const line = props.shown ? list.createDiv('pm-switcher-line') : list
+      if (props.shown) renderShownBox(line, project, props.shown)
+      const row = renderOptionRow(line, {
         label: project.title,
         icon: project.isParent ? 'corner-left-up' : project.icon,
         color: project.isParent ? undefined : project.color,
         note: project.isParent ? t('header.parent') : undefined,
         selected: project.isCurrent,
         onPick: (e) => {
-          close()
           if (!project.isCurrent) props.onPick(project.path, e.ctrlKey || e.metaKey)
+          close()
         }
       })
       row.addClass('pm-switcher-row')
-      row.setCssProps({ '--pm-depth': String(query ? 0 : project.depth) })
+      const indented = props.shown ? line : row
+      indented.setCssProps({ '--pm-depth': String(query ? 0 : project.depth) })
     }
   }
   renderList()
@@ -50,16 +62,59 @@ export function renderProjectSwitcherPanel(parent: HTMLElement, props: ProjectSw
     label: t('scope.all'),
     icon: 'library',
     onPick: () => {
-      close()
       props.onAllProjects()
+      close()
     }
   }).addClass('pm-switcher-all', 'pm-pop-section')
 }
 
-/** The switcher in a popover under `anchor`, with its search field focused. */
-export function openProjectSwitcher(anchor: HTMLElement, props: ProjectSwitcherProps): Popover {
-  const pop = new Popover({ anchor, width: 280 })
-  renderProjectSwitcherPanel(pop.contentEl, props, () => pop.close())
+function renderShownBox(parent: HTMLElement, project: SwitcherProject, shown: Set<string>): void {
+  const box = new Checkbox(parent)
+    .setChecked(shown.has(project.path))
+    .setAriaLabel(t('header.showProject', { title: project.title }))
+    .onChange((checked) => {
+      if (checked) shown.add(project.path)
+      else if (shown.size > 1) shown.delete(project.path)
+      else box.setChecked(true)
+    })
+}
+
+/**
+ * The switcher in a popover under `anchor`, with its search field focused. With `shown`,
+ * `onShow` gets the checked paths when it closes, unless they're unchanged or a row was picked.
+ */
+export function openProjectSwitcher(
+  anchor: HTMLElement,
+  props: ProjectSwitcherProps & { onShow?: (paths: string[]) => void }
+): Popover {
+  const before = props.shown ? [...props.shown] : []
+  let picked = false
+  const pop = new Popover({
+    anchor,
+    width: 280,
+    onClose: () => {
+      const shown = props.shown
+      if (picked || !shown || !props.onShow) return
+      if (shown.size === before.length && before.every((path) => shown.has(path))) return
+      const added = [...shown].filter((path) => !before.includes(path))
+      props.onShow([...before.filter((path) => shown.has(path)), ...added])
+    }
+  })
+  renderProjectSwitcherPanel(
+    pop.contentEl,
+    {
+      ...props,
+      onPick: (path, newTab) => {
+        picked = true
+        props.onPick(path, newTab)
+      },
+      onAllProjects: () => {
+        picked = true
+        props.onAllProjects()
+      }
+    },
+    () => pop.close()
+  )
   pop.open()
   pop.contentEl.find('input.pm-pop-field')?.focus()
   return pop

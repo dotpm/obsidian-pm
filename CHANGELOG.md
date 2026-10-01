@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Added "Open as note" to the project overview and the tab's "More options" menu
 - Added parent project links and a project switcher to the top of the task views
+- The task views can now show hand-picked projects together, checked in the project switcher
 - Added "Expand all" and "Collapse all" to the table
 - Filters can now match custom fields, start dates, task types and titles
 - Filters can now exclude values, match empty fields, and compare numbers and date ranges

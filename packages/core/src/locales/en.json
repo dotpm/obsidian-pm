@@ -275,6 +275,7 @@
   "header.showColumn": "Show column",
   "header.showField": "Show field",
   "header.showHiddenColumns": "Show hidden columns",
+  "header.showProject": "Show {title} in this view",
   "header.showProjects.one": "Show {count} project",
   "header.showProjects.other": "Show {count} projects",
   "header.showTasks.one": "Show {count} task",

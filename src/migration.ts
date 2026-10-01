@@ -252,7 +252,13 @@ function retargetOpenViews(plugin: PMPlugin, moves: ProjectMove[]): void {
     }
 
     const scope = state.scope as ScopeSpec | undefined
-    if (scope && scope.kind !== 'vault') {
+    if (scope?.kind === 'picked') {
+      const paths = scope.paths.map((path) => movedPath(path, moves) ?? path)
+      if (paths.some((path, i) => path !== scope.paths[i])) {
+        state.scope = { ...scope, paths }
+        changed = true
+      }
+    } else if (scope && scope.kind !== 'vault') {
       const moved = movedPath(scope.path, moves)
       if (moved) {
         state.scope = { ...scope, path: moved }

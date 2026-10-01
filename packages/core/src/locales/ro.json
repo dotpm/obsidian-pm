@@ -288,6 +288,7 @@
   "header.showColumn": "Afișează coloana",
   "header.showField": "Afișează câmpul",
   "header.showHiddenColumns": "Afișează coloanele ascunse",
+  "header.showProject": "Afișează {title} în această vizualizare",
   "header.showProjects.few": "Afișează {count} proiecte",
   "header.showProjects.one": "Afișează {count} proiect",
   "header.showProjects.other": "Afișează {count} de proiecte",
