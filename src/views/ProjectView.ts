@@ -538,13 +538,12 @@ export class ProjectView extends ItemView {
     this.searchBox?.setValue(this.query.text)
     this.header?.tune.setBadge(filters).setActive(isQueryActive(this.query))
     if (this.groupButton) {
-      const setup = this.groupSetup()
+      const label = this.groupSummary()
       const hidden = this.boardColumnsNow().filter((column) => column.hidden).length
-      const field = setup ? boardField(setup, this.group) : null
       this.groupButton
-        .setLabel(setup && field ? filterFieldLabel(field, setup.ctx.customFields) : t('header.group'))
+        .setLabel(label || t('header.group'))
         .setDetail(hidden ? tn('header.hiddenCount', hidden) : '')
-        .setActive(field !== null && field !== makeDefaultGroup().field)
+        .setActive(!!label)
     }
     if (this.fieldsButton) {
       const hidden = this.hiddenFieldCount()
@@ -918,11 +917,10 @@ export class ProjectView extends ItemView {
       })
     }
     if (this.currentView === 'kanban') {
-      const setup = this.groupSetup()
       query.push({
         icon: 'group',
         label: t('header.group'),
-        state: setup ? filterFieldLabel(boardField(setup, this.group), setup.ctx.customFields) : '',
+        state: this.groupSummary(),
         onOpen: (anchor) => this.openGroup(anchor)
       })
     }
@@ -954,6 +952,20 @@ export class ProjectView extends ItemView {
     this.syncHeader()
     this.renderCurrentView()
     void this.persistFilter()
+  }
+
+  /** The board's field as the Group button names it, or nothing while the board groups by status untouched. */
+  private groupSummary(): string {
+    const setup = this.groupSetup()
+    if (!setup) return ''
+    const field = boardField(setup, this.group)
+    const columns = this.group.columns?.[field]
+    const changed =
+      field !== makeDefaultGroup().field ||
+      !!this.group.hideEmpty ||
+      !!columns?.hidden?.length ||
+      !!columns?.order?.length
+    return changed ? filterFieldLabel(field, setup.ctx.customFields) : ''
   }
 
   private groupSetup() {
