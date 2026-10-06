@@ -11,6 +11,12 @@ export class Checkbox {
     return this
   }
 
+  /** The mixed state, for a box standing for a group of which only some are checked. */
+  setIndeterminate(indeterminate: boolean): this {
+    this.el.indeterminate = indeterminate
+    return this
+  }
+
   /** What the box stands for, since the label naming it is usually a sibling. */
   setAriaLabel(label: string): this {
     this.el.setAttribute('aria-label', label)

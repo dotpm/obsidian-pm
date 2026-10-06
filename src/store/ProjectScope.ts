@@ -57,6 +57,22 @@ export function resolveScopePaths(spec: ScopeSpec, index: VaultIndex): string[] 
   }
 }
 
+/**
+ * The spec a set of checked projects stands for: one alone is that project, and one with
+ * exactly its sub-projects is its subtree, so a sub-project added later joins the view.
+ */
+export function selectionSpec(paths: string[], descendantsOf: (path: string) => string[]): ScopeSpec {
+  if (paths.length === 1) return { kind: 'project', path: paths[0] }
+  const chosen = new Set(paths)
+  for (const path of paths) {
+    const descendants = descendantsOf(path)
+    if (descendants.length + 1 === chosen.size && descendants.every((child) => chosen.has(child))) {
+      return { kind: 'subtree', path }
+    }
+  }
+  return { kind: 'picked', paths }
+}
+
 function unionById<T extends { id: string }>(lists: T[][]): T[] {
   const seen = new Set<string>()
   const out: T[] = []

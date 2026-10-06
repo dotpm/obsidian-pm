@@ -26,7 +26,7 @@ import { openGroupPopover } from './groupPopover'
 import { openNonWorkingDaysPopover } from './nonWorkingDaysPopover'
 import { openProjectFieldsPopover } from './projectFieldsPopover'
 import { openProjectFilterPopover, renderProjectFilterPanel } from './projectFilterPopover'
-import { openProjectSwitcher, type SwitcherProject } from './projectSwitcher'
+import { openProjectSwitcher, type ProjectSwitcherProps, type SwitcherProject } from './projectSwitcher'
 import { openSavedViewsPopover, type SavedViewsProps } from './savedViewsPopover'
 import type { BoardColumn } from '../../views/boardColumns'
 import { openSearchPopover, SearchBox } from './SearchBox'
@@ -734,6 +734,19 @@ describe('breadcrumb', () => {
     expect(onOpen).toHaveBeenCalledWith(false)
   })
 
+  it('tints a scoped title and shows its badge', () => {
+    const nav = renderBreadcrumb(document.body, {
+      ancestors: [],
+      title: 'Website, Shop',
+      badge: '+1',
+      scoped: true,
+      foldLabel: ''
+    })
+    const current = nav.find('.pm-crumb--current')
+    expect(current?.hasClass('pm-crumb--scoped')).toBe(true)
+    expect(current?.find('.pm-crumb-badge')?.textContent).toBe('+1')
+  })
+
   it('leaves a title without a switcher inert', () => {
     const nav = renderBreadcrumb(document.body, { ancestors: [], title: 'All projects', foldLabel: '' })
     expect(nav.querySelector<HTMLButtonElement>('.pm-crumb--current')?.disabled).toBe(true)
@@ -939,84 +952,129 @@ describe('ViewHeader on a phone', () => {
 
 describe('project switcher', () => {
   const projects: SwitcherProject[] = [
-    { path: 'web', title: 'Website', depth: 0, isCurrent: true },
-    { path: 'app', title: 'Mobile app', depth: 0 },
-    { path: 'brand', title: 'Brand', depth: 1 }
+    { path: 'acme', title: 'Acme', folder: 'Clients', taskCount: 4 },
+    { path: 'web', title: 'Website', parent: 'acme', folder: 'Clients', taskCount: 10 },
+    { path: 'shop', title: 'Shop', parent: 'acme', folder: 'Clients', taskCount: 5 },
+    { path: 'ops', title: 'Ops', folder: 'Internal', taskCount: 2 }
   ]
-  const boxes = (): HTMLInputElement[] => document.body.findAll('.pm-switcher-line input') as HTMLInputElement[]
-  const tick = (box: HTMLInputElement): void => {
-    box.checked = !box.checked
-    box.dispatchEvent(new Event('change'))
+  const open = (props: Partial<ProjectSwitcherProps> = {}): ProjectSwitcherProps => {
+    const full: ProjectSwitcherProps = {
+      projects,
+      selected: ['web'],
+      current: 'web',
+      presets: [],
+      onPick: noop,
+      onShow: noop,
+      ...props
+    }
+    openProjectSwitcher(document.body.createEl('button'), full)
+    return full
   }
-  const escape = (): void => {
+  const line = (path: string): HTMLElement => {
+    const el = document.body.find(`.pm-switcher-line[data-path="${path}"]`)
+    if (!el) throw new Error(`no row for ${path}`)
+    return el
+  }
+  const box = (path: string): HTMLInputElement => line(path).find('input') as HTMLInputElement
+  const tick = (path: string): void => {
+    box(path).checked = !box(path).checked
+    box(path).dispatchEvent(new Event('change'))
+  }
+  const rowTitles = (): string[] =>
+    document.body.findAll('.pm-switcher-row .pm-pop-item-label').map((el) => el.textContent ?? '')
+  const outside = (): void => {
+    document.body.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
+  }
+
+  it('lists projects under their folders, opening the branch holding the selection', () => {
+    open()
+    expect(document.body.findAll('.pm-switcher-list .pm-pop-heading').map((el) => el.textContent)).toEqual([
+      'Clients',
+      'Internal'
+    ])
+    expect(rowTitles()).toEqual(['Acme', 'Website', 'Shop', 'Ops'])
+    expect(box('web').checked).toBe(true)
+    expect(box('acme').indeterminate).toBe(true)
+    expect(line('web').find('.pm-pop-check--hidden')).toBeNull()
+  })
+
+  it('keeps a branch without a selection closed, counting what it hides', () => {
+    open({ selected: ['ops'], current: 'ops' })
+    expect(rowTitles()).toEqual(['Acme', 'Ops'])
+    expect(line('acme').find('.pm-pop-item-note')?.textContent).toBe('+2')
+    line('acme').find('.pm-collapse-toggle')?.click()
+    expect(rowTitles()).toEqual(['Acme', 'Website', 'Shop', 'Ops'])
+  })
+
+  it('checks a whole branch from its parent and applies the selection on close', () => {
+    const onShow = vi.fn<(paths: string[]) => void>()
+    open({ onShow })
+    tick('acme')
+    expect(['acme', 'web', 'shop'].map((path) => box(path).checked)).toEqual([true, true, true])
+    expect(document.body.find('.pm-switcher-summary')?.textContent).toBe('3 selected · 19 tasks')
+    outside()
+    expect(onShow).toHaveBeenCalledExactlyOnceWith(['web', 'acme', 'shop'])
+  })
+
+  it('applies from its button and discards the selection on Escape', () => {
+    const onShow = vi.fn<(paths: string[]) => void>()
+    open({ onShow })
+    tick('ops')
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
-  }
-
-  it('draws no checkboxes without a set of shown projects', () => {
-    openProjectSwitcher(document.body.createEl('button'), { projects, onPick: noop, onAllProjects: noop })
-    expect(boxes()).toHaveLength(0)
-    expect(document.body.findAll('.pm-switcher-row')).toHaveLength(3)
-  })
-
-  it('reports the checked projects once it closes, the ones already shown first', () => {
-    const onShow = vi.fn<(paths: string[]) => void>()
-    const shown = new Set(['web'])
-    openProjectSwitcher(document.body.createEl('button'), {
-      projects,
-      shown,
-      onShow,
-      onPick: noop,
-      onAllProjects: noop
-    })
-    expect(boxes().map((box) => box.checked)).toEqual([true, false, false])
-    tick(boxes()[2])
-    tick(boxes()[1])
     expect(onShow).not.toHaveBeenCalled()
-    escape()
-    expect(onShow).toHaveBeenCalledExactlyOnceWith(['web', 'brand', 'app'])
+    open({ onShow })
+    tick('ops')
+    const show = document.body.find('.pm-switcher-foot button.mod-cta') as HTMLButtonElement
+    expect(show.textContent).toBe('Show 2 projects')
+    show.click()
+    expect(onShow).toHaveBeenCalledExactlyOnceWith(['web', 'ops'])
   })
 
-  it('keeps the last shown project checked', () => {
+  it('reports nothing when the selection is unchanged or cleared', () => {
     const onShow = vi.fn<(paths: string[]) => void>()
-    openProjectSwitcher(document.body.createEl('button'), {
-      projects,
-      shown: new Set(['web']),
-      onShow,
-      onPick: noop,
-      onAllProjects: noop
-    })
-    tick(boxes()[0])
-    expect(boxes()[0].checked).toBe(true)
-    escape()
+    open({ onShow })
+    outside()
+    open({ onShow })
+    ;(document.body.find('.pm-switcher-foot .pm-chip-btn') as HTMLButtonElement).click()
+    expect(box('web').checked).toBe(false)
+    expect((document.body.find('.pm-switcher-foot button.mod-cta') as HTMLButtonElement).disabled).toBe(true)
+    outside()
     expect(onShow).not.toHaveBeenCalled()
   })
 
-  it('goes to a picked project instead of reporting the checks', () => {
+  it('goes to a project alone on a click and toggles it on a modifier-click or Space', () => {
+    const onPick = vi.fn<(path: string) => void>()
     const onShow = vi.fn<(paths: string[]) => void>()
-    const onPick = vi.fn<(path: string, newTab: boolean) => void>()
-    openProjectSwitcher(document.body.createEl('button'), {
-      projects,
-      shown: new Set(['web']),
-      onShow,
-      onPick,
-      onAllProjects: noop
-    })
-    tick(boxes()[1])
-    document.body.findAll('.pm-switcher-row')[2].click()
-    expect(onPick).toHaveBeenCalledExactlyOnceWith('brand', false)
+    open({ onPick, onShow })
+    const row = (path: string): HTMLButtonElement => line(path).find('.pm-switcher-row') as HTMLButtonElement
+    row('shop').dispatchEvent(new MouseEvent('click', { ctrlKey: true }))
+    expect(box('shop').checked).toBe(true)
+    row('ops').dispatchEvent(new KeyboardEvent('keydown', { key: ' ', bubbles: true }))
+    expect(box('ops').checked).toBe(true)
+    row('ops').click()
+    expect(onPick).toHaveBeenCalledExactlyOnceWith('ops')
     expect(onShow).not.toHaveBeenCalled()
   })
 
-  it('searches every project while the field holds a query', () => {
-    openProjectSwitcher(document.body.createEl('button'), {
-      projects,
-      searchable: [...projects, { path: 'far', title: 'Far away', depth: 0 }],
-      onPick: noop,
-      onAllProjects: noop
-    })
+  it('runs a preset instead of the selection', () => {
+    const onPick = vi.fn<() => void>()
+    const onShow = vi.fn<(paths: string[]) => void>()
+    open({ onShow, presets: [{ label: 'All projects', active: false, onPick }] })
+    tick('ops')
+    ;(document.body.find('.pm-switcher-presets .pm-chip-btn') as HTMLButtonElement).click()
+    expect(onPick).toHaveBeenCalledOnce()
+    expect(onShow).not.toHaveBeenCalled()
+  })
+
+  it('searches titles and folders as a flat list', () => {
+    open()
     const search = document.body.find('input.pm-pop-field') as HTMLInputElement
-    search.value = 'far'
+    search.value = 'internal'
     search.dispatchEvent(new Event('input'))
-    expect(document.body.findAll('.pm-switcher-row').map((row) => row.textContent)).toEqual(['Far away'])
+    expect(rowTitles()).toEqual(['Ops'])
+    search.value = 'shop'
+    search.dispatchEvent(new Event('input'))
+    expect(rowTitles()).toEqual(['Shop'])
+    expect(document.body.find('.pm-switcher-list .pm-collapse-toggle')).toBeNull()
   })
 })

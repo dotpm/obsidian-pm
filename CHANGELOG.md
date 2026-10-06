@@ -51,10 +51,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Table column widths set on a phone now stay on that phone
 - Tasks opened in a tab now navigate like note tabs, with back and forward history
 - Ctrl-clicking a link in a task description now keeps the task editor open
+- The project switcher now also chooses sub-projects, a folder, or all projects for the view
 
 ### Removed
 
 - Removed the "Show subtasks" and "Show description preview" settings in favor of "Fields". Boards keep their choice.
+- Removed the projects button next to the project name in favor of the project switcher
+- Removed "Project" from the filter fields in favor of choosing projects in the project switcher
 
 ### Fixed
 

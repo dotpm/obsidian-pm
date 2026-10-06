@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { makeFakeApp } from '#test/fakeVault'
 import { DEFAULT_SETTINGS, makeTask, type PMSettings, type Project, type StatusConfig } from '@dotpm/core'
 import { ProjectStore } from './ProjectStore'
-import { ProjectScope, resolveScopePaths, scopeKey } from './ProjectScope'
+import { ProjectScope, resolveScopePaths, scopeKey, selectionSpec } from './ProjectScope'
 import { VaultIndex } from './VaultIndex'
 
 const SETTINGS: PMSettings = { ...DEFAULT_SETTINGS }
@@ -25,6 +25,27 @@ describe('scopeKey', () => {
   it('names a picked set by its paths in any order', () => {
     expect(scopeKey({ kind: 'picked', paths: ['B.md', 'A.md'] })).toBe('picked:A.md|B.md')
     expect(scopeKey({ kind: 'picked', paths: ['A.md', 'B.md'] })).toBe('picked:A.md|B.md')
+  })
+})
+
+describe('selectionSpec', () => {
+  const tree: Record<string, string[]> = { 'A.md': ['A1.md', 'A2.md'], 'A1.md': [], 'A2.md': [], 'B.md': [] }
+  const descendantsOf = (path: string): string[] => tree[path] ?? []
+
+  it('names one project alone', () => {
+    expect(selectionSpec(['A.md'], descendantsOf)).toEqual({ kind: 'project', path: 'A.md' })
+  })
+
+  it('names a project with exactly its sub-projects as its subtree, in any order', () => {
+    expect(selectionSpec(['A1.md', 'A.md', 'A2.md'], descendantsOf)).toEqual({ kind: 'subtree', path: 'A.md' })
+  })
+
+  it('picks any other set, keeping its order', () => {
+    expect(selectionSpec(['A.md', 'A1.md'], descendantsOf)).toEqual({ kind: 'picked', paths: ['A.md', 'A1.md'] })
+    expect(selectionSpec(['B.md', 'A.md', 'A1.md', 'A2.md'], descendantsOf)).toEqual({
+      kind: 'picked',
+      paths: ['B.md', 'A.md', 'A1.md', 'A2.md']
+    })
   })
 })
 

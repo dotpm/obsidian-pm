@@ -5,7 +5,8 @@ export interface PopoverOptions {
   host?: HTMLElement
   align?: 'left' | 'right'
   width?: number
-  onClose?: () => void
+  /** `escaped` is set when Escape closed it, the reader backing out. */
+  onClose?: (escaped: boolean) => void
 }
 
 const VIEWPORT_MARGIN = 12
@@ -55,7 +56,7 @@ export class Popover {
   private readonly doc: Document
   private readonly align: 'left' | 'right'
   private readonly width?: number
-  private readonly onCloseCb?: () => void
+  private readonly onCloseCb?: (escaped: boolean) => void
   private opened = false
   private container: HTMLElement | null = null
 
@@ -98,7 +99,7 @@ export class Popover {
     this.win.addEventListener('resize', this.reposition)
   }
 
-  close(): void {
+  close(escaped = false): void {
     if (!this.opened) return
     this.opened = false
     const hadFocus = this.el.contains(this.doc.activeElement)
@@ -110,7 +111,7 @@ export class Popover {
     this.el.remove()
     this.container = null
     if (hadFocus) this.anchor.focus()
-    this.onCloseCb?.()
+    this.onCloseCb?.(escaped)
   }
 
   private findContainer(): HTMLElement | null {
@@ -169,7 +170,7 @@ export class Popover {
   private onKeyDown = (e: KeyboardEvent): void => {
     if (e.key === 'Escape') {
       e.stopPropagation()
-      this.close()
+      this.close(true)
     }
   }
 }
