@@ -57,9 +57,13 @@ const bucketLabel = (bucket: DateBucket): string =>
     'this-month': t('filter.thisMonth')
   })[bucket]
 
-/** The fields the picker offers: the built-in ones, then every custom field not opted out. */
+/**
+ * The fields the picker offers: the built-in ones, then every custom field not opted out.
+ * Project isn't offered, since the project switcher decides which projects are in view; a
+ * project condition a saved view already holds still shows and matches.
+ */
 export function offeredFields(setup: FilterSetup): string[] {
-  const builtins = BUILTIN_FILTER_FIELDS.filter((field) => field !== 'project' || setup.projects.length > 1)
+  const builtins = BUILTIN_FILTER_FIELDS.filter((field) => field !== 'project')
   const custom = setup.ctx.customFields.filter((cf) => cf.filterable !== false).map((cf) => customFilterField(cf.id))
   return [...builtins, ...custom]
 }

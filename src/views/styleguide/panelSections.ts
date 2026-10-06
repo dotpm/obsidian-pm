@@ -165,19 +165,43 @@ export function renderPanelSections({ section, row }: GalleryLayout): void {
 
   const switcher = section('Project switcher panel', 'panel-switcher')
   const switcherProjects: SwitcherProject[] = [
-    { path: 'acme', title: 'Acme', depth: 0, isParent: true },
-    { path: 'web', title: 'Website redesign', icon: 'globe', color: '#5b8def', depth: 0, isCurrent: true },
-    { path: 'brand', title: 'Brand refresh', icon: 'palette', color: '#d96ba0', depth: 1 },
-    { path: 'app', title: 'Mobile app', icon: 'smartphone', color: '#6bb38f', depth: 0 }
+    { path: 'acme', title: 'Acme', folder: 'Clients', taskCount: 12 },
+    {
+      path: 'web',
+      title: 'Website redesign',
+      icon: 'globe',
+      color: '#5b8def',
+      parent: 'acme',
+      folder: 'Clients',
+      taskCount: 318
+    },
+    { path: 'checkout', title: 'Checkout', parent: 'acme', folder: 'Clients', taskCount: 86 },
+    { path: 'help', title: 'Help center', parent: 'web', folder: 'Clients', taskCount: 20 },
+    { path: 'app', title: 'Mobile app', icon: 'smartphone', color: '#6bb38f', folder: 'Internal', taskCount: 42 }
   ]
+  const switcherProps = {
+    projects: switcherProjects,
+    presets: [
+      { label: 'Only Website redesign', active: true, onPick: noop },
+      { label: 'With sub-projects', active: false, onPick: noop },
+      { label: 'Folder: Clients', active: false, onPick: noop },
+      { label: 'All projects', active: false, onPick: noop }
+    ],
+    onPick: noop,
+    onShow: noop
+  }
   renderProjectSwitcherPanel(
-    frame(row(switcher, 'parent, siblings with the current one checked, its children'), 280),
-    { projects: switcherProjects, onPick: noop, onAllProjects: noop },
+    frame(row(switcher, 'one project in view, its branch open and the parent mixed'), 320),
+    { ...switcherProps, selected: ['web'], current: 'web' },
     noop
   )
   renderProjectSwitcherPanel(
-    frame(row(switcher, 'with the projects in view checked, to show several at once'), 280),
-    { projects: switcherProjects, shown: new Set(['web', 'app']), onPick: noop, onAllProjects: noop },
+    frame(row(switcher, 'a hand-picked selection across folders'), 320),
+    {
+      ...switcherProps,
+      presets: switcherProps.presets.map((preset) => ({ ...preset, active: false })),
+      selected: ['web', 'checkout', 'app']
+    },
     noop
   )
 

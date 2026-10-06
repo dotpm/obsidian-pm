@@ -116,7 +116,6 @@ button.pm-crumb:hover {
 .pm-vh--terse .pm-vh-saved-view .pm-chip-btn-label,
 .pm-vh--terse .pm-vh-saved-view .pm-chip-btn-chevron,
 .pm-vh--terse .pm-crumb-mode-label,
-.pm-vh--terse .pm-vh-scope .pm-chip-btn-label,
 .pm-vh--terse .pm-vh-save-view,
 .pm-vh--bare .pm-crumb--mode,
 .pm-vh--bare .pm-crumb-mode-sep,
@@ -198,6 +197,24 @@ button.pm-crumb--current {
 .pm-crumb-title {
   overflow: hidden;
   text-overflow: ellipsis;
+}
+button.pm-crumb--scoped {
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  color: var(--text-accent);
+}
+button.pm-crumb--scoped:hover {
+  background: color-mix(in srgb, var(--interactive-accent) 18%, transparent);
+  color: var(--text-accent);
+}
+.pm-crumb-badge {
+  flex-shrink: 0;
+  padding: 0 5px;
+  border-radius: var(--radius-s);
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
+  font-weight: normal;
+  font-variant-numeric: tabular-nums;
 }
 .pm-chip-btn-icon,
 .pm-chip-btn-chevron,
@@ -443,21 +460,46 @@ button.pm-filter-chip-remove {
   color: var(--text-faint);
 }
 
-.pm-pop-list button.pm-switcher-row {
-  padding-left: calc(9px + var(--pm-depth, 0) * 16px);
+.pm-switcher-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  padding: 2px 4px 6px;
+}
+.pm-switcher-list {
+  max-height: 320px;
+  overflow-y: auto;
 }
 .pm-switcher-line {
   display: flex;
   align-items: center;
+  gap: 2px;
   padding-left: calc(9px + var(--pm-depth, 0) * 16px);
+}
+.pm-switcher-line .pm-collapse-toggle,
+.pm-switcher-gap {
+  flex-shrink: 0;
+  width: 16px;
 }
 .pm-pop-list .pm-switcher-line button.pm-switcher-row {
   flex: 1;
   min-width: 0;
-  padding-left: 8px;
+  padding-left: 4px;
 }
-button.pm-switcher-all {
-  border-radius: 0;
+.pm-switcher-foot {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 4px 0;
+}
+.pm-switcher-summary {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--text-muted);
+  font-size: var(--font-ui-smaller);
 }
 
 .pm-filter-pop-ops {
@@ -466,7 +508,8 @@ button.pm-switcher-all {
   gap: 4px;
   padding: 0 4px 6px;
 }
-.pm-filter-pop-ops button.pm-chip-btn {
+.pm-filter-pop-ops button.pm-chip-btn,
+.pm-switcher-presets button.pm-chip-btn {
   height: 24px;
   padding: 0 8px;
   font-weight: normal;

@@ -47,6 +47,20 @@
   margin: 0;
   flex-shrink: 0;
 }
+input.pm-checkbox:indeterminate {
+  background-color: var(--interactive-accent);
+  border-color: var(--interactive-accent);
+}
+input.pm-checkbox:indeterminate::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 8px;
+  height: 2px;
+  margin: auto;
+  border-radius: 1px;
+  background-color: var(--checkbox-marker-color, var(--text-on-accent));
+}
 
 /* `button` prefix outranks core button chrome, as in pm-prop-add. */
 button.pm-chip-btn,

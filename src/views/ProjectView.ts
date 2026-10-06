@@ -39,7 +39,8 @@ import {
   type ProjectRef,
   resolveScopePaths,
   scopeKey,
-  type ScopeSpec
+  type ScopeSpec,
+  selectionSpec
 } from '#store'
 import {
   boardCandidates,
@@ -110,6 +111,7 @@ interface ProjectViewState {
 
 const MODES: ViewMode[] = ['table', 'gantt', 'kanban']
 const MODE_ICONS: Record<ViewMode, string> = { table: 'table', gantt: 'chart-gantt', kanban: 'kanban' }
+const SCOPE_ICONS = { picked: 'layers', folder: 'folder', vault: 'vault' }
 const modeLabel = (mode: ViewMode): string =>
   ({ table: t('views.table'), gantt: t('views.gantt'), kanban: t('views.kanban') })[mode]
 const granularityLabel = (granularity: GanttGranularity): string => t(`granularity.${granularity}`)
@@ -528,9 +530,7 @@ export class ProjectView extends ItemView {
       name: active?.name ?? t('header.allTasks'),
       saved: !!active,
       dirty: this.viewChanges().length > 0,
-      count: isQueryActive(this.query)
-        ? t('header.shownOf', { shown: counts.shown, total: counts.total })
-        : tn('header.taskCount', counts.total)
+      count: this.countLabel(counts)
     })
     this.filterBar?.setSummary(t('header.shownSummary', { shown: counts.shown, total: counts.total }))
     this.syncFilterEmpty(counts)
@@ -597,6 +597,16 @@ export class ProjectView extends ItemView {
     })
   }
 
+  /** The tasks shown, and how many projects they come from when there are several. */
+  private countLabel(counts: { shown: number; total: number }): string {
+    const tasks = isQueryActive(this.query)
+      ? t('header.shownOf', { shown: counts.shown, total: counts.total })
+      : tn('header.taskCount', counts.total)
+    const scope = this.projectScope
+    if (!scope?.isMulti) return tasks
+    return t('header.scopeCount', { projects: tn('scope.projectCount', scope.projects.length), tasks })
+  }
+
   private taskCounts(): { shown: number; total: number } {
     const scope = this.projectScope
     if (!scope) return { shown: 0, total: 0 }
@@ -609,35 +619,44 @@ export class ProjectView extends ItemView {
 
   private renderContextSlot(parent: HTMLElement, scope: ProjectScope, primary: Project): void {
     const kind = scope.spec.kind
-    const isProject = kind === 'project' || kind === 'subtree'
-    const icons: Record<ScopeSpec['kind'], string> = {
-      project: primary.icon,
-      subtree: primary.icon,
-      folder: 'folder',
-      picked: 'boxes',
-      vault: 'library'
-    }
-    renderBreadcrumb(parent, {
-      icon: icons[kind],
-      color: isProject ? primary.color : undefined,
-      ancestors: isProject
-        ? this.plugin.index.ancestorRefs(primary.filePath).map((ref) => ({
-            title: ref.title,
-            onOpen: safeAsync((newTab: boolean) => this.goTo({ kind: 'project', path: ref.path }, newTab))
-          }))
-        : [],
-      title: scope.label(),
-      onSwitch: isProject || kind === 'picked' ? (anchor) => this.openSwitcher(anchor, scope, primary) : undefined,
+    const count = scope.projects.length
+    const common = {
+      onSwitch: (anchor: HTMLElement) => this.openSwitcher(anchor, scope, primary),
       switchLabel: t('header.switchProject'),
       foldLabel: t('header.parentProjects'),
       mode: {
         icon: MODE_ICONS[this.currentView],
         label: modeLabel(this.currentView),
         tooltip: t('header.viewMode', { mode: modeLabel(this.currentView) }),
-        onOpen: (anchor) => this.showModeMenu(anchor, scope, primary)
+        onOpen: (anchor: HTMLElement) => this.showModeMenu(anchor, scope, primary)
       }
+    }
+    if (kind === 'project' || kind === 'subtree') {
+      renderBreadcrumb(parent, {
+        ...common,
+        icon: primary.icon,
+        color: primary.color,
+        ancestors: this.plugin.index.ancestorRefs(primary.filePath).map((ref) => ({
+          title: ref.title,
+          onOpen: safeAsync((newTab: boolean) => this.goTo({ kind: 'project', path: ref.path }, newTab))
+        })),
+        title: primary.title,
+        badge: count > 1 ? `+${count - 1}` : undefined
+      })
+      return
+    }
+    const named = kind === 'picked' ? scope.projects.slice(0, 2) : []
+    let title = t('scope.all')
+    if (kind === 'picked') title = named.map((project) => project.title).join(', ')
+    else if (scope.spec.kind === 'folder') title = scope.spec.path || t('scope.vault')
+    renderBreadcrumb(parent, {
+      ...common,
+      icon: SCOPE_ICONS[kind],
+      ancestors: [],
+      title,
+      badge: kind === 'picked' && count > named.length ? `+${count - named.length}` : undefined,
+      scoped: true
     })
-    this.renderScopeButton(parent, scope, primary)
   }
 
   private showModeMenu(anchor: HTMLElement, scope: ProjectScope, primary: Project): void {
@@ -676,86 +695,62 @@ export class ProjectView extends ItemView {
 
   private openSwitcher(anchor: HTMLElement, scope: ProjectScope, primary: Project): void {
     const index = this.plugin.index
-    const kind = scope.spec.kind
-    const current = scope.projects.find((project) => project.filePath === this.anchorPath) ?? primary
-    const switcherProject = (ref: ProjectRef, depth: number): SwitcherProject => ({
-      path: ref.path,
-      title: ref.title,
-      icon: ref.icon,
-      color: ref.color,
-      depth
-    })
-    const parent = index.parentOf(current.filePath)
-    const siblings = parent ? index.childRefs(parent.path) : index.rootRefs()
+    const spec = scope.spec
     const projects: SwitcherProject[] = []
-    if (parent) {
-      projects.push({ path: parent.path, title: parent.title, depth: 0, isParent: true })
+    const add = (ref: ProjectRef, parent: string | undefined, folder: string): void => {
+      projects.push({
+        path: ref.path,
+        title: ref.title,
+        icon: ref.icon,
+        color: ref.color,
+        parent,
+        folder,
+        taskCount: index.counts(ref).total
+      })
+      for (const child of index.childRefs(ref.path)) add(child, ref.path, folder)
     }
-    for (const ref of siblings) {
-      const isAnchor = ref.path === current.filePath
-      projects.push({ ...switcherProject(ref, 0), isCurrent: isAnchor && kind !== 'picked' })
-      if (!isAnchor) continue
-      for (const child of index.childRefs(ref.path)) projects.push(switcherProject(child, 1))
-    }
-    const shown = kind === 'subtree' ? undefined : new Set(scope.projects.map((project) => project.filePath))
-    for (const project of scope.projects) {
-      if (kind !== 'picked' || projects.some((entry) => entry.path === project.filePath)) continue
-      const ref = index.projectRef(project.filePath)
-      if (ref) projects.push(switcherProject(ref, 0))
-    }
-    const goToKind = kind === 'subtree' ? 'subtree' : 'project'
-    openProjectSwitcher(anchor, {
-      projects,
-      searchable: index.projectRefs().map((ref) => switcherProject(ref, 0)),
-      shown,
-      onPick: safeAsync((path: string, newTab: boolean) => this.goTo({ kind: goToKind, path }, newTab)),
-      onShow: safeAsync((paths: string[]) =>
-        this.goTo(paths.length === 1 ? { kind: 'project', path: paths[0] } : { kind: 'picked', paths }, false)
-      ),
-      onAllProjects: safeAsync(() => this.plugin.router.openDashboard())
-    })
-  }
+    const roots = index.rootRefs().map((ref) => ({ ref, folder: this.containingFolder(ref.path) }))
+    roots.sort((a, b) => a.folder.localeCompare(b.folder))
+    for (const { ref, folder } of roots) add(ref, undefined, folder)
 
-  private scopeOptions(scope: ProjectScope, primary: Project): { label: string; spec: ScopeSpec }[] {
-    const anchor = scope.projects.find((project) => project.filePath === this.anchorPath) ?? primary
-    const projectPath =
-      scope.spec.kind === 'project' || scope.spec.kind === 'subtree' ? scope.spec.path : anchor.filePath
-    // A project owns its folder, so "the containing folder" is the one holding that folder.
-    const own = projectFolderOf(this.app, projectPath)
-    const folder = folderOf(own ?? projectPath)
-    return [
-      { label: t('scope.thisProject'), spec: { kind: 'project', path: projectPath } },
-      { label: t('scope.subtree'), spec: { kind: 'subtree', path: projectPath } },
+    const anchorProject = scope.projects.find((project) => project.filePath === this.anchorPath) ?? primary
+    const path = spec.kind === 'project' || spec.kind === 'subtree' ? spec.path : anchorProject.filePath
+    const folder = this.containingFolder(path)
+    const options: { label: string; spec: ScopeSpec }[] = [
+      {
+        label: t('scope.only', { title: index.projectRef(path)?.title ?? anchorProject.title }),
+        spec: { kind: 'project', path }
+      }
+    ]
+    if (index.childRefs(path).length) options.push({ label: t('scope.subtree'), spec: { kind: 'subtree', path } })
+    options.push(
       {
         label: folder ? t('scope.folder', { folder }) : t('scope.vaultFolder'),
         spec: { kind: 'folder', path: folder }
       },
       { label: t('scope.all'), spec: { kind: 'vault' } }
-    ]
+    )
+
+    openProjectSwitcher(anchor, {
+      projects,
+      selected: scope.projects.map((project) => project.filePath),
+      current: spec.kind === 'project' ? spec.path : undefined,
+      presets: options.map((option) => ({
+        label: option.label,
+        active: scope.key === scopeKey(option.spec),
+        onPick: safeAsync(() => this.goTo(option.spec, false))
+      })),
+      onPick: safeAsync((picked: string) => this.goTo({ kind: 'project', path: picked }, false)),
+      onShow: safeAsync((paths: string[]) => {
+        const descendantsOf = (of: string): string[] => index.descendantRefs(of).map((ref) => ref.path)
+        return this.goTo(selectionSpec(paths, descendantsOf), false)
+      })
+    })
   }
 
-  private renderScopeButton(parent: HTMLElement, scope: ProjectScope, primary: Project): void {
-    const options = this.scopeOptions(scope, primary)
-    const current = options.find((option) => scope.key === scopeKey(option.spec))
-    const button = new ChipButton(parent)
-      .setIcon('layers')
-      .setLabel(scope.spec.kind === 'project' ? '' : tn('scope.projectCount', scope.projects.length))
-      .setActive(scope.spec.kind !== 'project')
-      .setAriaLabel(t('scope.change'))
-      .setTooltip(t('header.scope', { label: current?.label ?? scope.label() }))
-    button.el.addClass('pm-vh-scope')
-    button.onClick(() => {
-      const menu = new Menu()
-      for (const option of options) {
-        menu.addItem((item) =>
-          item
-            .setTitle(option.label)
-            .setChecked(scope.key === scopeKey(option.spec))
-            .onClick(safeAsync(() => this.goTo(option.spec, false)))
-        )
-      }
-      showMenuBelow(menu, button.el)
-    })
+  /** The folder a project sits in. A project owns its folder, so that is the one holding it. */
+  private containingFolder(projectPath: string): string {
+    return folderOf(projectFolderOf(this.app, projectPath) ?? projectPath)
   }
 
   private renderViewSlot(parent: HTMLElement): void {

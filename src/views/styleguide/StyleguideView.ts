@@ -249,9 +249,10 @@ export class StyleguideView extends ItemView {
 
   private renderCheckbox(): void {
     const sec = this.section('Checkbox', 'checkbox')
-    const row = this.row(sec, 'unchecked / checked')
+    const row = this.row(sec, 'unchecked / checked / mixed')
     new Checkbox(row).setAriaLabel('Unchecked example').onChange(noop)
     new Checkbox(row).setChecked(true).setAriaLabel('Checked example').onChange(noop)
+    new Checkbox(row).setIndeterminate(true).setAriaLabel('Mixed example').onChange(noop)
   }
 
   private renderEmptyState(): void {
@@ -713,7 +714,6 @@ export class StyleguideView extends ItemView {
       foldLabel: 'Parent projects',
       mode: { icon: 'table', label: 'Table', tooltip: 'View mode: Table', onOpen: noop }
     })
-    new ChipButton(header.context).setIcon('layers').setLabel('').setAriaLabel('Scope')
     new ChipButton(header.view).setIcon('bookmark').setLabel('Sprint 14').setChevron(true)
     header.view.createSpan({ cls: 'pm-vh-count', text: '42 of 318' })
     new SearchBox(header.query, {
