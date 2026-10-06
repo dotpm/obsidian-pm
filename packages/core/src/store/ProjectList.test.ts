@@ -5,6 +5,7 @@ import {
   countProjectFilters,
   projectProgress,
   projectTagCounts,
+  tidyProjectFields,
   type ProjectListItem
 } from './ProjectList'
 
@@ -119,5 +120,18 @@ describe('project helpers', () => {
       { tag: 'client', count: 3 },
       { tag: 'web', count: 1 }
     ])
+  })
+})
+
+describe('tidyProjectFields', () => {
+  it('drops the list once every column shows in the default order', () => {
+    expect(tidyProjectFields(['progress', 'tasks', 'members', 'due'])).toBeUndefined()
+    expect(tidyProjectFields(undefined)).toBeUndefined()
+  })
+
+  it('keeps a reordered or shortened list', () => {
+    expect(tidyProjectFields(['due', 'progress', 'tasks', 'members'])).toEqual(['due', 'progress', 'tasks', 'members'])
+    expect(tidyProjectFields(['progress', 'due'])).toEqual(['progress', 'due'])
+    expect(tidyProjectFields([])).toEqual([])
   })
 })

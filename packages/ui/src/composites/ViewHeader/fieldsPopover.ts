@@ -6,13 +6,15 @@ import {
   type FieldList,
   type ViewFields,
   type ViewMode,
+  availableFields,
   columnWidth,
   hiddenFields,
   isLockedField,
   shownFields,
   t,
   tidyFields,
-  viewFieldLabel
+  viewFieldLabel,
+  withFieldShown
 } from '@dotpm/core'
 import { renderPopHead } from '../popoverParts'
 import { renderVisibilityList } from '../visibilityList'
@@ -64,7 +66,9 @@ export function renderFieldsPanel(parent: HTMLElement, props: FieldsPopoverProps
   const label = (id: string): string => viewFieldLabel(id, catalog.customFields)
   const toggle = (id: string): void => {
     const shown = shownFields(fields, mode, catalog)
-    list().visible = shown.includes(id) ? shown.filter((field) => field !== id) : [...shown, id]
+    list().visible = shown.includes(id)
+      ? shown.filter((field) => field !== id)
+      : withFieldShown(shown, id, availableFields(mode, catalog))
     changed()
   }
 

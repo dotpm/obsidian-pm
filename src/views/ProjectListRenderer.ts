@@ -3,6 +3,7 @@ import type PMPlugin from '#main'
 import { folderOf, projectFolderOf, type ProjectRef } from '#store'
 import {
   type ProjectGroupBy,
+  type ProjectListField,
   type ProjectListGroup,
   type ProjectListItem,
   type ProjectListRow,
@@ -10,22 +11,21 @@ import {
   dateUrgency,
   t
 } from '@dotpm/core'
-import { safeAsync, CollapseToggle, ProjectRow } from '@dotpm/ui'
+import { safeAsync, CollapseToggle, ProjectRow, projectFieldLabel } from '@dotpm/ui'
 import { linkedRefs } from './linkedRefs'
 
-const columns = (): { label: string; cls?: string }[] => [
+const columns = (fields: ProjectListField[]): { label: string; cls?: string }[] => [
   { label: '' },
   { label: t('columns.project'), cls: 'pm-project-th-title' },
-  { label: t('columns.progress') },
-  { label: t('columns.tasks') },
-  { label: t('columns.members') },
-  { label: t('columns.due') },
+  ...fields.map((field) => ({ label: projectFieldLabel(field) })),
   { label: '' }
 ]
 
 export interface ProjectListContext {
   plugin: PMPlugin
   contentEl: HTMLElement
+  /** The columns after the title, in order. */
+  fields: ProjectListField[]
   openProject: (path: string) => Promise<void>
   /** Draws the list again after a row changed something about it. */
   redraw: () => void
@@ -65,14 +65,15 @@ export function renderProjectTable(
   wrapper.setAttr('data-borders', ctx.plugin.settings.lineBorders)
   const table = wrapper.createEl('table', { cls: 'pm-table pm-project-table' })
   const headRow = table.createEl('thead').createEl('tr')
-  for (const column of columns()) headRow.createEl('th', { text: column.label, cls: column.cls })
+  const header = columns(ctx.fields)
+  for (const column of header) headRow.createEl('th', { text: column.label, cls: column.cls })
   const tbody = table.createEl('tbody')
   for (const group of groups) {
     const collapsed = group.key !== null && collapsedGroups.has(group.key)
     if (group.key !== null) {
       const key = group.key
       const row = tbody.createEl('tr', { cls: 'pm-project-group-row' })
-      const cell = row.createEl('td', { attr: { colspan: String(columns().length) } })
+      const cell = row.createEl('td', { attr: { colspan: String(header.length) } })
       const inner = cell.createDiv('pm-project-group')
       new CollapseToggle(inner, {
         collapsed,
@@ -108,6 +109,7 @@ function renderRow(ctx: ProjectListContext, tbody: HTMLElement, row: ProjectList
     treeGuides: ctx.plugin.settings.showSubtreeConnections ? row.guides : null,
     isLastChild: row.isLastChild,
     childCount: row.childCount,
+    fields: ctx.fields,
     collapsed: row.collapsed,
     archived: index.isArchived(item.path),
     tasksDone: item.done,

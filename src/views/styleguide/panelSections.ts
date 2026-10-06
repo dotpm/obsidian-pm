@@ -21,6 +21,7 @@ import {
   renderFilterPanel,
   renderGroupPanel,
   renderNonWorkingDaysPanel,
+  renderProjectFieldsPanel,
   renderProjectFilterPanel,
   renderProjectSwitcherPanel,
   renderSavedViewsPanel,
@@ -249,6 +250,14 @@ export function renderPanelSections({ section, row }: GalleryLayout): void {
     ],
     onChange: noop
   })
+
+  const projectFields = section('Project list fields panel', 'panel-project-fields')
+  const projectFieldsRow = row(projectFields, 'every column / due first, members hidden')
+  renderProjectFieldsPanel(frame(projectFieldsRow, 260), {
+    shown: ['progress', 'tasks', 'members', 'due'],
+    onChange: noop
+  })
+  renderProjectFieldsPanel(frame(projectFieldsRow, 260), { shown: ['due', 'progress', 'tasks'], onChange: noop })
 
   if (activeDocument.activeElement instanceof HTMLElement) activeDocument.activeElement.blur()
 }

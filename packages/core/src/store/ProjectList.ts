@@ -1,4 +1,12 @@
-import type { ProjectListFilter, ProjectListState, ProjectProgress, ProjectSortRule } from '../types'
+import {
+  type ProjectListField,
+  type ProjectListFilter,
+  type ProjectListState,
+  type ProjectProgress,
+  type ProjectSortRule,
+  PROJECT_LIST_FIELDS
+} from '../types'
+import { sameValue } from './ViewState'
 
 /**
  * One project as the project list sees it, with its sub-projects. `done`, `total`,
@@ -155,4 +163,9 @@ export function arrangeProjects(
     })
     .filter((group) => group.rows.length)
   return { groups, shown: hit.size, total }
+}
+
+/** The columns as the project list keeps them: undefined once every column shows in the default order. */
+export function tidyProjectFields(fields: readonly ProjectListField[] | undefined): ProjectListField[] | undefined {
+  return !fields || sameValue(fields, PROJECT_LIST_FIELDS) ? undefined : [...fields]
 }
