@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.6.0] - 2026-10-06
+
+### Highlights
+
+- **A new header:** Switch projects, search, filter on any field, sort by several keys and pick the fields you see, all in one place. Set it up once, save it as a view, and come back to it in one click.
+- **A board per team:** Group the board by assignee, tag, or a custom field like "team", and see who is overloaded at a glance. ([#392](https://github.com/dotpm/obsidian-pm/issues/392))
+- **Filter by what you track:** "Art tasks due this month with no assignee" is one filter now, custom fields included. ([#216](https://github.com/dotpm/obsidian-pm/issues/216))
+- **Sort like you think:** Priority, then due date, then title, or... the other way around. ([#196](https://github.com/dotpm/obsidian-pm/issues/196))
+- **Only the fields you use:** Working solo? Hide the assignee column, resize the rest, and choose what a card shows. ([#217](https://github.com/dotpm/obsidian-pm/issues/217))
+- **A timeline without weekends:** Zoom from days to years with Ctrl+scroll, and drop weekends and holidays from the chart. ([#338](https://github.com/dotpm/obsidian-pm/issues/338))
+- **Fits a phone:** The views now adapt to small screens, so planning on the go actually works.
+
 ### Added
 
 - Added "Open as note" to the project overview and the tab's "More options" menu

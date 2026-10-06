@@ -2,7 +2,7 @@
 
 # dotpm
 
-**Project management inside Obsidian. Table, Gantt and Kanban over plain Markdown notes.**
+**Project management inside Obsidian. Table, Gantt timeline and Kanban board views over plain Markdown notes.**
 
 [![Obsidian community plugin](https://img.shields.io/badge/Obsidian-community%20plugin-7c3aed?logo=obsidian&logoColor=white)](https://obsidian.md/plugins?id=project-manager)
 [![Downloads](https://img.shields.io/github/downloads/dotpm/obsidian-pm/total?color=2ea44f)](https://github.com/dotpm/obsidian-pm/releases)
@@ -19,7 +19,7 @@ English | [简体中文](README.zh-CN.md)
 
 Project tools keep the plan in one app and the thinking about it in another. dotpm keeps both in the vault. A project is a note, a task is a note, and the table, the timeline and the board are three ways of looking at the same files.
 
-- Scheduling, not checkboxes. Tasks have start and due dates, dependencies drawn as arrows, and a Gantt chart that moves dependents when a blocker slips.
+- Scheduling, not checkboxes. Tasks have start and due dates, dependencies drawn as arrows, and a Gantt timeline that moves dependents when a blocker slips.
 - Tasks are full notes. Each has a body, backlinks, tags and properties, so search, the graph, templates and Dataview all work on them.
 - Agents and scripts can work the board. A local HTTP and MCP server and a command line client edit the same notes the views do, so a coding agent can pick up a task, update it and close it.
 - Nothing to sign up for. Projects sync with whatever already syncs the vault, and a project folder can be diffed and reviewed in git like any other code.
@@ -92,7 +92,7 @@ One column per status, or per priority, assignee, tag, type or custom field. Dra
 **Organizing**
 
 - Sub-projects, with an overview page per project: progress, milestones, sub-projects, properties
-- One view over a project, its subtree, a folder or the whole vault
+- One view over a project, its subtree, a folder, the whole vault, or projects picked by hand
 - Archive a project that is done or no longer relevant; its sub-projects go with it
 - Filters on any field, custom fields included: is, is not, contains, between, date buckets and ranges
 - Saved views: named filter and sort combinations, one of them starred as the view a project opens with
