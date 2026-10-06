@@ -102,9 +102,5 @@ export function renderGroupPanel(parent: HTMLElement, props: GroupPopoverProps):
 }
 
 /** The group panel in a popover under `anchor`. */
-export function openGroupPopover(anchor: HTMLElement, props: GroupPopoverProps): Popover {
-  const pop = new Popover({ anchor, width: 300 })
-  renderGroupPanel(pop.contentEl, props)
-  pop.open()
-  return pop
-}
+export const openGroupPopover = (anchor: HTMLElement, props: GroupPopoverProps): Popover =>
+  Popover.show({ anchor, width: 300 }, (el) => renderGroupPanel(el, props))

@@ -184,9 +184,7 @@ export function renderSavedViewsPanel(parent: HTMLElement, props: SavedViewsProp
 
 /** The saved views in a popover under `anchor`, with the search field focused when there is one. */
 export function openSavedViewsPopover(anchor: HTMLElement, props: SavedViewsProps): Popover {
-  const pop = new Popover({ anchor, width: 300 })
-  renderSavedViewsPanel(pop.contentEl, props, () => pop.close())
-  pop.open()
+  const pop = Popover.show({ anchor, width: 300 }, (el, close) => renderSavedViewsPanel(el, props, close))
   pop.contentEl.find('input.pm-pop-field')?.focus()
   return pop
 }

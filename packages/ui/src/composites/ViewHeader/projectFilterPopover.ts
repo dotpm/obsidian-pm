@@ -86,9 +86,5 @@ export function renderProjectFilterPanel(parent: HTMLElement, props: ProjectFilt
 }
 
 /** The project filter panel in a popover under `anchor`. */
-export function openProjectFilterPopover(anchor: HTMLElement, props: ProjectFilterProps): Popover {
-  const pop = new Popover({ anchor, width: 260 })
-  renderProjectFilterPanel(pop.contentEl, props)
-  pop.open()
-  return pop
-}
+export const openProjectFilterPopover = (anchor: HTMLElement, props: ProjectFilterProps): Popover =>
+  Popover.show({ anchor, width: 260 }, (el) => renderProjectFilterPanel(el, props))

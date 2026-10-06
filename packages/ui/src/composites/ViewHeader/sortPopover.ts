@@ -140,26 +140,34 @@ export function renderSortPanel<K extends string>(parent: HTMLElement, props: So
   render()
 }
 
-/**
- * Shows the sort on the header's Sort button: the first key's name, its direction as the icon,
- * and "+N" for the keys after it. `first` is undefined while the default sort applies.
- */
-export function syncSortButton(
-  button: ChipButton,
-  first: { label: string; dir: SortDir } | undefined,
-  keys: number
-): void {
+export interface SortSummary {
+  /** The first key's field. */
+  label: string
+  dir: SortDir
+  /** "+N" for the keys after the first, or empty. */
+  more: string
+}
+
+/** The sort as the header names it, or undefined while no known key applies. */
+export function summarizeSort<K extends string>(
+  fields: SortField<K>[],
+  sort: { key: K; dir: SortDir }[]
+): SortSummary | undefined {
+  const [first] = sort
+  const field = first && fields.find((option) => option.id === first.key)
+  if (!field) return undefined
+  return { label: field.label, dir: first.dir, more: sort.length > 1 ? `+${sort.length - 1}` : '' }
+}
+
+/** Shows the sort on the header's Sort button: the first key's name, its direction as the icon, and "+N". */
+export function syncSortButton(button: ChipButton, summary: SortSummary | undefined): void {
   button
-    .setLabel(first?.label ?? t('header.sort'))
-    .setIcon(!first ? 'arrow-down-up' : first.dir === 'asc' ? 'arrow-up-narrow-wide' : 'arrow-down-wide-narrow')
-    .setBadge(first && keys > 1 ? `+${keys - 1}` : '')
-    .setActive(!!first)
+    .setLabel(summary?.label ?? t('header.sort'))
+    .setIcon(!summary ? 'arrow-down-up' : summary.dir === 'asc' ? 'arrow-up-narrow-wide' : 'arrow-down-wide-narrow')
+    .setBadge(summary?.more ?? '')
+    .setActive(!!summary)
 }
 
 /** The sort panel in a popover under `anchor`. */
-export function openSortPopover<K extends string>(anchor: HTMLElement, props: SortPopoverProps<K>): Popover {
-  const pop = new Popover({ anchor, width: 340 })
-  renderSortPanel(pop.contentEl, props)
-  pop.open()
-  return pop
-}
+export const openSortPopover = <K extends string>(anchor: HTMLElement, props: SortPopoverProps<K>): Popover =>
+  Popover.show({ anchor, width: 340 }, (el) => renderSortPanel(el, props))
