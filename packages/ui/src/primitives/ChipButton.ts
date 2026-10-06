@@ -30,8 +30,8 @@ export class ChipButton {
     return this
   }
 
-  /** A count or short value after the label. Empty removes it. */
-  setBadge(text: string): this {
+  /** A count or short value after the label. Empty or 0 removes it. */
+  setBadge(text: string | number): this {
     if (!text) {
       this.badgeEl?.remove()
       this.badgeEl = null
@@ -39,7 +39,7 @@ export class ChipButton {
       return this
     }
     this.badgeEl ??= this.el.createSpan('pm-chip-btn-badge')
-    this.badgeEl.setText(text)
+    this.badgeEl.setText(String(text))
     this.order()
     return this
   }

@@ -73,6 +73,14 @@ export class Popover {
     this.contentEl = this.el.createDiv('pm-pop-body')
   }
 
+  /** Opens a popover whose content `fill` draws, handing it the way to close the popover. */
+  static show(opts: PopoverOptions, fill: (contentEl: HTMLElement, close: () => void) => void): Popover {
+    const pop = new Popover(opts)
+    fill(pop.contentEl, () => pop.close())
+    pop.open()
+    return pop
+  }
+
   get isOpen(): boolean {
     return this.opened
   }

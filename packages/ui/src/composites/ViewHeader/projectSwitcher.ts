@@ -58,9 +58,7 @@ export function renderProjectSwitcherPanel(parent: HTMLElement, props: ProjectSw
 
 /** The switcher in a popover under `anchor`, with its search field focused. */
 export function openProjectSwitcher(anchor: HTMLElement, props: ProjectSwitcherProps): Popover {
-  const pop = new Popover({ anchor, width: 280 })
-  renderProjectSwitcherPanel(pop.contentEl, props, () => pop.close())
-  pop.open()
+  const pop = Popover.show({ anchor, width: 280 }, (el, close) => renderProjectSwitcherPanel(el, props, close))
   pop.contentEl.find('input.pm-pop-field')?.focus()
   return pop
 }

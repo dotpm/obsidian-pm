@@ -133,9 +133,5 @@ export function renderFieldsPanel(parent: HTMLElement, props: FieldsPopoverProps
 }
 
 /** The fields panel in a popover under `anchor`. */
-export function openFieldsPopover(anchor: HTMLElement, props: FieldsPopoverProps): Popover {
-  const pop = new Popover({ anchor, width: 320 })
-  renderFieldsPanel(pop.contentEl, props)
-  pop.open()
-  return pop
-}
+export const openFieldsPopover = (anchor: HTMLElement, props: FieldsPopoverProps): Popover =>
+  Popover.show({ anchor, width: 320 }, (el) => renderFieldsPanel(el, props))

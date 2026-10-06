@@ -5,8 +5,8 @@ import { Popover } from '#primitives/Popover'
 export interface SheetTab {
   id: string
   label: string
-  /** A badge after the label, asked again after every change ("5" filters). Empty hides it. */
-  badge?: () => string
+  /** A badge after the label, asked again after every change ("5" filters). Empty or 0 hides it. */
+  badge?: () => string | number
   /** Draws the tab's panel; the panel calls `changed` after each edit it applies. */
   render: (parent: HTMLElement, changed: () => void) => void
 }
@@ -74,9 +74,5 @@ export function renderTuneSheetPanel(parent: HTMLElement, props: TuneSheetProps,
 }
 
 /** The sheet in a popover, which a phone draws as a bottom sheet. */
-export function openTuneSheet(anchor: HTMLElement, props: TuneSheetProps): Popover {
-  const pop = new Popover({ anchor, align: 'right', width: 360 })
-  renderTuneSheetPanel(pop.contentEl, props, () => pop.close())
-  pop.open()
-  return pop
-}
+export const openTuneSheet = (anchor: HTMLElement, props: TuneSheetProps): Popover =>
+  Popover.show({ anchor, align: 'right', width: 360 }, (el, close) => renderTuneSheetPanel(el, props, close))

@@ -72,9 +72,5 @@ export function renderNonWorkingDaysPanel(parent: HTMLElement, props: NonWorking
 }
 
 /** The non-working days panel in a popover under `anchor`. */
-export function openNonWorkingDaysPopover(anchor: HTMLElement, props: NonWorkingDaysProps): Popover {
-  const pop = new Popover({ anchor, width: 280 })
-  renderNonWorkingDaysPanel(pop.contentEl, props)
-  pop.open()
-  return pop
-}
+export const openNonWorkingDaysPopover = (anchor: HTMLElement, props: NonWorkingDaysProps): Popover =>
+  Popover.show({ anchor, width: 280 }, (el) => renderNonWorkingDaysPanel(el, props))

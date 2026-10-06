@@ -50,9 +50,5 @@ export function renderTunePanel(
 }
 
 /** The Tune list in a popover under `anchor`, which each row's own control then opens at. */
-export function openTunePopover(anchor: HTMLElement, sections: TuneItem[][]): Popover {
-  const pop = new Popover({ anchor, align: 'right', width: 240 })
-  renderTunePanel(pop.contentEl, sections, () => pop.close(), anchor)
-  pop.open()
-  return pop
-}
+export const openTunePopover = (anchor: HTMLElement, sections: TuneItem[][]): Popover =>
+  Popover.show({ anchor, align: 'right', width: 240 }, (el, close) => renderTunePanel(el, sections, close, anchor))

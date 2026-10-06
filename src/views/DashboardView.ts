@@ -43,6 +43,7 @@ import {
   type SortField,
   type TuneItem,
   SavedViewSlot,
+  summarizeSort,
   syncSortButton
 } from '@dotpm/ui'
 import { openProjectCreate } from '#ui/ModalFactory'
@@ -147,7 +148,6 @@ export class DashboardView extends ItemView {
 
   private renderHeader(): void {
     this.header?.destroy()
-    this.headerEl.empty()
     const header = new ViewHeader(this.headerEl)
     this.header = header
     renderBreadcrumb(header.context, {
@@ -203,13 +203,10 @@ export class DashboardView extends ItemView {
   }
 
   private openFilter(anchor: HTMLElement): void {
-    openProjectFilterPopover(
-      anchor,
-      this.filterProps(() => {})
-    )
+    openProjectFilterPopover(anchor, this.filterProps())
   }
 
-  private filterProps(after: () => void): ProjectFilterProps {
+  private filterProps(after?: () => void): ProjectFilterProps {
     const all = allProjectItems(this.items)
     const progress: Record<ProjectProgress, number> = { 'not-started': 0, 'in-progress': 0, complete: 0 }
     for (const item of all) progress[projectProgress(item)]++
@@ -219,7 +216,7 @@ export class DashboardView extends ItemView {
       tags: projectTagCounts(this.items),
       onChange: () => {
         this.changed()
-        after()
+        after?.()
       }
     }
   }
@@ -233,25 +230,22 @@ export class DashboardView extends ItemView {
   }
 
   private openSort(anchor: HTMLElement): void {
-    openSortPopover(
-      anchor,
-      this.sortProps(() => {})
-    )
+    openSortPopover(anchor, this.sortProps())
   }
 
-  private sortProps(after: () => void): SortPopoverProps<ProjectSortKey> {
+  private sortProps(after?: () => void): SortPopoverProps<ProjectSortKey> {
+    const sorted = (): void => {
+      this.changed()
+      after?.()
+    }
     return {
       fields: sortFields(),
       sort: this.state.sort,
-      onChange: () => {
-        this.changed()
-        after()
-      },
+      onChange: sorted,
       onReset: () => {
         const { sort } = this.state
         sort.splice(0, sort.length, ...structuredClone(this.activeView()?.sort ?? []))
-        this.changed()
-        after()
+        sorted()
       }
     }
   }
@@ -263,10 +257,7 @@ export class DashboardView extends ItemView {
         {
           id: 'filter',
           label: t('header.filter'),
-          badge: () => {
-            const count = countProjectFilters(this.state.filter)
-            return count ? String(count) : ''
-          },
+          badge: () => countProjectFilters(this.state.filter),
           render: (parent, changed) =>
             renderProjectFilterPanel(parent, { ...this.filterProps(changed), showClear: false })
         },
@@ -338,17 +329,11 @@ export class DashboardView extends ItemView {
     showMenuBelow(menu, anchor)
   }
 
-  private sortLabel(): string {
-    const [first] = this.state.sort
-    const field = first ? sortFields().find((f) => f.id === first.key) : undefined
-    if (!field) return ''
-    return this.state.sort.length > 1 ? `${field.label} +${this.state.sort.length - 1}` : field.label
-  }
-
   /** The query controls as the Tune button lists them in a narrow header. */
   private tuneItems(): TuneItem[][] {
     const { settings, index } = this.plugin
     const filters = countProjectFilters(this.state.filter)
+    const sort = summarizeSort(sortFields(), this.state.sort)
     const items: TuneItem[] = [
       {
         icon: 'search',
@@ -375,7 +360,7 @@ export class DashboardView extends ItemView {
       {
         icon: 'arrow-down-up',
         label: t('header.sort'),
-        state: this.sortLabel(),
+        state: sort ? `${sort.label} ${sort.more}`.trim() : '',
         onOpen: (anchor) => this.openSort(anchor)
       },
       {
@@ -458,19 +443,13 @@ export class DashboardView extends ItemView {
         : tn('count.projects', total)
     })
     const filters = countProjectFilters(this.state.filter)
-    this.filterButton?.setBadge(filters ? String(filters) : '').setActive(filters > 0)
+    this.filterButton?.setBadge(filters).setActive(filters > 0)
     this.searchBox?.setValue(this.text)
-    this.header?.tune
-      .setBadge(filters ? String(filters) : '')
-      .setActive(isProjectQueryActive(this.state.filter, this.text))
+    this.header?.tune.setBadge(filters).setActive(isProjectQueryActive(this.state.filter, this.text))
     const hasArchived = index.projectRefs(true).length > index.projectRefs().length
     this.archivedButton?.setActive(settings.showArchivedProjects)
     this.archivedButton?.el.toggleClass('pm-hidden', !hasArchived && !settings.showArchivedProjects)
-    const [first] = this.state.sort
-    const field = first ? sortFields().find((f) => f.id === first.key) : undefined
-    if (this.sortButton) {
-      syncSortButton(this.sortButton, field && { label: field.label, dir: first.dir }, this.state.sort.length)
-    }
+    if (this.sortButton) syncSortButton(this.sortButton, summarizeSort(sortFields(), this.state.sort))
     const grouped = this.state.group !== 'none'
     this.groupButton?.setLabel(grouped ? groupLabel(this.state.group) : t('header.group')).setActive(grouped)
     this.header?.fit()

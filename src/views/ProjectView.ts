@@ -84,7 +84,9 @@ import {
   type SwitcherProject,
   type TuneItem,
   SavedViewSlot,
-  syncSortButton
+  summarizeSort,
+  syncSortButton,
+  type SortSummary
 } from '@dotpm/ui'
 import type { SubView } from './SubView'
 import { TableView } from './table/TableView'
@@ -502,7 +504,6 @@ export class ProjectView extends ItemView {
     const primary = scope?.primary
     if (!scope || !primary) return
     this.header?.destroy()
-    this.headerEl.empty()
     const header = new ViewHeader(this.headerEl)
     this.header = header
     this.renderContextSlot(header.context, scope, primary)
@@ -533,9 +534,9 @@ export class ProjectView extends ItemView {
     this.filterBar?.setSummary(t('header.shownSummary', { shown: counts.shown, total: counts.total }))
     this.syncFilterEmpty(counts)
     const filters = countActiveFilters(this.query.filter)
-    this.filterButton?.setBadge(filters ? String(filters) : '').setActive(filters > 0)
+    this.filterButton?.setBadge(filters).setActive(filters > 0)
     this.searchBox?.setValue(this.query.text)
-    this.header?.tune.setBadge(filters ? String(filters) : '').setActive(isQueryActive(this.query))
+    this.header?.tune.setBadge(filters).setActive(isQueryActive(this.query))
     if (this.groupButton) {
       const setup = this.groupSetup()
       const hidden = this.boardColumnsNow().filter((column) => column.hidden).length
@@ -553,11 +554,7 @@ export class ProjectView extends ItemView {
     }
     this.zoomStepper?.setValue(`${this.zoom}%`, this.zoom <= MIN_ZOOM, this.zoom >= MAX_ZOOM)
     this.daysButton?.setActive(!!this.nonWorkingDays.weekends || !!this.nonWorkingDays.holidays)
-    if (this.sortButton) {
-      const [first] = this.sort
-      const { label } = this.sortSummary()
-      syncSortButton(this.sortButton, label ? { label, dir: first.dir } : undefined, this.sort.length)
-    }
+    if (this.sortButton) syncSortButton(this.sortButton, this.sortSummary())
     this.header?.fit()
   }
 
@@ -828,19 +825,16 @@ export class ProjectView extends ItemView {
   }
 
   private openSort(anchor: HTMLElement): void {
-    openSortPopover(
-      anchor,
-      this.sortProps(() => {})
-    )
+    openSortPopover(anchor, this.sortProps())
   }
 
   /** What the sort panel edits; `after` runs after each change, for a host that follows it. */
-  private sortProps(after: () => void): SortPopoverProps {
+  private sortProps(after?: () => void): SortPopoverProps {
     const sorted = (): void => {
       this.syncHeader()
       this.refreshSubview()
       void this.persistFilter()
-      after()
+      after?.()
     }
     return {
       fields: sortFields(this.projectScope?.config),
@@ -854,11 +848,11 @@ export class ProjectView extends ItemView {
   }
 
   private openFields(anchor: HTMLElement): void {
-    const props = this.fieldsProps(() => {})
+    const props = this.fieldsProps()
     if (props) openFieldsPopover(anchor, props)
   }
 
-  private fieldsProps(after: () => void): FieldsPopoverProps | null {
+  private fieldsProps(after?: () => void): FieldsPopoverProps | null {
     const scope = this.projectScope
     if (!scope) return null
     return {
@@ -867,17 +861,14 @@ export class ProjectView extends ItemView {
       catalog: scope.fieldCatalog(),
       onChange: () => {
         this.handleFieldsChange()
-        after()
+        after?.()
       }
     }
   }
 
-  /** The sort button's words: the first key's field and how many keys follow it, or nothing at the default. */
-  private sortSummary(): { label: string; more: string } {
-    const [first] = this.sort
-    const field = first ? sortFields().find((f) => f.id === first.key) : undefined
-    if (sameValue(this.sort, makeDefaultSort()) || !field) return { label: '', more: '' }
-    return { label: field.label, more: this.sort.length > 1 ? `+${this.sort.length - 1}` : '' }
+  /** The sort as the header names it, or nothing at the default. */
+  private sortSummary(): SortSummary | undefined {
+    return sameValue(this.sort, makeDefaultSort()) ? undefined : summarizeSort(sortFields(), this.sort)
   }
 
   /** How many of the mode's default fields are hidden, counted only once the mode's fields were changed. */
@@ -922,7 +913,7 @@ export class ProjectView extends ItemView {
       query.push({
         icon: 'arrow-down-up',
         label: t('header.sort'),
-        state: `${sort.label} ${sort.more}`.trim(),
+        state: sort ? `${sort.label} ${sort.more}`.trim() : '',
         onOpen: (anchor) => this.openSort(anchor)
       })
     }
@@ -947,13 +938,10 @@ export class ProjectView extends ItemView {
         icon: 'zoom-in',
         label: t('timeline.zoom'),
         control: (parent) => {
-          const stepper = new Stepper(
-            parent,
-            this.zoomProps(() => sync())
-          )
           const sync = (): void => {
             stepper.setValue(`${this.zoom}%`, this.zoom <= MIN_ZOOM, this.zoom >= MAX_ZOOM)
           }
+          const stepper = new Stepper(parent, this.zoomProps(sync))
           sync()
         }
       }
@@ -984,11 +972,11 @@ export class ProjectView extends ItemView {
   }
 
   private openGroup(anchor: HTMLElement): void {
-    const props = this.groupProps(() => {})
+    const props = this.groupProps()
     if (props) openGroupPopover(anchor, props)
   }
 
-  private groupProps(after: () => void): GroupPopoverProps | null {
+  private groupProps(after?: () => void): GroupPopoverProps | null {
     const setup = this.groupSetup()
     if (!setup) return null
     return {
@@ -1000,7 +988,7 @@ export class ProjectView extends ItemView {
         this.syncHeader()
         this.refreshSubview()
         void this.persistFilter()
-        after()
+        after?.()
       }
     }
   }
@@ -1013,10 +1001,7 @@ export class ProjectView extends ItemView {
       tabs.push({
         id: 'filter',
         label: t('header.filter'),
-        badge: () => {
-          const count = countActiveFilters(this.query.filter)
-          return count ? String(count) : ''
-        },
+        badge: () => countActiveFilters(this.query.filter),
         render: (parent, changed) =>
           renderFilterPanel(
             parent,
@@ -1120,10 +1105,7 @@ export class ProjectView extends ItemView {
     this.daysButton = null
     for (const option of this.viewOptions(scope)) {
       if (option === 'zoom') {
-        this.zoomStepper = new Stepper(
-          parent,
-          this.zoomProps(() => {})
-        )
+        this.zoomStepper = new Stepper(parent, this.zoomProps())
         continue
       }
       const chip = new ChipButton(parent).setAriaLabel(option.label)
@@ -1200,10 +1182,10 @@ export class ProjectView extends ItemView {
   }
 
   /** The zoom stepper's handlers; `onZoom` runs after each step, for a stepper the header doesn't keep current. */
-  private zoomProps(onZoom: () => void): StepperProps {
+  private zoomProps(onZoom?: () => void): StepperProps {
     const zoomTo = (zoom: number): void => {
       this.setZoom(zoom)
-      onZoom()
+      onZoom?.()
     }
     return {
       decreaseLabel: t('timeline.zoomOut'),

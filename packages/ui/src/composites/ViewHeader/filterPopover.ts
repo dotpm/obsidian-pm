@@ -451,17 +451,12 @@ export function renderFilterPanel(
 }
 
 /** The filter panel in a popover under `anchor`. */
-export function openFilterPopover(
+export const openFilterPopover = (
   anchor: HTMLElement,
   setup: FilterSetup,
   onChange: () => void,
   start?: number | 'list'
-): Popover {
-  const pop = new Popover({ anchor, width: 300 })
-  renderFilterPanel(pop.contentEl, setup, onChange, start)
-  pop.open()
-  return pop
-}
+): Popover => Popover.show({ anchor, width: 300 }, (el) => renderFilterPanel(el, setup, onChange, start))
 
 function renderChecklist(
   parent: HTMLElement,
