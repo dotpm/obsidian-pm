@@ -1,4 +1,4 @@
-import { t, tn } from '@dotpm/core'
+import { type ProjectListField, t, tn } from '@dotpm/core'
 import { AvatarStack, type AvatarPerson } from '#primitives/AvatarStack'
 import { Chip } from '#primitives/Chip'
 import { CollapseToggle } from '#primitives/CollapseToggle'
@@ -18,6 +18,8 @@ export interface ProjectRowProps {
   isLastChild: boolean
   /** Sub-projects below this one. Above zero, the counts are the caller's subtree rollup. */
   childCount: number
+  /** The cells after the title, in order. */
+  fields: ProjectListField[]
   collapsed: boolean
   archived: boolean
   tasksDone: number
@@ -61,30 +63,7 @@ export class ProjectRow {
     inner.createSpan({ text: props.title, cls: 'pm-task-title-text' })
     if (props.archived) new Chip(inner).setLabel(t('common.archived')).setVariant('outline').setSize('sm')
 
-    const progress = this.el.createEl('td', { cls: 'pm-table-cell pm-table-cell-progress' })
-    new ProgressBar(progress)
-      .setSize('sm')
-      .setValue(props.tasksTotal ? (props.tasksDone / props.tasksTotal) * 100 : 0)
-      .setColor(props.color)
-      .setShowLabel(true)
-
-    const tasks = this.el.createEl('td', { cls: 'pm-table-cell' })
-    tasks.createSpan({ cls: 'pm-project-row-tasks', text: `${props.tasksDone}/${props.tasksTotal}` })
-    if (props.overdue > 0) {
-      new Chip(tasks)
-        .setLabel(tn('projectRow.overdue', props.overdue))
-        .setVariant('solid')
-        .setColor('var(--color-red)')
-        .setSize('sm')
-        .setStrong()
-    }
-
-    const members = this.el.createEl('td', { cls: 'pm-table-cell pm-table-cell-assignees' })
-    new AvatarStack(members).setPeople(props.members).setMax(3).setSize('sm')
-
-    const due = this.el.createEl('td', { cls: 'pm-table-cell' })
-    if (props.dueLabel) renderDueChip(due, props.dueLabel, props.dueUrgency, 'sm')
-    else due.createSpan({ cls: 'pm-project-row-empty', text: '—' })
+    for (const field of props.fields) renderCell(this.el.createEl('td', { cls: 'pm-table-cell' }), field, props)
 
     const actions = this.el.createEl('td', { cls: 'pm-table-cell pm-table-cell-actions' })
     new IconButton(actions)
@@ -99,5 +78,36 @@ export class ProjectRow {
       props.onClick()
     })
     this.el.addEventListener('contextmenu', (e) => props.onContextMenu(e))
+  }
+}
+
+function renderCell(cell: HTMLElement, field: ProjectListField, props: ProjectRowProps): void {
+  switch (field) {
+    case 'progress':
+      cell.addClass('pm-table-cell-progress')
+      new ProgressBar(cell)
+        .setSize('sm')
+        .setValue(props.tasksTotal ? (props.tasksDone / props.tasksTotal) * 100 : 0)
+        .setColor(props.color)
+        .setShowLabel(true)
+      return
+    case 'tasks':
+      cell.createSpan({ cls: 'pm-project-row-tasks', text: `${props.tasksDone}/${props.tasksTotal}` })
+      if (props.overdue > 0) {
+        new Chip(cell)
+          .setLabel(tn('projectRow.overdue', props.overdue))
+          .setVariant('solid')
+          .setColor('var(--color-red)')
+          .setSize('sm')
+          .setStrong()
+      }
+      return
+    case 'members':
+      cell.addClass('pm-table-cell-assignees')
+      new AvatarStack(cell).setPeople(props.members).setMax(3).setSize('sm')
+      return
+    case 'due':
+      if (props.dueLabel) renderDueChip(cell, props.dueLabel, props.dueUrgency, 'sm')
+      else cell.createSpan({ cls: 'pm-project-row-empty', text: '—' })
   }
 }

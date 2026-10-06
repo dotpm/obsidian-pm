@@ -2,6 +2,7 @@ import { ItemView, Menu, Scope, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
 import {
   type ProjectGroupBy,
+  type ProjectListField,
   type ProjectListItem,
   type ProjectListView,
   type ProjectProgress,
@@ -12,21 +13,25 @@ import {
   isProjectQueryActive,
   makeDefaultProjectList,
   makeId,
+  PROJECT_LIST_FIELDS,
   projectProgress,
   projectTagCounts,
   sameValue,
   t,
+  tidyProjectFields,
   tn,
   withDefault
 } from '@dotpm/core'
 import {
   ChipButton,
   EmptyState,
+  openProjectFieldsPopover,
   openProjectFilterPopover,
   openSavedViewsPopover,
   openSearchPopover,
   openSortPopover,
   renderOptionRow,
+  renderProjectFieldsPanel,
   renderProjectFilterPanel,
   renderSortPanel,
   renderBreadcrumb,
@@ -36,6 +41,7 @@ import {
   SplitButton,
   ViewHeader,
   type PlatformMenu,
+  type ProjectFieldsProps,
   type ProjectFilterProps,
   type SearchBoxProps,
   type SortPopoverProps,
@@ -75,6 +81,7 @@ export class DashboardView extends ItemView {
   private archivedButton: ChipButton | null = null
   private sortButton: ChipButton | null = null
   private groupButton: ChipButton | null = null
+  private fieldsButton: ChipButton | null = null
   private items: ProjectListItem[] = []
   private shown = 0
 
@@ -187,6 +194,34 @@ export class DashboardView extends ItemView {
     const group = new ChipButton(parent).setIcon('group').setAriaLabel(t('header.groupBy'))
     group.onClick(() => this.openGroupMenu(group.el))
     this.groupButton = group
+    const fields = new ChipButton(parent).setIcon('columns-3').setLabel(t('header.fields'))
+    fields.setAriaLabel(t('header.fields')).onClick(() => this.openFields(fields.el))
+    this.fieldsButton = fields
+  }
+
+  private shownFields(): ProjectListField[] {
+    return this.state.fields ?? [...PROJECT_LIST_FIELDS]
+  }
+
+  private setFields(fields: ProjectListField[] | undefined): void {
+    const tidy = tidyProjectFields(fields)
+    if (tidy) this.state.fields = tidy
+    else delete this.state.fields
+  }
+
+  private openFields(anchor: HTMLElement): void {
+    openProjectFieldsPopover(anchor, this.fieldsProps())
+  }
+
+  private fieldsProps(after?: () => void): ProjectFieldsProps {
+    return {
+      shown: this.shownFields(),
+      onChange: (shown) => {
+        this.setFields(shown)
+        this.changed()
+        after?.()
+      }
+    }
   }
 
   private searchProps(): SearchBoxProps {
@@ -288,6 +323,11 @@ export class DashboardView extends ItemView {
             }
             draw()
           }
+        },
+        {
+          id: 'fields',
+          label: t('header.fields'),
+          render: (parent, changed) => renderProjectFieldsPanel(parent, this.fieldsProps(changed))
         }
       ],
       clear: {
@@ -368,6 +408,12 @@ export class DashboardView extends ItemView {
         label: t('header.groupBy'),
         state: groupLabel(this.state.group),
         onOpen: (anchor) => this.openGroupMenu(anchor)
+      },
+      {
+        icon: 'columns-3',
+        label: t('header.fields'),
+        state: this.hiddenFieldsLabel(),
+        onOpen: (anchor) => this.openFields(anchor)
       }
     )
     return [items]
@@ -408,6 +454,7 @@ export class DashboardView extends ItemView {
     const ctx: ProjectListContext = {
       plugin,
       contentEl: this.bodyEl,
+      fields: this.shownFields(),
       openProject: (path) => plugin.router.openProjectLink(path),
       redraw: () => this.renderList()
     }
@@ -452,7 +499,14 @@ export class DashboardView extends ItemView {
     if (this.sortButton) syncSortButton(this.sortButton, summarizeSort(sortFields(), this.state.sort))
     const grouped = this.state.group !== 'none'
     this.groupButton?.setLabel(grouped ? groupLabel(this.state.group) : t('header.group')).setActive(grouped)
+    this.fieldsButton?.setDetail(this.hiddenFieldsLabel()).setActive(this.state.fields !== undefined)
     this.header?.fit()
+  }
+
+  /** "2 hidden" while columns are hidden, or nothing. */
+  private hiddenFieldsLabel(): string {
+    const hidden = PROJECT_LIST_FIELDS.length - this.shownFields().length
+    return hidden ? tn('header.hiddenCount', hidden) : ''
   }
 
   private activeView(): ProjectListView | undefined {
@@ -467,6 +521,7 @@ export class DashboardView extends ItemView {
     if (!sameValue(active.filter, this.state.filter)) changes.push(t('header.changedFilter'))
     if (!sameValue(active.sort, this.state.sort)) changes.push(t('header.changedSort'))
     if (active.group !== this.state.group) changes.push(t('header.changedGroup'))
+    if (active.fields && !sameValue(active.fields, this.shownFields())) changes.push(t('header.changedFields'))
     if (active.showArchived !== this.plugin.settings.showArchivedProjects) changes.push(t('header.changedArchived'))
     return changes
   }
@@ -475,6 +530,7 @@ export class DashboardView extends ItemView {
     this.state.filter = structuredClone(view.filter)
     this.state.sort = structuredClone(view.sort)
     this.state.group = view.group
+    if (view.fields) this.setFields(view.fields)
     this.state.activeViewId = view.id
     this.plugin.settings.showArchivedProjects = view.showArchived
   }
@@ -486,6 +542,7 @@ export class DashboardView extends ItemView {
       filter: structuredClone(this.state.filter),
       sort: structuredClone(this.state.sort),
       group: this.state.group,
+      fields: this.shownFields(),
       showArchived: this.plugin.settings.showArchivedProjects
     }
   }

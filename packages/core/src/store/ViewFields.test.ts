@@ -8,7 +8,8 @@ import {
   legacyBoardFields,
   shownFields,
   tidyFields,
-  viewFieldLabel
+  viewFieldLabel,
+  withFieldShown
 } from './ViewFields'
 
 const client: CustomFieldDef = { id: 'client', name: 'Client', type: 'text' }
@@ -74,5 +75,20 @@ describe('view fields', () => {
   it('names custom fields by their name', () => {
     expect(viewFieldLabel('cf:client', [client])).toBe('Client')
     expect(viewFieldLabel('due', [])).toBe('Due')
+  })
+})
+
+describe('withFieldShown', () => {
+  const order = ['a', 'b', 'c', 'd']
+
+  it('puts a field back between the ones around it in the order', () => {
+    expect(withFieldShown(['a', 'c', 'd'], 'b', order)).toEqual(['a', 'b', 'c', 'd'])
+    expect(withFieldShown(['b', 'c'], 'a', order)).toEqual(['a', 'b', 'c'])
+    expect(withFieldShown(['a', 'b'], 'd', order)).toEqual(['a', 'b', 'd'])
+  })
+
+  it('keeps a reordered list as it is around the field', () => {
+    expect(withFieldShown(['d', 'a'], 'c', order)).toEqual(['c', 'd', 'a'])
+    expect(withFieldShown([], 'b', order)).toEqual(['b'])
   })
 })

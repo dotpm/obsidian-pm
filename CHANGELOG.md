@@ -28,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The timeline can now leave out weekends and holidays, with holidays set per vault
 - The project list can now be searched, filtered by progress or tag, sorted, and grouped
 - Added saved views to the project list
+- The project list's columns can now be hidden and reordered from the "Fields" menu
 - Person notes can now set their avatar color with a `color` property
 
 ### Changed

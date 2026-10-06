@@ -10,6 +10,7 @@ import {
   type SortRule,
   type FilterState,
   type NonWorkingDays,
+  type ProjectListField,
   type ProjectListFilter,
   type ViewFields
 } from '@dotpm/core'
@@ -23,6 +24,7 @@ import { openFieldsPopover } from './fieldsPopover'
 import { openFilterPopover, renderFilterPanel, type FilterSetup } from './filterPopover'
 import { openGroupPopover } from './groupPopover'
 import { openNonWorkingDaysPopover } from './nonWorkingDaysPopover'
+import { openProjectFieldsPopover } from './projectFieldsPopover'
 import { openProjectFilterPopover, renderProjectFilterPanel } from './projectFilterPopover'
 import { openSavedViewsPopover, type SavedViewsProps } from './savedViewsPopover'
 import type { BoardColumn } from '../../views/boardColumns'
@@ -560,14 +562,15 @@ describe('fields popover', () => {
     expect(document.body.findAll('.pm-vis-detail')[1].textContent).toBe('130')
   })
 
-  it('hides a field by its eye and shows it again at the end', () => {
+  it('hides a field by its eye and shows it again in its place', () => {
     const fields: ViewFields = {}
     const onChange = open(fields)
     document.body.findAll('.pm-vis-row')[1].querySelector<HTMLButtonElement>('.pm-vis-eye')?.click()
     expect(fields.table?.visible).not.toContain('status')
     expect(document.body.find('.pm-fields-pop .pm-pop-head.pm-pop-section')).not.toBeNull()
     document.body.find('.pm-vis-row.is-hidden')?.querySelector<HTMLButtonElement>('.pm-vis-eye')?.click()
-    expect(fields.table?.visible.at(-1)).toBe('status')
+    expect(fields.table).toBeUndefined()
+    expect(labels()).toEqual(['Task', 'Status', 'Priority', 'Assignees', 'Due', 'Progress', 'Time', 'Client'])
     expect(onChange).toHaveBeenCalledTimes(2)
   })
 
@@ -665,6 +668,30 @@ describe('project filter popover', () => {
       showClear: false
     })
     expect(document.body.find('.pm-project-filter .pm-pop-head-action')).toBeNull()
+  })
+})
+
+describe('project fields popover', () => {
+  const ids = (selector: string): (string | undefined)[] => document.body.findAll(selector).map((row) => row.dataset.id)
+
+  it('hides, shows and puts back the columns, with the title locked first', () => {
+    const onChange = vi.fn<(shown: ProjectListField[]) => void>()
+    openProjectFieldsPopover(document.body.createEl('button'), { shown: ['progress', 'tasks', 'due'], onChange })
+    expect(ids('.pm-vis-row:not(.is-hidden)')).toEqual(['project', 'progress', 'tasks', 'due'])
+    expect(ids('.pm-vis-row.is-hidden')).toEqual(['members'])
+    expect(document.body.find('.pm-vis-row')?.find('.pm-vis-eye')).toBeNull()
+
+    document.body.find('.pm-vis-row[data-id="tasks"]')?.querySelector<HTMLButtonElement>('.pm-vis-eye')?.click()
+    expect(onChange).toHaveBeenLastCalledWith(['progress', 'due'])
+    document.body.find('.pm-vis-row[data-id="members"]')?.querySelector<HTMLButtonElement>('.pm-vis-eye')?.click()
+    expect(onChange).toHaveBeenLastCalledWith(['progress', 'members', 'due'])
+    document.body.find('.pm-vis-row[data-id="tasks"]')?.querySelector<HTMLButtonElement>('.pm-vis-eye')?.click()
+    expect(onChange).toHaveBeenLastCalledWith(['progress', 'tasks', 'members', 'due'])
+    expect(document.body.querySelector<HTMLButtonElement>('.pm-fields-foot .pm-chip-btn')?.disabled).toBe(true)
+
+    document.body.find('.pm-vis-row[data-id="due"]')?.querySelector<HTMLButtonElement>('.pm-vis-eye')?.click()
+    document.body.find('.pm-fields-foot .pm-chip-btn')?.click()
+    expect(onChange).toHaveBeenLastCalledWith(['progress', 'tasks', 'members', 'due'])
   })
 })
 

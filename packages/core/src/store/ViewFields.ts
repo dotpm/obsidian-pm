@@ -67,6 +67,13 @@ export function shownFields(fields: ViewFields, mode: ViewMode, catalog: FieldCa
   return [...locked, ...list.filter((id) => !locked.includes(id))]
 }
 
+/** `shown` with `id` back where `order` puts it among them, so hiding a field and showing it again changes nothing. */
+export function withFieldShown<T extends string>(shown: readonly T[], id: T, order: readonly T[]): T[] {
+  const rank = order.indexOf(id)
+  const at = shown.findIndex((other) => order.indexOf(other) > rank)
+  return at === -1 ? [...shown, id] : [...shown.slice(0, at), id, ...shown.slice(at)]
+}
+
 export function hiddenFields(fields: ViewFields, mode: ViewMode, catalog: FieldCatalog): string[] {
   const shown = shownFields(fields, mode, catalog)
   return availableFields(mode, catalog).filter((id) => !shown.includes(id))

@@ -212,12 +212,18 @@ export interface ProjectListFilter {
 
 export type ProjectGroupBy = 'none' | 'folder' | 'tag'
 
+/** The project list's columns after the title, in their default order. */
+export const PROJECT_LIST_FIELDS = ['progress', 'tasks', 'members', 'due'] as const
+export type ProjectListField = (typeof PROJECT_LIST_FIELDS)[number]
+
 /** What the project list shows. Archived projects follow `PMSettings.showArchivedProjects`. */
 export interface ProjectListState {
   filter: ProjectListFilter
   /** Empty keeps the order of the project tree. */
   sort: ProjectSortRule[]
   group: ProjectGroupBy
+  /** The columns shown after the title, in order. Left out while every column shows in the default order. */
+  fields?: ProjectListField[]
   activeViewId: string | null
 }
 
@@ -227,6 +233,8 @@ export interface ProjectListView {
   filter: ProjectListFilter
   sort: ProjectSortRule[]
   group: ProjectGroupBy
+  /** Left out by a view saved before columns could be chosen, which then keeps whatever shows. */
+  fields?: ProjectListField[]
   showArchived: boolean
   isDefault?: boolean
 }
