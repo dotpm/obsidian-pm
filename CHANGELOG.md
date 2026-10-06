@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- The board's "Group" button now names its field and highlights only after the columns are changed
 - Tab titles now show the whole project or task name instead of the first 10 characters
 - Project notes now open on their project page instead of in Obsidian's editor
 - The table now remembers its sort order after the view is closed and reopened
