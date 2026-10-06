@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The task name column in the table can now be resized
+
+### Fixed
+
+- Fixed table columns shifting left instead of widening when dragging a column edge to the right
+- Fixed resized table columns snapping back narrower when the table is wider than the view
+
 ## [2.6.0] - 2026-10-06
 
 ### Highlights

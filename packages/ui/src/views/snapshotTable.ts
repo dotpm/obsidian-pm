@@ -113,7 +113,9 @@ export function renderSnapshotTable(container: HTMLElement, model: ViewModel): H
   for (const id of columns) {
     const th = hrow.createEl('th', { text: viewFieldLabel(id, customFields) })
     const width = columnWidth(model.fields, id)
-    th.setCssStyles({ width: width === undefined ? 'auto' : `${width}px` })
+    const titleMin = id === 'title' ? model.fields.table?.widths?.title : undefined
+    if (width !== undefined) th.setCssStyles({ width: `${width}px`, minWidth: `${width}px` })
+    else th.setCssStyles({ width: 'auto', minWidth: titleMin === undefined ? '' : `${titleMin}px` })
     const rank = model.sort.findIndex((rule) => rule.key === id)
     if (rank >= 0) {
       const indicator = th.createSpan({
