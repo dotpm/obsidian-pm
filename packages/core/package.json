@@ -28,6 +28,6 @@
     "build": "tsdown"
   },
   "dependencies": {
-    "temporal-polyfill": "1.0.4"
+    "temporal-polyfill": "1.0.5"
   }
 }
