@@ -155,6 +155,8 @@ Everything a client changes goes through the same code the views use and shows u
 
 ## Contributing
 
+For more information see [CONTRIBUTING.md](https://github.com/dotpm/obsidian-pm/blobs/main/CONTRIBUTING.md).
+
 Bug reports and feature requests go in [issues](https://github.com/dotpm/obsidian-pm/issues). Pull requests are welcome. For anything larger than a fix, open an issue first so the approach can be agreed on before the work is done.
 
 The repo is a pnpm workspace on Node 24. `pnpm dev` builds into the vault named by `VAULT_PATH`, and `pnpm check`, `pnpm check:submission` and `pnpm test` are what CI runs.
