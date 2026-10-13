@@ -223,6 +223,7 @@
   "gantt.quarterYear": "{quarter} кв. {year}",
   "gantt.saveDateFailed": "Не удалось сохранить новую дату. Попробуйте ещё раз.",
   "gantt.setDatesFailed": "Не удалось задать даты задачи. Попробуйте ещё раз.",
+  "gantt.spanTooltip": "Все задачи: {start} – {end}",
   "gantt.today": "Сегодня",
   "gantt.tooltipAssignees": "Исполнители: {names}",
   "gantt.tooltipDate": "Дата: {date}",

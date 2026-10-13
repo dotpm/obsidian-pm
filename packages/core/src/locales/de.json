@@ -199,6 +199,7 @@
   "gantt.quarterYear": "Q{quarter} {year}",
   "gantt.saveDateFailed": "Die Datumsänderung konnte nicht gespeichert werden. Bitte versuche es erneut.",
   "gantt.setDatesFailed": "Die Termine konnten nicht festgelegt werden. Bitte versuche es erneut.",
+  "gantt.spanTooltip": "Alle Aufgaben: {start} – {end}",
   "gantt.today": "Heute",
   "gantt.tooltipAssignees": "Zuständig: {names}",
   "gantt.tooltipDate": "Datum: {date}",

@@ -199,6 +199,7 @@
   "gantt.quarterYear": "Kv{quarter} {year}",
   "gantt.saveDateFailed": "Det gick inte att spara datumändringen. Försök igen.",
   "gantt.setDatesFailed": "Det gick inte att ange uppgiftens datum. Försök igen.",
+  "gantt.spanTooltip": "Alla uppgifter: {start} – {end}",
   "gantt.today": "Idag",
   "gantt.tooltipAssignees": "Ansvariga: {names}",
   "gantt.tooltipDate": "Datum: {date}",

@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - The task name column in the table can now be resized
+- The timeline groups tasks under their project when it shows several projects, and each project can be collapsed to a single row ([#258](https://github.com/dotpm/obsidian-pm/issues/258))
+- A collapsed task or project shows how far everything folded into it reaches, as a line out to the earliest start and the latest end ([#180](https://github.com/dotpm/obsidian-pm/issues/180))
 
 ### Fixed
 

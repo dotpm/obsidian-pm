@@ -187,6 +187,7 @@
   "gantt.quarterYear": "{year}년 {quarter}분기",
   "gantt.saveDateFailed": "날짜 변경을 저장하지 못했습니다. 다시 시도해 주세요.",
   "gantt.setDatesFailed": "작업 날짜를 지정하지 못했습니다. 다시 시도해 주세요.",
+  "gantt.spanTooltip": "모든 작업: {start} – {end}",
   "gantt.today": "오늘",
   "gantt.tooltipAssignees": "담당자: {names}",
   "gantt.tooltipDate": "날짜: {date}",

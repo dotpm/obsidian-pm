@@ -211,6 +211,7 @@
   "gantt.quarterYear": "T{quarter} {year}",
   "gantt.saveDateFailed": "Échec de l'enregistrement de la date. Réessayez.",
   "gantt.setDatesFailed": "Échec de la définition des dates de la tâche. Réessayez.",
+  "gantt.spanTooltip": "Toutes les tâches : {start} – {end}",
   "gantt.today": "Aujourd'hui",
   "gantt.tooltipAssignees": "Responsables : {names}",
   "gantt.tooltipDate": "Date : {date}",

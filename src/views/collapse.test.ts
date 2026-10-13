@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS, makeProject, makeTask, type PMSettings, type Project } from '@dotpm/core'
-import { collapsedTaskIds, setAllCollapsed, toggleCollapsed } from './collapse'
+import { collapsedProjectRows, collapsedTaskIds, setAllCollapsed, toggleCollapsed, toggleProjectRow } from './collapse'
 
 function settings(): PMSettings {
   return structuredClone(DEFAULT_SETTINGS)
@@ -78,5 +78,40 @@ describe('setAllCollapsed', () => {
     setAllCollapsed(cfg, [project('Projects/A.md')], false)
 
     expect(cfg.collapsedTasks['Projects/A.md']).toEqual([])
+  })
+})
+
+describe('project rows', () => {
+  it('folds a project and unfolds it again', () => {
+    const cfg = settings()
+    const a = project('Projects/A.md')
+
+    toggleProjectRow(cfg, a)
+    expect([...collapsedProjectRows(cfg, [a, project('Projects/B.md')])]).toEqual(['Projects/A.md'])
+
+    toggleProjectRow(cfg, a)
+    expect(collapsedProjectRows(cfg, [a]).size).toBe(0)
+  })
+
+  it('reads only the projects in the scope', () => {
+    const cfg = settings()
+    cfg.collapsedProjectRows = ['Projects/Other.md']
+
+    expect(collapsedProjectRows(cfg, [project('Projects/A.md')]).size).toBe(0)
+  })
+
+  it('collapse all folds the scope projects only when asked to', () => {
+    const cfg = settings()
+    cfg.collapsedProjectRows = ['Projects/Other.md']
+    const scope = [project('Projects/A.md'), project('Projects/B.md')]
+
+    setAllCollapsed(cfg, scope, true)
+    expect(cfg.collapsedProjectRows).toEqual(['Projects/Other.md'])
+
+    setAllCollapsed(cfg, scope, true, true)
+    expect(cfg.collapsedProjectRows).toEqual(['Projects/Other.md', 'Projects/A.md', 'Projects/B.md'])
+
+    setAllCollapsed(cfg, scope, false, true)
+    expect(cfg.collapsedProjectRows).toEqual(['Projects/Other.md'])
   })
 })

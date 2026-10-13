@@ -21,7 +21,26 @@ export function toggleCollapsed(settings: PMSettings, project: Project, taskId: 
   settings.collapsedTasks[project.filePath] = ids
 }
 
-export function setAllCollapsed(settings: PMSettings, projects: Project[], collapsed: boolean): void {
+/** The projects in a timeline covering several that are folded to their own row. */
+export function collapsedProjectRows(settings: PMSettings, projects: Project[]): ReadonlySet<string> {
+  const folded = new Set(settings.collapsedProjectRows)
+  return new Set(projects.map((project) => project.filePath).filter((path) => folded.has(path)))
+}
+
+export function toggleProjectRow(settings: PMSettings, project: Project): void {
+  const paths = settings.collapsedProjectRows
+  const at = paths.indexOf(project.filePath)
+  if (at === -1) paths.push(project.filePath)
+  else paths.splice(at, 1)
+}
+
+/** `projectRows` folds or unfolds the projects' own rows too, for a timeline that draws them. */
+export function setAllCollapsed(
+  settings: PMSettings,
+  projects: Project[],
+  collapsed: boolean,
+  projectRows = false
+): void {
   for (const project of projects) {
     settings.collapsedTasks[project.filePath] = collapsed
       ? flattenTasks(project.tasks)
@@ -29,4 +48,8 @@ export function setAllCollapsed(settings: PMSettings, projects: Project[], colla
           .map((flat) => flat.task.id)
       : []
   }
+  if (!projectRows) return
+  const paths = new Set(projects.map((project) => project.filePath))
+  const others = settings.collapsedProjectRows.filter((path) => !paths.has(path))
+  settings.collapsedProjectRows = collapsed ? [...others, ...paths] : others
 }

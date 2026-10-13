@@ -5,12 +5,15 @@ import {
   safeAsync,
   barAsideText,
   barColor,
+  barExtent,
+  dateSpan,
   drawDependencyArrows,
+  drawSpanWhiskers,
   drawMilestoneDiamond,
   drawMilestoneLabels,
   drawRowHover,
   drawTaskBar,
-  type GanttRow,
+  spanExtent,
   ROW_HEIGHT,
   HEADER_HEIGHT,
   BAR_PADDING,
@@ -24,19 +27,29 @@ import { attachBarDrag } from './GanttDragHandler'
 import { handleLinkDotClick } from './GanttLinkHandler'
 import type { RendererContext } from './GanttRenderer'
 
-export function renderTaskBar(g: SVGGElement, task: Task, row: number, _depth: number, ctx: RendererContext): void {
+/**
+ * A task's bar and its handles. A `folded` task also gets lines out of its bar to how far
+ * everything folded into it reaches, drawn last so they stay above the row hover.
+ */
+export function renderTaskBar(g: SVGGElement, task: Task, row: number, folded: boolean, ctx: RendererContext): void {
   const project = ctx.scope.projectOf(task.id)
   if (!project) return
+  const span = folded ? dateSpan([task]) : null
+  const color = barColor(ctx, ctx.statuses, task)
+  const drawSpan = () => {
+    if (span) drawSpanWhiskers(g, ctx, row, span, color, barExtent(ctx, task))
+  }
   if (!task.start && !task.due) {
     renderEmptyRowClickTarget(g, task, row, ctx)
+    drawSpan()
     return
   }
 
-  const color = barColor(ctx, ctx.statuses, task)
   drawRowHover(g, ctx, row)
 
   if (task.type === 'milestone') {
     renderMilestoneDiamond(g, task, row, color, ctx)
+    drawSpan()
     return
   }
 
@@ -47,8 +60,10 @@ export function renderTaskBar(g: SVGGElement, task: Task, row: number, _depth: n
     task,
     row,
     color,
-    barAsideText(task, ctx.labelFields, ctx.labelSource)
+    barAsideText(task, ctx.labelFields, ctx.labelSource),
+    span ? spanExtent(ctx, span).x2 : 0
   )
+  drawSpan()
   if (!drawn) return
   const { barGroup, rect, x, y, width, height } = drawn
 
@@ -219,14 +234,22 @@ function renderMilestoneDiamond(g: SVGGElement, task: Task, row: number, color: 
   })
 }
 
+/** A project row has no bar of its own: its line runs across every task it holds in this view. */
+export function renderProjectSpan(
+  g: SVGGElement,
+  tasks: Task[],
+  color: string,
+  row: number,
+  ctx: RendererContext
+): void {
+  const span = dateSpan(tasks)
+  if (span) drawSpanWhiskers(g, ctx, row, span, color, null)
+}
+
 export function renderMilestoneLabels(ctx: RendererContext): void {
-  drawMilestoneLabels(ctx, ctx.statuses, visibleRows(ctx))
+  drawMilestoneLabels(ctx, ctx.statuses, ctx.taskRows, ctx.rowCount)
 }
 
 export function renderDependencyArrows(ctx: RendererContext): void {
-  drawDependencyArrows(ctx, visibleRows(ctx))
-}
-
-function visibleRows(ctx: RendererContext): GanttRow[] {
-  return ctx.flatTasks.filter((f) => f.visible || f.depth === 0).map((f) => ({ task: f.task, depth: f.depth }))
+  drawDependencyArrows(ctx, ctx.taskRows)
 }

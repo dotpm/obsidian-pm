@@ -211,6 +211,7 @@
   "gantt.quarterYear": "T{quarter} {year}",
   "gantt.saveDateFailed": "Salvarea datei nu a reușit. Încearcă din nou.",
   "gantt.setDatesFailed": "Datele sarcinii nu au putut fi setate. Încearcă din nou.",
+  "gantt.spanTooltip": "Toate sarcinile: {start} – {end}",
   "gantt.today": "Astăzi",
   "gantt.tooltipAssignees": "Responsabili: {names}",
   "gantt.tooltipDate": "Dată: {date}",

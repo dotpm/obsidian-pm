@@ -211,6 +211,7 @@
   "gantt.quarterYear": "T{quarter} {year}",
   "gantt.saveDateFailed": "No se pudo guardar el cambio de fecha. Inténtelo de nuevo.",
   "gantt.setDatesFailed": "No se pudieron definir las fechas de la tarea. Inténtelo de nuevo.",
+  "gantt.spanTooltip": "Todas las tareas: {start} – {end}",
   "gantt.today": "Hoy",
   "gantt.tooltipAssignees": "Responsables: {names}",
   "gantt.tooltipDate": "Fecha: {date}",

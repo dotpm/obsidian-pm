@@ -389,6 +389,8 @@ export interface PMSettings {
   collapsedTasks: Record<string, string[]>
   /** Paths of projects whose sub-projects are collapsed in the project list. */
   collapsedProjects: string[]
+  /** Paths of projects folded to their own row in a timeline covering several projects. */
+  collapsedProjectRows: string[]
   /** Whether the project list shows archived projects. */
   showArchivedProjects: boolean
   projectList: ProjectListState
@@ -482,6 +484,7 @@ export const DEFAULT_SETTINGS: PMSettings = {
   scopeViews: {},
   collapsedTasks: {},
   collapsedProjects: [],
+  collapsedProjectRows: [],
   showArchivedProjects: false,
   projectList: makeDefaultProjectList(),
   projectListViews: [],

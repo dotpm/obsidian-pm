@@ -187,6 +187,7 @@
   "gantt.quarterYear": "{year}年 Q{quarter}",
   "gantt.saveDateFailed": "日付の変更を保存できませんでした。もう一度お試しください。",
   "gantt.setDatesFailed": "タスクの日付を設定できませんでした。もう一度お試しください。",
+  "gantt.spanTooltip": "すべてのタスク: {start} – {end}",
   "gantt.today": "今日",
   "gantt.tooltipAssignees": "担当者：{names}",
   "gantt.tooltipDate": "日付：{date}",

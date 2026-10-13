@@ -1,10 +1,10 @@
 import { Menu } from 'obsidian'
-import { Chip, CollapseToggle, IconButton, renderProjectChip, renderStatusDot, safeAsync, ROW_HEIGHT } from '@dotpm/ui'
+import { Chip, CollapseToggle, IconButton, renderStatusDot, safeAsync, ROW_HEIGHT } from '@dotpm/ui'
 import type PMPlugin from '#main'
-import { type StatusConfig, type Task, t, tn } from '@dotpm/core'
+import { type Project, type StatusConfig, type Task, t, tn } from '@dotpm/core'
 import type { ProjectScope, TaskRef } from '#store'
 import { openTaskByPath, openTaskModal } from '#ui/ModalFactory'
-import { toggleCollapsed } from '../collapse'
+import { toggleCollapsed, toggleProjectRow } from '../collapse'
 
 export interface LabelContext {
   plugin: PMPlugin
@@ -12,6 +12,51 @@ export interface LabelContext {
   statuses: StatusConfig[]
   collapsedIds: ReadonlySet<string>
   onRefresh: () => Promise<void>
+}
+
+/** The row that heads a project's tasks when the timeline shows several projects. */
+export function renderProjectLabel(
+  container: HTMLElement,
+  project: Project,
+  collapsed: boolean,
+  ctx: LabelContext
+): void {
+  const el = container.createDiv('pm-gantt-label-row pm-gantt-project-row')
+  el.style.height = `${ROW_HEIGHT}px`
+
+  new CollapseToggle(el, {
+    collapsed,
+    subject: project.title,
+    onToggle: safeAsync(async () => {
+      toggleProjectRow(ctx.plugin.settings, project)
+      await ctx.plugin.saveSettings()
+      await ctx.onRefresh()
+    })
+  })
+  el.createSpan({ cls: 'pm-gantt-project-dot' }).style.backgroundColor = project.color
+  const titleEl = el.createSpan({ text: project.title, cls: 'pm-gantt-label-title' })
+  titleEl.setAttr('aria-label', t('projectChip.open', { title: project.title }))
+  titleEl.addEventListener(
+    'click',
+    safeAsync(() => ctx.plugin.router.openProjectLink(project.filePath))
+  )
+
+  new IconButton(el)
+    .setIcon('plus')
+    .setTooltip(t('task.add'))
+    .setRevealOnHover(true)
+    .onClick(
+      safeAsync(async (e: MouseEvent) => {
+        e.stopPropagation()
+        // A folded project would hide the new task, so it opens up first.
+        if (collapsed) {
+          toggleProjectRow(ctx.plugin.settings, project)
+          await ctx.plugin.saveSettings()
+          await ctx.onRefresh()
+        }
+        openTaskModal(ctx.plugin, project, { onSave: () => ctx.onRefresh() })
+      })
+    )
 }
 
 export function renderTaskLabel(
@@ -80,15 +125,6 @@ export function renderTaskLabel(
   titleEl.addEventListener('click', () => {
     openTaskModal(ctx.plugin, project, { task, onSave: () => ctx.onRefresh() })
   })
-
-  // With one project the rows are all its own; with several, each says where it belongs.
-  if (ctx.scope.isMulti) {
-    renderProjectChip(el, {
-      title: project.title,
-      color: project.color,
-      onClick: safeAsync(() => ctx.plugin.router.openProjectLink(project.filePath))
-    })
-  }
 
   // A predecessor outside this view draws no arrow, so the row says it is there.
   const elsewhere = task.dependencies

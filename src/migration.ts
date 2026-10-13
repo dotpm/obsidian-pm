@@ -206,7 +206,7 @@ function movedPath(path: string, moves: ProjectMove[]): string | null {
 
 /** Per-project filters, saved views and collapsed state are keyed by the project's path. */
 function remapProjectSettings(plugin: PMPlugin, moves: ProjectMove[]): void {
-  const { projectFilters, scopeViews, collapsedTasks, collapsedProjects } = plugin.settings
+  const { projectFilters, scopeViews, collapsedTasks, collapsedProjects, collapsedProjectRows } = plugin.settings
 
   for (const { from, to } of moves) {
     for (const kind of ['project', 'subtree']) {
@@ -232,6 +232,9 @@ function remapProjectSettings(plugin: PMPlugin, moves: ProjectMove[]): void {
 
     const at = collapsedProjects.indexOf(from)
     if (at !== -1) collapsedProjects[at] = to
+
+    const rowAt = collapsedProjectRows.indexOf(from)
+    if (rowAt !== -1) collapsedProjectRows[rowAt] = to
   }
 }
 

@@ -424,6 +424,7 @@ export default class PMPlugin extends Plugin {
     if (!this.settings.scopeViews) this.settings.scopeViews = {}
     if (!this.settings.collapsedTasks) this.settings.collapsedTasks = {}
     if (!this.settings.collapsedProjects) this.settings.collapsedProjects = []
+    if (!this.settings.collapsedProjectRows) this.settings.collapsedProjectRows = []
     if (!this.settings.excludedFolders) this.settings.excludedFolders = []
 
     let migrated = false
@@ -646,11 +647,16 @@ export default class PMPlugin extends Plugin {
       this.app.vault.getAbstractFileByPath(path)
     )
     if (collapsedProjects.length !== this.settings.collapsedProjects.length) dirty = true
+    const collapsedProjectRows = this.settings.collapsedProjectRows.filter((path) =>
+      this.app.vault.getAbstractFileByPath(path)
+    )
+    if (collapsedProjectRows.length !== this.settings.collapsedProjectRows.length) dirty = true
     if (dirty) {
       this.settings.projectFilters = cleaned
       this.settings.scopeViews = cleanedScopeViews
       this.settings.collapsedTasks = cleanedCollapsed
       this.settings.collapsedProjects = collapsedProjects
+      this.settings.collapsedProjectRows = collapsedProjectRows
       await this.saveSettings()
     }
   }

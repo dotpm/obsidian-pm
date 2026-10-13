@@ -7,7 +7,6 @@ import {
   shownFields,
   type GanttGranularity,
   type TaskQuery,
-  type FlatTask,
   flattenTasks,
   applyTaskFilterPromote,
   Temporal,
@@ -30,7 +29,7 @@ import {
 } from '@dotpm/ui'
 import { openAddTask } from '../addTask'
 import type { SubView } from '../SubView'
-import { collapsedTaskIds } from '../collapse'
+import { collapsedProjectRows, collapsedTaskIds } from '../collapse'
 import { makeDragState } from './GanttDragHandler'
 import type { DragState } from './GanttDragHandler'
 import { makeLinkState, cancelLink } from './GanttLinkHandler'
@@ -40,17 +39,18 @@ import {
   renderGridLines,
   renderTodayLine,
   renderTaskBar,
+  renderProjectSpan,
   renderDependencyArrows,
   renderMilestoneLabels
 } from './GanttRenderer'
-import type { RendererContext } from './GanttRenderer'
-import { renderTaskLabel } from './TaskLabelRenderer'
+import type { RendererContext, TimelineRow } from './GanttRenderer'
+import { renderProjectLabel, renderTaskLabel } from './TaskLabelRenderer'
 
 export class GanttView implements SubView {
   private scrollEl!: HTMLElement
   private svgEl!: SVGSVGElement
   private headerSvgEl!: SVGSVGElement
-  private flatTasks: FlatTask[] = []
+  private rows: TimelineRow[] = []
   /** Read from settings once per render pass. */
   private collapsedIds: ReadonlySet<string> = new Set()
   private cfg!: TimelineCfg
@@ -142,9 +142,9 @@ export class GanttView implements SubView {
     this.container.empty()
     this.container.addClass('pm-gantt-view')
 
-    const activeTasks = this.getVisibleTasks()
     this.collapsedIds = collapsedTaskIds(this.plugin.settings, this.scope.projects)
-    this.flatTasks = flattenTasks(activeTasks, this.collapsedIds).filter((f) => f.visible || f.depth === 0)
+    this.rows = this.buildRows()
+    const activeTasks = this.getVisibleTasks()
     this.cfg = buildTimelineConfig(activeTasks, this.granularity, {
       zoom: this.zoom,
       isHidden: nonWorkingDay(this.nonWorkingDays, this.plugin.settings.holidays),
@@ -216,7 +216,7 @@ export class GanttView implements SubView {
     // Tuck the body's top band (still drawn at y=HEADER_HEIGHT) under the sticky header.
     svgContainer.style.marginTop = `-${HEADER_HEIGHT}px`
 
-    const totalRows = this.flatTasks.filter((f) => f.visible || f.depth === 0).length
+    const totalRows = this.rows.length
     const svgHeight = HEADER_HEIGHT + (totalRows + 1) * ROW_HEIGHT // +1 for add-task row
 
     this.svgEl = svgEl('svg', {
@@ -309,18 +309,39 @@ export class GanttView implements SubView {
       collapsedIds: this.collapsedIds,
       onRefresh: this.onRefresh
     }
-    let rowIndex = 0
-    const renderFlatList = (tasks: Task[], depth: number) => {
-      for (const task of tasks) {
-        renderTaskLabel(leftBody, task, depth, rowIndex, labelCtx)
-        renderTaskBar(barsGroup, task, rowIndex, depth, ctx)
-        rowIndex++
-        if (!this.collapsedIds.has(task.id) && task.subtasks.length) {
-          renderFlatList(task.subtasks, depth + 1)
-        }
+    // Under project rows a task sits one step in, so its own nesting still reads.
+    const indent = this.scope.isMulti ? 1 : 0
+    this.rows.forEach((row, index) => {
+      if (row.kind === 'project') {
+        renderProjectLabel(leftBody, row.project, row.collapsed, labelCtx)
+        renderProjectSpan(barsGroup, row.tasks, row.project.color, index, ctx)
+        return
       }
-    }
-    renderFlatList(this.getVisibleTasks(), 0)
+      const { task, depth } = row
+      renderTaskLabel(leftBody, task, depth + indent, index, labelCtx)
+      renderTaskBar(barsGroup, task, index, this.collapsedIds.has(task.id) && task.subtasks.length > 0, ctx)
+    })
+  }
+
+  /**
+   * Tasks in tree order with folded subtasks left out. With several projects each one heads
+   * its own tasks, and a folded project keeps only that row.
+   */
+  private buildRows(): TimelineRow[] {
+    const taskRows = (tasks: Task[]): TimelineRow[] =>
+      flattenTasks(tasks, this.collapsedIds)
+        .filter((flat) => flat.visible)
+        .map((flat) => ({ kind: 'task', task: flat.task, depth: flat.depth }))
+    if (!this.scope.isMulti) return taskRows(this.getVisibleTasks())
+
+    const folded = collapsedProjectRows(this.plugin.settings, this.scope.projects)
+    const ctx = this.scope.filterContext(personKeyer(this.plugin.app))
+    return this.scope.projects.flatMap((project) => {
+      const tasks = applyTaskFilterPromote(project.tasks, this.query, ctx)
+      const collapsed = folded.has(project.filePath)
+      const head: TimelineRow = { kind: 'project', project, tasks, collapsed }
+      return collapsed ? [head] : [head, ...taskRows(tasks)]
+    })
   }
 
   private makeRendererContext(): RendererContext {
@@ -338,7 +359,10 @@ export class GanttView implements SubView {
         priorities: this.scope.config.priorities,
         customFields: this.scope.customFields()
       },
-      flatTasks: this.flatTasks,
+      taskRows: this.rows.flatMap((row, index) =>
+        row.kind === 'task' ? [{ task: row.task, depth: row.depth, row: index }] : []
+      ),
+      rowCount: this.rows.length,
       drag: this.drag,
       link: this.link,
       onRefresh: this.onRefresh,

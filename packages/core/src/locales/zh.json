@@ -187,6 +187,7 @@
   "gantt.quarterYear": "{year}年第{quarter}季度",
   "gantt.saveDateFailed": "保存日期更改失败，请重试。",
   "gantt.setDatesFailed": "设置任务日期失败，请重试。",
+  "gantt.spanTooltip": "所有任务：{start} – {end}",
   "gantt.today": "今天",
   "gantt.tooltipAssignees": "负责人：{names}",
   "gantt.tooltipDate": "日期：{date}",

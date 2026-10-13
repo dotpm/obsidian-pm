@@ -98,6 +98,20 @@
   color: var(--interactive-accent);
 }
 
+.pm-gantt-project-row {
+  padding-left: 8px;
+  background: var(--background-secondary);
+}
+.pm-gantt-project-row .pm-gantt-label-title {
+  font-weight: var(--font-semibold);
+}
+.pm-gantt-project-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
 .pm-gantt-label-progress {
   font-size: 11px;
   color: var(--text-muted);
@@ -257,6 +271,22 @@
   pointer-events: none;
   dominant-baseline: central;
   text-shadow: 0 0 3px rgba(0, 0, 0, 0.55);
+}
+
+/* How long a folded task or project runs, everything folded into it counted. */
+.pm-gantt-span {
+  pointer-events: none;
+}
+.pm-gantt-span-line {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  opacity: 0.85;
+}
+.pm-gantt-span-hit {
+  stroke: transparent;
+  stroke-width: 6;
+  pointer-events: stroke;
 }
 
 .pm-gantt-today-line {

@@ -8,6 +8,7 @@ import {
   getPriorityConfig,
   getStatusConfig,
   parsePlainDate,
+  Temporal,
   t
 } from '@dotpm/core'
 import { cardCustomValues } from '../views/boardCards'
@@ -19,6 +20,120 @@ import { BAR_BORDER_RADIUS, BAR_PADDING, HEADER_HEIGHT, ROW_HEIGHT, dateToX } fr
 export interface GanttRow {
   task: Task
   depth: number
+  /** Its row on the canvas, when rows other than tasks sit between them. Defaults to its place in the list. */
+  row?: number
+}
+
+/** The first and last day dated anywhere in some tasks and their subtasks, both inclusive. */
+export interface DateSpan {
+  start: Temporal.PlainDate
+  end: Temporal.PlainDate
+}
+
+export function dateSpan(tasks: Task[]): DateSpan | null {
+  let span: DateSpan | null = null
+  const walk = (list: Task[]): void => {
+    for (const task of list) {
+      const start = parsePlainDate(task.start) ?? parsePlainDate(task.due)
+      const end = parsePlainDate(task.due) ?? start
+      if (start && end) {
+        if (!span) span = { start, end }
+        else {
+          if (Temporal.PlainDate.compare(start, span.start) < 0) span.start = start
+          if (Temporal.PlainDate.compare(end, span.end) > 0) span.end = end
+        }
+      }
+      walk(task.subtasks)
+    }
+  }
+  walk(tasks)
+  return span
+}
+
+const MILESTONE_SIZE = 12
+
+/** Where a task's own bar or milestone diamond sits across the canvas. Null when it has no date. */
+export function barExtent(canvas: GanttCanvas, task: Task): { x1: number; x2: number } | null {
+  const startDate = parsePlainDate(task.start)
+  const endDate = parsePlainDate(task.due)
+  if (task.type === 'milestone') {
+    const date = endDate ?? startDate
+    if (!date) return null
+    const cx = dateToX(canvas.cfg, date) + canvas.cfg.dayWidth / 2
+    return { x1: cx - MILESTONE_SIZE, x2: cx + MILESTONE_SIZE }
+  }
+  // A task due on E occupies day E, so the bar's right edge sits at the start of E+1.
+  const effectiveStart = startDate ?? endDate
+  if (!effectiveStart) return null
+  const effectiveEnd = (endDate ?? effectiveStart).add({ days: 1 })
+  const x1 = Math.max(0, dateToX(canvas.cfg, effectiveStart))
+  const xEnd = Math.min(canvas.cfg.totalWidth, dateToX(canvas.cfg, effectiveEnd))
+  return { x1, x2: x1 + Math.max(8, xEnd - x1) }
+}
+
+/** Where `span` runs across the canvas, from the start of its first day to the end of its last. */
+export function spanExtent(canvas: GanttCanvas, span: DateSpan): { x1: number; x2: number } {
+  return {
+    x1: Math.max(0, dateToX(canvas.cfg, span.start)),
+    x2: Math.min(canvas.cfg.totalWidth, dateToX(canvas.cfg, span.end.add({ days: 1 })))
+  }
+}
+
+function spanTooltip(span: DateSpan): SVGTitleElement {
+  const tooltip = svgEl('title', {})
+  tooltip.textContent = t('gantt.spanTooltip', {
+    start: formatDateShort(span.start.toString()),
+    end: formatDateShort(span.end.toString())
+  })
+  return tooltip
+}
+
+/**
+ * For a folded task or project: a line out of each end of its own `bar` to the first and
+ * last day of `span`, capped by a tick, so the bar shows how far what is folded into it
+ * reaches. A side the folded tasks don't reach past gets nothing. Without a bar, as for a
+ * project, the line runs the whole span.
+ */
+export function drawSpanWhiskers(
+  g: SVGGElement,
+  canvas: GanttCanvas,
+  row: number,
+  span: DateSpan,
+  color: string,
+  bar: { x1: number; x2: number } | null
+): SVGGElement | null {
+  const { x1, x2 } = spanExtent(canvas, span)
+  const left = bar && bar.x1 > x1 ? bar.x1 : null
+  const right = bar && bar.x2 < x2 ? bar.x2 : null
+  if (bar && left === null && right === null) return null
+
+  const y = HEADER_HEIGHT + row * ROW_HEIGHT + ROW_HEIGHT / 2
+  const tick = (ROW_HEIGHT - BAR_PADDING * 2) / 3
+  // Each segment runs from its capped outer end in to where it meets the bar.
+  const segments: { outer: number; inner: number }[] = []
+  if (!bar) segments.push({ outer: x1, inner: x2 })
+  if (left !== null) segments.push({ outer: x1, inner: left })
+  if (right !== null) segments.push({ outer: x2, inner: right })
+  const caps = bar ? segments.map((s) => s.outer) : [x1, x2]
+
+  const group = svgEl('g', { class: 'pm-gantt-span' })
+  const d = [
+    ...caps.map((x) => `M ${x} ${y - tick} L ${x} ${y + tick}`),
+    ...segments.map(({ outer, inner }) => `M ${outer} ${y} L ${inner} ${y}`)
+  ]
+  group.appendChild(svgEl('path', { d: d.join(' '), stroke: color, class: 'pm-gantt-span-line' }))
+  // The link dots sit just past the bar's ends, so the pointer strip stops short of them.
+  const DOT_CLEARANCE = 14
+  for (const { outer, inner } of segments) {
+    const toward = Math.sign(inner - outer)
+    const end = bar ? inner - toward * DOT_CLEARANCE : inner
+    if ((end - outer) * toward < 2) continue
+    const hit = svgEl('line', { x1: outer, y1: y, x2: end, y2: y, class: 'pm-gantt-span-hit' })
+    hit.appendChild(spanTooltip(span))
+    group.appendChild(hit)
+  }
+  g.appendChild(group)
+  return group
 }
 
 /** A status color, or the accent the theme resolves for the canvas. */
@@ -80,7 +195,8 @@ export function barAsideText(task: Task, fields: string[], source: LabelSource):
 
 /**
  * The bar itself: fill, progress, recurrence mark, label, the `aside` text past its end,
- * and tooltip. Nothing interactive.
+ * and tooltip. Nothing interactive. `asideAfter` pushes the mark and text out past that x,
+ * clear of anything drawn beside the bar.
  */
 export function drawTaskBar(
   g: SVGGElement,
@@ -89,7 +205,8 @@ export function drawTaskBar(
   task: Task,
   row: number,
   color: string,
-  aside = ''
+  aside = '',
+  asideAfter = 0
 ): DrawnBar | null {
   const startDate = parsePlainDate(task.start)
   const endDate = parsePlainDate(task.due)
@@ -136,9 +253,10 @@ export function drawTaskBar(
     )
   }
 
-  let asideX = x + width + 6
+  const besideX = Math.max(x + width, asideAfter)
+  let asideX = besideX + 6
   if (task.recurrence) {
-    const icon = svgEl('text', { x: x + width + 4, y: y + height / 2 + 5, class: 'pm-gantt-bar-icon' })
+    const icon = svgEl('text', { x: besideX + 4, y: y + height / 2 + 5, class: 'pm-gantt-bar-icon' })
     icon.textContent = t('chip.recurring')
     barGroup.appendChild(icon)
     asideX += 20
@@ -184,7 +302,7 @@ export function drawMilestoneDiamond(
   if (!date) return null
   const cx = dateToX(canvas.cfg, date) + canvas.cfg.dayWidth / 2
   const cy = HEADER_HEIGHT + row * ROW_HEIGHT + ROW_HEIGHT / 2
-  const size = 12
+  const size = MILESTONE_SIZE
   const diamond = svgEl('polygon', {
     points: `${cx},${cy - size} ${cx + size},${cy} ${cx},${cy + size} ${cx - size},${cy}`,
     fill: color,
@@ -200,12 +318,17 @@ export function drawMilestoneDiamond(
 }
 
 /** A dashed line down the body and a label in the sticky header for every dated milestone. */
-export function drawMilestoneLabels(canvas: GanttCanvas, statuses: StatusConfig[], rows: GanttRow[]): void {
+export function drawMilestoneLabels(
+  canvas: GanttCanvas,
+  statuses: StatusConfig[],
+  rows: GanttRow[],
+  rowCount = rows.length
+): void {
   const milestones = rows.filter(({ task }) => task.type === 'milestone' && (task.due || task.start))
   if (!milestones.length) return
 
   const linesG = svgEl('g', { class: 'pm-gantt-milestone-labels' })
-  const totalH = HEADER_HEIGHT + rows.length * ROW_HEIGHT
+  const totalH = HEADER_HEIGHT + rowCount * ROW_HEIGHT
 
   for (const { task } of milestones) {
     const date = parsePlainDate(task.due) ?? parsePlainDate(task.start)
@@ -237,7 +360,11 @@ export function drawMilestoneLabels(canvas: GanttCanvas, statuses: StatusConfig[
 
 export function drawDependencyArrows(canvas: GanttCanvas, rows: GanttRow[]): void {
   const indexMap = new Map<string, number>()
-  rows.forEach((row, i) => indexMap.set(row.task.id, i))
+  const taskAt = new Map<number, Task>()
+  rows.forEach((row, i) => {
+    indexMap.set(row.task.id, row.row ?? i)
+    taskAt.set(row.row ?? i, row.task)
+  })
 
   const arrowGroup = svgEl('g', { class: 'pm-gantt-arrows' })
 
@@ -253,7 +380,7 @@ export function drawDependencyArrows(canvas: GanttCanvas, rows: GanttRow[]): voi
     for (const depId of task.dependencies) {
       const fromRow = indexMap.get(depId)
       if (fromRow === undefined) continue
-      const depDue = parsePlainDate(rows[fromRow].task.due)
+      const depDue = parsePlainDate(taskAt.get(fromRow)?.due ?? '')
       if (!depDue) continue
       const fromX = dateToX(canvas.cfg, depDue.add({ days: 1 }))
       const fromY = HEADER_HEIGHT + fromRow * ROW_HEIGHT + ROW_HEIGHT / 2

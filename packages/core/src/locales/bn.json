@@ -199,6 +199,7 @@
   "gantt.quarterYear": "ত্রৈ{quarter} {year}",
   "gantt.saveDateFailed": "তারিখের পরিবর্তন সংরক্ষণ করা যায়নি। আবার চেষ্টা করুন।",
   "gantt.setDatesFailed": "টাস্কের তারিখ নির্ধারণ করা যায়নি। আবার চেষ্টা করুন।",
+  "gantt.spanTooltip": "সব কাজ: {start} – {end}",
   "gantt.today": "আজ",
   "gantt.tooltipAssignees": "দায়িত্বে: {names}",
   "gantt.tooltipDate": "তারিখ: {date}",

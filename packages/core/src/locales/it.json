@@ -211,6 +211,7 @@
   "gantt.quarterYear": "T{quarter} {year}",
   "gantt.saveDateFailed": "Impossibile salvare la modifica della data. Riprova.",
   "gantt.setDatesFailed": "Impossibile impostare le date dell'attività. Riprova.",
+  "gantt.spanTooltip": "Tutte le attività: {start} – {end}",
   "gantt.today": "Oggi",
   "gantt.tooltipAssignees": "Assegnatari: {names}",
   "gantt.tooltipDate": "Data: {date}",
