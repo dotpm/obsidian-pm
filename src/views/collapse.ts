@@ -21,6 +21,15 @@ export function toggleCollapsed(settings: PMSettings, project: Project, taskId: 
   settings.collapsedTasks[project.filePath] = ids
 }
 
+/** Expands or collapses one parent without depending on its current state. */
+export function setCollapsed(settings: PMSettings, project: Project, taskId: string, collapsed: boolean): void {
+  const ids = settings.collapsedTasks[project.filePath] ?? []
+  const at = ids.indexOf(taskId)
+  if (collapsed && at === -1) ids.push(taskId)
+  else if (!collapsed && at !== -1) ids.splice(at, 1)
+  settings.collapsedTasks[project.filePath] = ids
+}
+
 export function setAllCollapsed(settings: PMSettings, projects: Project[], collapsed: boolean): void {
   for (const project of projects) {
     settings.collapsedTasks[project.filePath] = collapsed

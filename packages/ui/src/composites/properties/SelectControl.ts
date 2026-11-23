@@ -1,6 +1,6 @@
 import { setIcon } from '#platform'
 import { Popover } from '#primitives/Popover'
-import { renderGlyph, renderOptionRow, type SelectItem } from './optionList'
+import { enableOptionNavigation, renderGlyph, renderOptionRow, type SelectItem } from './optionList'
 
 export interface SelectControlOpts {
   container: HTMLElement
@@ -54,8 +54,15 @@ export function renderSelectControl(opts: SelectControlOpts): void {
       }
     }
     searchInput?.addEventListener('input', () => renderList())
+    enableOptionNavigation(pop.contentEl, list, searchInput)
     renderList()
     pop.open()
-    searchInput?.focus()
+    if (searchInput) {
+      searchInput.focus()
+    } else {
+      const selected = list.querySelector<HTMLButtonElement>('button.pm-pop-item--selected')
+      const first = list.querySelector<HTMLButtonElement>('button.pm-pop-item')
+      ;(selected ?? first)?.focus()
+    }
   })
 }

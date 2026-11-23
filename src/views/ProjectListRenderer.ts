@@ -60,7 +60,7 @@ export function renderProjectTable(
   groups: ProjectListGroup[],
   groupBy: ProjectGroupBy,
   collapsedGroups: Set<string>
-): void {
+): string[] {
   const wrapper = ctx.contentEl.createDiv('pm-table-wrapper')
   wrapper.setAttr('data-borders', ctx.plugin.settings.lineBorders)
   const table = wrapper.createEl('table', { cls: 'pm-table pm-project-table' })
@@ -68,6 +68,7 @@ export function renderProjectTable(
   const header = columns(ctx.fields)
   for (const column of header) headRow.createEl('th', { text: column.label, cls: column.cls })
   const tbody = table.createEl('tbody')
+  const paths: string[] = []
   for (const group of groups) {
     const collapsed = group.key !== null && collapsedGroups.has(group.key)
     if (group.key !== null) {
@@ -87,8 +88,14 @@ export function renderProjectTable(
       inner.createSpan({ cls: 'pm-project-group-label', text: groupLabel(groupBy, key) })
       inner.createSpan({ cls: 'pm-project-group-count', text: String(group.count) })
     }
-    if (!collapsed) for (const row of group.rows) renderRow(ctx, tbody, row)
+    if (!collapsed) {
+      for (const row of group.rows) {
+        const path = renderRow(ctx, tbody, row)
+        if (path) paths.push(path)
+      }
+    }
   }
+  return paths
 }
 
 function groupLabel(groupBy: ProjectGroupBy, key: string): string {
@@ -96,12 +103,12 @@ function groupLabel(groupBy: ProjectGroupBy, key: string): string {
   return key ? `${key}/` : t('list.noFolder')
 }
 
-function renderRow(ctx: ProjectListContext, tbody: HTMLElement, row: ProjectListRow): void {
+function renderRow(ctx: ProjectListContext, tbody: HTMLElement, row: ProjectListRow): string | null {
   const { index } = ctx.plugin
   const { item } = row
   const ref = index.projectRef(item.path)
-  if (!ref) return
-  new ProjectRow(tbody, {
+  if (!ref) return null
+  const projectRow = new ProjectRow(tbody, {
     title: ref.title,
     icon: ref.icon,
     color: ref.color,
@@ -128,6 +135,8 @@ function renderRow(ctx: ProjectListContext, tbody: HTMLElement, row: ProjectList
     onContextMenu: (e) => openProjectContextMenu(ctx, ref, e),
     onActions: (e) => openProjectContextMenu(ctx, ref, e)
   })
+  projectRow.el.dataset.projectPath = item.path
+  return item.path
 }
 
 function openProjectContextMenu(ctx: ProjectListContext, ref: ProjectRef, e: MouseEvent): void {

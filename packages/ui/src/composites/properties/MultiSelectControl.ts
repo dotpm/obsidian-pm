@@ -1,11 +1,11 @@
 import { t } from '@dotpm/core'
-import { setIcon } from '#platform'
+import { activeDocument, setIcon } from '#platform'
 import { safeAsync } from '#dom'
 import { Popover } from '#primitives/Popover'
 import { Chip } from '#primitives/Chip'
 import { Avatar } from '#primitives/Avatar'
 import { renderDepRow, type DepLink } from './depRow'
-import { renderOptionRow } from './optionList'
+import { enableOptionNavigation, renderOptionRow } from './optionList'
 
 export interface PickerItem {
   id: string
@@ -148,6 +148,13 @@ export function renderMultiSelect(opts: MultiSelectOpts): void {
     const listEl = popover.contentEl.createDiv('pm-pop-list')
 
     const renderList = () => {
+      const focused = activeDocument().activeElement as HTMLElement | null
+      const focusedIndex =
+        focused && listEl.contains(focused)
+          ? Array.from(listEl.querySelectorAll<HTMLButtonElement>('button.pm-pop-item')).indexOf(
+              focused as HTMLButtonElement
+            )
+          : -1
       listEl.empty()
       const q = query.trim().toLowerCase()
       const picked = new Map(opts.selected().map((value) => [keyOf(value), value]))
@@ -220,6 +227,11 @@ export function renderMultiSelect(opts: MultiSelectOpts): void {
           })
         })
       }
+
+      if (focusedIndex !== -1) {
+        const all = Array.from(listEl.querySelectorAll<HTMLButtonElement>('button.pm-pop-item'))
+        ;(all[Math.min(focusedIndex, all.length - 1)] ?? searchInput)?.focus()
+      }
     }
 
     if (searchInput) {
@@ -229,8 +241,15 @@ export function renderMultiSelect(opts: MultiSelectOpts): void {
       })
     }
 
+    enableOptionNavigation(popover.contentEl, listEl, searchInput)
     renderList()
     popover.open()
-    searchInput?.focus()
+    if (searchInput) {
+      searchInput.focus()
+    } else {
+      const selected = listEl.querySelector<HTMLButtonElement>('button.pm-pop-item--selected')
+      const first = listEl.querySelector<HTMLButtonElement>('button.pm-pop-item')
+      ;(selected ?? first)?.focus()
+    }
   })
 }

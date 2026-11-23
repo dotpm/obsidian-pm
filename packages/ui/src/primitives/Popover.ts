@@ -59,6 +59,9 @@ export class Popover {
   private readonly onCloseCb?: (escaped: boolean) => void
   private opened = false
   private container: HTMLElement | null = null
+  /** Open popovers by the order they opened, so a modal can close the topmost one. */
+  private static stack: Popover[] = []
+  private static lastEscape = 0
 
   constructor(opts: PopoverOptions) {
     this.anchor = opts.anchor
@@ -72,6 +75,29 @@ export class Popover {
     if (isPhone()) this.el.addClass('pm-pop--sheet')
     if (this.width != null) this.el.setCssProps({ '--pop-width': `${this.width}px` })
     this.contentEl = this.el.createDiv('pm-pop-body')
+  }
+
+  /** Closes the topmost open popover inside `container`; true when it closed one. */
+  static closeWithin(container: HTMLElement): boolean {
+    for (let i = Popover.stack.length - 1; i >= 0; i--) {
+      const popover = Popover.stack[i]
+      if (!container.contains(popover.el)) continue
+      popover.close(true)
+      return true
+    }
+    return false
+  }
+
+  /** True once after an Escape was consumed here, so a host dialog can ignore that key. */
+  static consumeEscape(): boolean {
+    if (Date.now() - Popover.lastEscape > 100) return false
+    Popover.lastEscape = 0
+    return true
+  }
+
+  /** Closes every open popover, for a host that is tearing down or swapping panels. */
+  static closeAll(): void {
+    for (const popover of [...Popover.stack].reverse()) popover.close(true)
   }
 
   /** Opens a popover whose content `fill` draws, handing it the way to close the popover. */
@@ -93,8 +119,11 @@ export class Popover {
     this.host.appendChild(this.el)
     this.container = this.findContainer()
     this.reposition()
+    Popover.stack.push(this)
     this.doc.addEventListener('mousedown', this.onOutsideDown, true)
-    this.doc.addEventListener('keydown', this.onKeyDown, true)
+    // Window capture runs ahead of Obsidian's keymap, so Escape can close this popover
+    // without the host modal seeing it too.
+    this.win.addEventListener('keydown', this.onKeyDown, true)
     this.win.addEventListener('scroll', this.reposition, true)
     this.win.addEventListener('resize', this.reposition)
   }
@@ -105,8 +134,10 @@ export class Popover {
     const hadFocus = this.el.contains(this.doc.activeElement)
     this.anchor.setAttribute('aria-expanded', 'false')
     this.doc.removeEventListener('mousedown', this.onOutsideDown, true)
-    this.doc.removeEventListener('keydown', this.onKeyDown, true)
+    this.win.removeEventListener('keydown', this.onKeyDown, true)
     this.win.removeEventListener('scroll', this.reposition, true)
+    const at = Popover.stack.indexOf(this)
+    if (at !== -1) Popover.stack.splice(at, 1)
     this.win.removeEventListener('resize', this.reposition)
     this.el.remove()
     this.container = null
@@ -168,9 +199,10 @@ export class Popover {
   }
 
   private onKeyDown = (e: KeyboardEvent): void => {
-    if (e.key === 'Escape') {
-      e.stopPropagation()
-      this.close(true)
-    }
+    if (e.key !== 'Escape') return
+    e.preventDefault()
+    e.stopImmediatePropagation()
+    Popover.lastEscape = Date.now()
+    this.close(true)
   }
 }

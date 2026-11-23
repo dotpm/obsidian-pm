@@ -53,6 +53,7 @@ import {
   syncSortButton
 } from '@dotpm/ui'
 import { openProjectCreate } from '#ui/ModalFactory'
+import { KeyboardController, type ActionHandlers, type KeyboardSurface } from '#ui/keyboard/index'
 import { projectListItems, renderProjectTable, type ProjectListContext } from './ProjectListRenderer'
 
 export const PM_DASHBOARD_VIEW_TYPE = 'pm-dashboard'
@@ -84,17 +85,130 @@ export class DashboardView extends ItemView {
   private fieldsButton: ChipButton | null = null
   private items: ProjectListItem[] = []
   private shown = 0
+  private keyboard!: KeyboardController
+  private surface!: KeyboardSurface
+  private activePath: string | null = null
+  private activeIndex: number | null = null
+  private rowPaths: string[] = []
 
   constructor(leaf: WorkspaceLeaf, plugin: PMPlugin) {
     super(leaf)
     this.plugin = plugin
     this.navigation = false
-    this.scope = new Scope(this.app.scope)
-    this.scope.register(['Mod'], 's', () => {
+    const scope = new Scope(this.app.scope)
+    this.scope = scope
+    scope.register(['Mod'], 's', () => {
       if (!this.viewChanges().length) return true
       safeAsync(() => this.updateActiveView())()
       return false
     })
+    this.surface = {
+      context: 'projects',
+      groups: () => (this.rowPaths.length ? [this.rowPaths] : []),
+      activeId: () => this.activePath,
+      activePosition: () => (this.activeIndex === null ? null : { group: 0, index: this.activeIndex }),
+      setActive: (id) => this.setActivePath(id),
+      setActiveAt: (id, _group, index) => this.setActiveRow(id, index),
+      pageSize: () => 10,
+      canCollapse: () => !isProjectQueryActive(this.state.filter, this.text),
+      expand: () => this.setActiveCollapsed(false),
+      collapse: () => this.setActiveCollapsed(true)
+    }
+    this.keyboard = new KeyboardController(this.app, scope, {
+      container: () => this.containerEl,
+      getSurface: () => this.surface,
+      getHandlers: () => this.actionHandlers()
+    })
+  }
+
+  private actionHandlers(): ActionHandlers {
+    const path = (): string | null => this.activePath
+    return {
+      open: () => {
+        const active = path()
+        if (active) void safeAsync(() => this.plugin.router.openProjectLink(active))()
+      },
+      openOverview: () => {
+        const active = path()
+        if (active) void safeAsync(() => this.plugin.router.openProjectOverview(active))()
+      },
+      editProject: () => {
+        const active = path()
+        if (active) void safeAsync(() => this.plugin.router.openProjectEdit(active))()
+      },
+      new: () => openProjectCreate(this.plugin),
+      expand: () => this.setActiveCollapsed(false),
+      collapse: () => this.setActiveCollapsed(true),
+      search: () => this.searchBox?.focus(),
+      filter: () => {
+        if (this.filterButton) this.openFilter(this.filterButton.el)
+      },
+      undo: () =>
+        (async () => {
+          await this.plugin.undoLastAction()
+          this.renderList()
+        })(),
+      redo: () =>
+        (async () => {
+          await this.plugin.redoLastAction()
+          this.renderList()
+        })()
+    }
+  }
+
+  private setActivePath(id: string | null): void {
+    if (!id) {
+      this.setActiveRow(null, 0)
+      return
+    }
+    const index = this.rowPaths.indexOf(id)
+    this.setActiveRow(id, index === -1 ? 0 : index)
+  }
+
+  private setActiveRow(id: string | null, index: number): void {
+    this.activePath = id
+    this.activeIndex = id ? index : null
+    this.paintActiveProject()
+    if (!id) return
+    const row = this.rowAt(index) ?? this.projectRow(id)
+    row?.scrollIntoView({ block: 'nearest' })
+  }
+
+  private rowAt(index: number | null): HTMLElement | null {
+    if (index === null || !this.bodyEl) return null
+    return this.bodyEl.querySelectorAll<HTMLElement>('.pm-project-row')[index] ?? null
+  }
+
+  private projectRow(id: string): HTMLElement | null {
+    if (!this.bodyEl) return null
+    return (
+      Array.from(this.bodyEl.querySelectorAll<HTMLElement>('.pm-project-row')).find(
+        (row) => row.dataset.projectPath === id
+      ) ?? null
+    )
+  }
+
+  private paintActiveProject(): void {
+    const rows = this.bodyEl?.querySelectorAll<HTMLElement>('.pm-project-row')
+    rows?.forEach((el) => el.removeClass('pm-project-row--active'))
+    if (!this.activePath || !rows) return
+    let row = this.rowAt(this.activeIndex)
+    if (!row || row.dataset.projectPath !== this.activePath) {
+      row = this.projectRow(this.activePath)
+      this.activeIndex = row ? Array.from(rows).indexOf(row) : null
+    }
+    row?.addClass('pm-project-row--active')
+  }
+
+  private async setActiveCollapsed(collapsed: boolean): Promise<void> {
+    const path = this.activePath
+    if (!path) return
+    const list = this.plugin.settings.collapsedProjects
+    const at = list.indexOf(path)
+    if (collapsed && at === -1) list.push(path)
+    else if (!collapsed && at !== -1) list.splice(at, 1)
+    await this.plugin.saveSettings()
+    this.renderList()
   }
 
   getViewType(): string {
@@ -130,6 +244,7 @@ export class DashboardView extends ItemView {
   }
 
   onClose(): Promise<void> {
+    this.keyboard.destroy()
     if (this.reloadDebounceTimer !== null) {
       window.clearTimeout(this.reloadDebounceTimer)
       this.reloadDebounceTimer = null
@@ -351,6 +466,13 @@ export class DashboardView extends ItemView {
         .setChecked(this.plugin.settings.showArchivedProjects)
         .onClick(() => this.toggleArchived())
     )
+    menu.addSeparator()
+    menu.addItem((item) =>
+      item
+        .setTitle(t('keyboard.help'))
+        .setIcon('keyboard')
+        .onClick(() => this.keyboard.openHelp())
+    )
   }
 
   private openGroupMenu(anchor: HTMLElement): void {
@@ -426,6 +548,7 @@ export class DashboardView extends ItemView {
   }
 
   private renderList(): void {
+    if (!this.containerEl.isConnected) return
     const { plugin } = this
     this.items = projectListItems(plugin)
     const { groups, shown, total } = arrangeProjects(this.items, this.state, this.text, (path) =>
@@ -434,12 +557,15 @@ export class DashboardView extends ItemView {
     this.shown = shown
     this.syncHeader(shown, total)
     this.bodyEl.empty()
+    this.rowPaths = []
 
     if (total === 0) {
+      this.activePath = null
       this.renderNothing()
       return
     }
     if (!groups.length) {
+      this.activePath = null
       new EmptyState(this.bodyEl)
         .setIcon('search-x')
         .setTitle(t('list.noMatch'))
@@ -458,7 +584,9 @@ export class DashboardView extends ItemView {
       openProject: (path) => plugin.router.openProjectLink(path),
       redraw: () => this.renderList()
     }
-    renderProjectTable(ctx, groups, this.state.group, this.collapsedGroups)
+    this.rowPaths = renderProjectTable(ctx, groups, this.state.group, this.collapsedGroups)
+    this.keyboard.reconcile()
+    this.paintActiveProject()
   }
 
   private renderNothing(): void {
