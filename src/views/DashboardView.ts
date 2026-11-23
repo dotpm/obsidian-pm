@@ -143,6 +143,11 @@ export class DashboardView extends ItemView {
       filter: () => {
         if (this.filterButton) this.openFilter(this.filterButton.el)
       },
+      clearFilter: () => {
+        if (countProjectFilters(this.state.filter) === 0) return
+        this.state.filter = {}
+        this.changed()
+      },
       undo: () =>
         (async () => {
           await this.plugin.undoLastAction()

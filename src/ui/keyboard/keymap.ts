@@ -35,6 +35,7 @@ export type ActionId =
   | 'redo'
   | 'search'
   | 'filter'
+  | 'clearFilter'
   | 'nextView'
   | 'viewTable'
   | 'viewBoard'
@@ -103,6 +104,7 @@ export const ACTION_LABELS: Record<ActionId, MessageKey> = {
   redo: 'commands.redo',
   search: 'header.search',
   filter: 'header.filter',
+  clearFilter: 'filter.clearAllFilters',
   nextView: 'keyboard.nextView',
   viewTable: 'views.table',
   viewBoard: 'views.kanban',
@@ -175,6 +177,7 @@ export const ACTION_SECTIONS: Record<ActionId, KeyboardSection> = {
   openNote: 'projects',
   search: 'view',
   filter: 'view',
+  clearFilter: 'view',
   nextView: 'view',
   viewTable: 'view',
   viewBoard: 'view',
@@ -223,6 +226,7 @@ const TASK_ACTIONS: Binding[] = [
 const VIEW_ACTIONS: Binding[] = [
   { keys: ['Mod+F', '/'], action: 'search' },
   { keys: ['f'], action: 'filter' },
+  { keys: ['Shift+F'], action: 'clearFilter' },
   { keys: ['v'], action: 'nextView' },
   { keys: ['1'], action: 'viewTable' },
   { keys: ['2'], action: 'viewBoard' },
@@ -260,6 +264,7 @@ export const KEYMAP: Record<KeyboardContext, Binding[]> = {
     { keys: ['Mod+Shift+Z', 'Mod+Y'], action: 'redo' },
     { keys: ['Mod+F', '/'], action: 'search' },
     { keys: ['f'], action: 'filter' },
+    { keys: ['Shift+F'], action: 'clearFilter' },
     ...COMMON_ACTIONS,
     ...TREE
   ],

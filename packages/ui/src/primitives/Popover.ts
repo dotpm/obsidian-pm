@@ -58,6 +58,8 @@ export class Popover {
   private readonly width?: number
   private readonly onCloseCb?: (escaped: boolean) => void
   private opened = false
+  /** Where focus was when it opened, which is where it goes back to. */
+  private opener: HTMLElement | null = null
   private container: HTMLElement | null = null
   /** Open popovers by the order they opened, so a modal can close the topmost one. */
   private static stack: Popover[] = []
@@ -115,6 +117,7 @@ export class Popover {
   open(): void {
     if (this.opened) return
     this.opened = true
+    this.opener = this.doc.activeElement as HTMLElement | null
     this.anchor.setAttribute('aria-expanded', 'true')
     this.host.appendChild(this.el)
     this.container = this.findContainer()
@@ -141,8 +144,20 @@ export class Popover {
     this.win.removeEventListener('resize', this.reposition)
     this.el.remove()
     this.container = null
-    if (hadFocus) this.anchor.focus()
+    if (hadFocus) this.restoreFocus()
     this.onCloseCb?.(escaped)
+  }
+
+  /**
+   * Focus goes back to where it came from, normally the trigger. A popover a hotkey opened
+   * from the page itself has no trigger to return to: landing on its anchor would leave a
+   * button focused, and the next Enter would press it instead of acting on the page.
+   */
+  private restoreFocus(): void {
+    const opener = this.opener
+    this.opener = null
+    if (!opener || opener === this.doc.body) return
+    ;(opener.isConnected ? opener : this.anchor).focus()
   }
 
   private findContainer(): HTMLElement | null {

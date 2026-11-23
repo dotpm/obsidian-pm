@@ -278,7 +278,20 @@ export class KeyboardController {
     })()
   }
 
+  /**
+   * Moving the cursor hands the keyboard back to it. A button left focused in the view, such as
+   * a header chip a popover returned to, would otherwise take the next Enter that is meant for
+   * the task the cursor is on.
+   */
+  private releaseButtonFocus(): void {
+    const container = this.host.container()
+    const active = activeDocument.activeElement as HTMLElement | null
+    if (!active || !container?.contains(active)) return
+    if (active.closest('button, a, [role="button"]')) active.blur()
+  }
+
   private navigate(action: ActionId, surface: KeyboardSurface): boolean {
+    if (action !== 'escape') this.releaseButtonFocus()
     const cursor = this.cursorFor(surface)
     switch (action) {
       case 'next':

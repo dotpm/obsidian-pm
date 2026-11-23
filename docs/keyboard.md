@@ -40,7 +40,7 @@ shortcuts sheet leaves it out.
 | `Mod+Z`, `Mod+Shift+Z` | Undo / redo |
 | `Mod+←`, `Mod+→` | Move a board card to the previous / next column |
 | `Mod+F` or `/` | Focus search |
-| `f` | Filter |
+| `f` / `Shift+F` | Open the filter panel / clear every filter |
 | `v`, `1` `2` `3` | Next view, or table / board / timeline |
 | `Mod+K` | Actions for the current item and view |
 | `?` or `F1` | Keyboard shortcuts |
@@ -54,7 +54,9 @@ takes the first match, and `↓` walks the list. Picking a field lands on its fi
 reaches the operators (`is any of`, `is none of`, …), where `←`/`→` switch between them,
 and one more `↑` reaches the back button. In the list of applied filters, `→` moves from a
 row to its remove button. Number and date fields keep the arrows for their own value; `Tab`
-leaves them. `Esc` closes the panel; every change has already been applied.
+leaves them. `Esc` closes the panel, and focus goes back to the page, so `Enter` acts on the
+task under the cursor again; every change has already been applied. `Shift+F` drops all
+filters at once (conditions and the archived toggle; the search text stays).
 
 On the project list, `o` opens the project overview and `e` edits the project. On a
 project's overview page, `Enter` opens its tasks, `e` edits the project, `o` opens the

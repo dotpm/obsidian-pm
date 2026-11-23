@@ -252,6 +252,7 @@ export class ProjectView extends ItemView {
       collapse: () => this.currentSurface()?.collapse?.(),
       search: () => this.searchBox?.focus(),
       filter: () => this.openFilter(),
+      clearFilter: () => this.clearFilter(),
       nextView: () => {
         const index = MODES.indexOf(this.currentView)
         this.switchMode(MODES[(index + 1) % MODES.length])
@@ -913,6 +914,15 @@ export class ProjectView extends ItemView {
     this.queryBarOpen = true
     if (!this.filterBar) this.renderFilterBar()
     this.filterBar?.openPicker()
+  }
+
+  /** Drops every filter condition and the archived toggle; the search text stays. */
+  private clearFilter(): void {
+    if (countActiveFilters(this.query.filter) === 0) return
+    this.query.filter.conditions = []
+    this.query.filter.showArchived = false
+    this.handleFilterMutation()
+    this.renderFilterBar()
   }
 
   private openSort(anchor: HTMLElement): void {

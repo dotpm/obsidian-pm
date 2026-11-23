@@ -26,6 +26,13 @@ describe('keymap', () => {
     expect(resolveAction('table', 'e')).toBe('open')
   })
 
+  it('clears the filters on Shift+F where f opens them', () => {
+    for (const context of ['table', 'board', 'timeline', 'projects'] as const) {
+      expect(resolveAction(context, 'f')).toBe('filter')
+      expect(resolveAction(context, 'Shift+f')).toBe('clearFilter')
+    }
+  })
+
   it('resolves the punctuation aliases', () => {
     expect(resolveAction('table', '?')).toBe('help')
     expect(resolveAction('table', '/')).toBe('search')

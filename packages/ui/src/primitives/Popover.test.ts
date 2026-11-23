@@ -36,6 +36,66 @@ describe('Popover', () => {
     expect(Popover.consumeEscape()).toBe(false)
   })
 
+  describe('focus on close', () => {
+    const openWithField = (anchor: HTMLElement): { popover: Popover; field: HTMLInputElement } => {
+      const popover = new Popover({ anchor })
+      const field = popover.contentEl.createEl('input')
+      popover.open()
+      field.focus()
+      return { popover, field }
+    }
+
+    it('goes back to the trigger that had focus when it opened', () => {
+      const anchor = document.createElement('button')
+      document.body.append(anchor)
+      anchor.focus()
+      const { popover } = openWithField(anchor)
+      popover.close()
+      expect(document.activeElement).toBe(anchor)
+    })
+
+    it('stays on the page when a hotkey opened it from there, so Enter cannot press the anchor', () => {
+      const anchor = document.createElement('button')
+      document.body.append(anchor)
+      expect(document.activeElement).toBe(document.body)
+      const { popover } = openWithField(anchor)
+      popover.close(true)
+      expect(document.activeElement).toBe(document.body)
+    })
+
+    it('goes back to what had focus before, even when that is not the anchor', () => {
+      const anchor = document.createElement('button')
+      const before = document.createElement('button')
+      document.body.append(anchor, before)
+      before.focus()
+      const { popover } = openWithField(anchor)
+      popover.close()
+      expect(document.activeElement).toBe(before)
+    })
+
+    it('falls back to the anchor when what had focus is gone', () => {
+      const anchor = document.createElement('button')
+      const before = document.createElement('button')
+      document.body.append(anchor, before)
+      before.focus()
+      const { popover } = openWithField(anchor)
+      before.remove()
+      popover.close()
+      expect(document.activeElement).toBe(anchor)
+    })
+
+    it('leaves focus alone when it had already moved elsewhere', () => {
+      const anchor = document.createElement('button')
+      const elsewhere = document.createElement('button')
+      document.body.append(anchor, elsewhere)
+      anchor.focus()
+      const { popover } = openWithField(anchor)
+      elsewhere.focus()
+      popover.close()
+      expect(document.activeElement).toBe(elsewhere)
+    })
+  })
+
   it('closes the topmost popover inside a container', () => {
     const modal = document.createElement('div')
     modal.className = 'modal'

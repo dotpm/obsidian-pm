@@ -180,6 +180,59 @@ describe('KeyboardController', () => {
     expect(state.surface.activeId()).toBe('a')
   })
 
+  it('drops a button left focused in the view when the cursor moves, so Enter reaches the task', () => {
+    const state = makeSurface('a')
+    const container = activeDocument.createElement('div')
+    const chip = activeDocument.createElement('button')
+    container.append(chip)
+    activeDocument.body.append(container)
+    const opened: string[] = []
+    const { scope } = makeController(
+      state,
+      () => ({
+        open: () => {
+          opened.push('open')
+        }
+      }),
+      container
+    )
+    const next = scope.handlers.find((entry) => entry.key === 'j')
+    const enter = scope.handlers.find((entry) => entry.key === 'Enter')
+    if (!next || !enter) throw new Error('no handlers')
+
+    chip.focus()
+    expect(activeDocument.activeElement).toBe(chip)
+    next.fn(keyEvent(chip, 'j'))
+    expect(state.surface.activeId()).toBe('b')
+    expect(activeDocument.activeElement).not.toBe(chip)
+
+    enter.fn(keyEvent(activeDocument.body, 'Enter'))
+    expect(opened).toEqual(['open'])
+  })
+
+  it('leaves Enter to a focused button until the cursor moves', () => {
+    const state = makeSurface('a')
+    const container = activeDocument.createElement('div')
+    const chip = activeDocument.createElement('button')
+    container.append(chip)
+    activeDocument.body.append(container)
+    const opened: string[] = []
+    const { scope } = makeController(
+      state,
+      () => ({
+        open: () => {
+          opened.push('open')
+        }
+      }),
+      container
+    )
+    const enter = scope.handlers.find((entry) => entry.key === 'Enter')
+    if (!enter) throw new Error('no Enter handler')
+
+    enter.fn(keyEvent(chip, 'Enter'))
+    expect(opened).toEqual([])
+  })
+
   it('lets Escape close an open menu before clearing a selection', () => {
     const state = makeSurface('a')
     state.setSelection(['a'])
