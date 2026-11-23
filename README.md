@@ -113,7 +113,7 @@ A subtask can take tags and custom fields from the tasks above it, at any depth,
 
 Set the rules in **Settings → Task fields → Subtask inheritance**, or per project under **Subtask inheritance** in the project's settings. Tags and properties each have their own rule: inherit all of them, or only the ones you pick, or all but a few.
 
-- An inherited tag is shown dimmed and dashed next to the task's own tags, and is not part of the task's own tag list.
+- An inherited tag is shown dashed and italic, with an arrow in place of the color dot, next to the task's own tags, and is not part of the task's own tag list.
 - A task's own value for a field always wins. A list, such as a multi-select, adds up with the ancestors' instead.
 - Nothing is copied into the task's note. Change the parent or the rules and every subtask follows, and turning inheritance off leaves the notes as they were.
 

@@ -1,10 +1,14 @@
 import { stringToColor, t } from '@dotpm/core'
 import { Chip } from '#primitives/Chip'
 
-/** A tag taken from an ancestor is drawn dashed and muted, so it reads as not the task's own. */
+/**
+ * A tag taken from an ancestor swaps the colored dot for a "passed down" arrow in the same
+ * color and is drawn dashed and italic, so it reads as not the task's own at a glance.
+ */
 export function renderTagChip(parent: HTMLElement, tag: string, colored: boolean, inherited = false): Chip {
   const chip = new Chip(parent).setLabel(tag).setVariant('outline').setTag()
-  if (colored) chip.setDot(true).setColor(stringToColor(tag))
-  if (inherited) chip.setInherited(t('chip.inheritedTooltip'))
+  if (colored) chip.setColor(stringToColor(tag))
+  if (inherited) chip.setLeadingIcon('corner-down-right').setInherited(t('chip.inheritedTooltip'))
+  else if (colored) chip.setDot(true)
   return chip
 }

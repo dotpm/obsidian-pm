@@ -459,10 +459,14 @@ button.pm-chip-btn--active:hover {
   position: relative;
   top: 0.75px;
 }
-/* Taken from an ancestor rather than set on the task itself. */
+/* Taken from an ancestor rather than set on the task itself: dashed and italic, with an arrow where the dot would be. */
 .pm-chip--inherited {
   border-style: dashed;
-  opacity: 0.7;
+  font-style: italic;
+}
+.pm-chip--tag .pm-chip-icon {
+  --icon-size: 11px;
+  margin-left: 0;
 }
 .pm-chip--sm {
   padding: 1px 5px;
