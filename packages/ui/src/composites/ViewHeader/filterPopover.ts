@@ -454,13 +454,17 @@ export function renderFilterPanel(
   }
 }
 
-/** The filter panel in a popover under `anchor`. */
-export const openFilterPopover = (
+/** The filter panel in a popover under `anchor`, with its first field focused once it is on the page. */
+export function openFilterPopover(
   anchor: HTMLElement,
   setup: FilterSetup,
   onChange: () => void,
   start?: number | 'list'
-): Popover => Popover.show({ anchor, width: 300 }, (el) => renderFilterPanel(el, setup, onChange, start))
+): Popover {
+  const pop = Popover.show({ anchor, width: 300 }, (el) => renderFilterPanel(el, setup, onChange, start))
+  pop.contentEl.find('input.pm-pop-field')?.focus()
+  return pop
+}
 
 function renderChecklist(
   parent: HTMLElement,

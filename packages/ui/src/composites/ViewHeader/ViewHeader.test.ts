@@ -185,6 +185,13 @@ describe('FilterBar', () => {
     ])
   })
 
+  it('focuses the field search when the picker opens', () => {
+    mountBar(makeDefaultFilter()).openPicker()
+    const search = document.body.querySelector<HTMLInputElement>('.pm-filter-pop input.pm-pop-field')
+    expect(search).not.toBeNull()
+    expect(document.activeElement).toBe(search)
+  })
+
   it('adds a condition from the value list, with counts that leave archived tasks out', () => {
     const filter = makeDefaultFilter()
     const bar = mountBar(filter)
