@@ -1,6 +1,7 @@
 import { ChipButton } from '#primitives/ChipButton'
 import { IconButton } from '#primitives/IconButton'
 import { Popover } from '#primitives/Popover'
+import { activeDocument } from '#platform'
 import {
   type DateBucket,
   type FilterCondition,
@@ -181,6 +182,89 @@ export function describeCondition(setup: FilterSetup, condition: FilterCondition
   }
 }
 
+const PRIMARY = 'data-pm-primary'
+
+/** Marks what a screen of the filter panel hands focus to when it opens. */
+function markPrimary(el: Element | null | undefined): void {
+  el?.setAttribute(PRIMARY, '')
+}
+
+function focusPrimary(root: HTMLElement): void {
+  root.querySelector<HTMLElement>(`[${PRIMARY}]`)?.focus()
+}
+
+/** Rebuilds a list's rows without dropping the keyboard focus that sat on one of them. */
+function keepRowFocus(list: HTMLElement, rebuild: () => void): void {
+  const rows = (): HTMLElement[] => Array.from(list.querySelectorAll<HTMLElement>('button.pm-pop-item'))
+  const at = rows().indexOf(activeDocument().activeElement as HTMLElement)
+  rebuild()
+  if (at === -1) return
+  const next = rows()
+  next[Math.min(at, next.length - 1)]?.focus()
+}
+
+/** Controls that sit side by side count as one stop for Up and Down, and Left and Right move along them. */
+const SIDE_BY_SIDE = '.pm-filter-pop-ops, .pm-filter-pop-range, .pm-filter-list-row'
+
+function navStops(body: HTMLElement): HTMLElement[][] {
+  const stops = new Map<Element, HTMLElement[]>()
+  // Icon buttons are not <button>s, but they take focus all the same.
+  for (const el of Array.from(body.querySelectorAll<HTMLElement>('button, input, .pm-icon-btn'))) {
+    if (el.hasAttribute('disabled')) continue
+    const key = el.closest(SIDE_BY_SIDE) ?? el
+    const group = stops.get(key)
+    if (group) group.push(el)
+    else stops.set(key, [el])
+  }
+  return Array.from(stops.values())
+}
+
+/**
+ * Arrow keys walk the panel, so it works without Tab: Up and Down go from the back button
+ * through the operators and the search field to the rows, Left and Right move along the
+ * operators or between a row and its remove button, Home and End jump to the first and
+ * last row. Number and date fields keep the arrows for their own value; Tab leaves them.
+ */
+function enableFilterNavigation(body: HTMLElement): void {
+  body.addEventListener('keydown', (event) => {
+    if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return
+    const target = event.target as HTMLElement
+    const isInput = target.tagName === 'INPUT'
+    if (isInput && (target as HTMLInputElement).type !== 'text') return
+    const stops = navStops(body)
+    const at = stops.findIndex((group) => group.includes(target))
+    if (at === -1) return
+    switch (event.key) {
+      case 'ArrowDown':
+      case 'ArrowUp': {
+        event.preventDefault()
+        const next = stops[at + (event.key === 'ArrowDown' ? 1 : -1)]
+        // Entering the operators lands on the one in use rather than the first.
+        ;(next?.find((el) => el.hasClass('pm-chip-btn--active')) ?? next?.[0])?.focus()
+        return
+      }
+      case 'ArrowRight':
+      case 'ArrowLeft': {
+        if (isInput) return
+        const group = stops[at]
+        const next = group[group.indexOf(target) + (event.key === 'ArrowRight' ? 1 : -1)]
+        if (!next) return
+        event.preventDefault()
+        next.focus()
+        return
+      }
+      case 'Home':
+      case 'End': {
+        if (isInput) return
+        const rows = Array.from(body.querySelectorAll<HTMLElement>('.pm-pop-list button.pm-pop-item'))
+        if (!rows.length) return
+        event.preventDefault()
+        rows[event.key === 'Home' ? 0 : rows.length - 1].focus()
+      }
+    }
+  })
+}
+
 function countFor(setup: FilterSetup, field: string, id: string): number {
   const key = valueKey(field, id, setup.ctx)
   let count = 0
@@ -211,6 +295,15 @@ export function renderFilterPanel(
 ): void {
   const body = parent.createDiv('pm-filter-pop')
   const { filter } = setup
+  enableFilterNavigation(body)
+  // Each screen replaces the last in place, so it hands focus on itself; the first one
+  // is left to whoever opened the panel, who knows whether it is on the page yet.
+  let ready = false
+  const settle = (): void => {
+    if (ready) focusPrimary(body)
+  }
+  /** The row to keep focus on when the list is rebuilt after a removal. */
+  let rowAfterRemove: number | null = null
 
   const showList = (): void => {
     body.empty()
@@ -220,6 +313,7 @@ export function renderFilterPanel(
         .setIcon('x')
         .setTooltip(t('filter.remove', { label }))
         .onClick(() => {
+          rowAfterRemove = list.findAll('.pm-filter-list-row').indexOf(row)
           onRemove()
           onChange()
           showList()
@@ -254,18 +348,24 @@ export function renderFilterPanel(
       accent: true,
       onPick: () => showFields(showList)
     })
-    if (!showClear || (!filter.conditions.length && !filter.showArchived)) return
-    const clear = body.createDiv('pm-filter-list-foot pm-pop-section')
-    renderOptionRow(clear, {
-      label: t('filter.clearAll'),
-      icon: 'x',
-      onPick: () => {
-        filter.conditions = []
-        filter.showArchived = false
-        onChange()
-        showList()
-      }
-    })
+    if (showClear && (filter.conditions.length || filter.showArchived)) {
+      const clear = body.createDiv('pm-filter-list-foot pm-pop-section')
+      renderOptionRow(clear, {
+        label: t('filter.clearAll'),
+        icon: 'x',
+        onPick: () => {
+          filter.conditions = []
+          filter.showArchived = false
+          onChange()
+          showList()
+        }
+      })
+    }
+    const rows = list.findAll('.pm-filter-list-row button.pm-pop-item')
+    const kept = rowAfterRemove === null ? undefined : rows[Math.min(rowAfterRemove, rows.length - 1)]
+    rowAfterRemove = null
+    markPrimary(kept ?? list.find('button.pm-pop-item'))
+    settle()
   }
 
   const showFields = (back?: () => void): void => {
@@ -308,7 +408,7 @@ export function renderFilterPanel(
           onPick: () => {
             filter.showArchived = !filter.showArchived
             onChange()
-            renderList()
+            keepRowFocus(list, renderList)
           }
         })
       }
@@ -318,7 +418,8 @@ export function renderFilterPanel(
       list.querySelector<HTMLButtonElement>('button')?.click()
     })
     renderList()
-    search.focus()
+    markPrimary(search)
+    settle()
   }
 
   const showEditor = (index: number | null, field: string, back?: () => void): void => {
@@ -368,6 +469,8 @@ export function renderFilterPanel(
             commit()
             renderOps()
             renderValue()
+            // The chip that was pressed is gone with the rebuild; keep the arrows on the operators.
+            ops.find('.pm-chip-btn--active')?.focus()
           })
           .el.addClass('pm-filter-pop-op')
       }
@@ -379,7 +482,7 @@ export function renderFilterPanel(
         case 'any':
         case 'none':
         case 'all':
-          renderChecklist(valueEl, setup, field, draft, commit)
+          markPrimary(renderChecklist(valueEl, setup, field, draft, commit))
           return
         case 'contains':
         case 'not-contains': {
@@ -392,7 +495,7 @@ export function renderFilterPanel(
             draft.value = input.value
             commit()
           })
-          input.focus()
+          markPrimary(input)
           return
         }
         case 'eq':
@@ -419,7 +522,7 @@ export function renderFilterPanel(
               commit()
             })
           }
-          inputs[0]?.focus()
+          markPrimary(inputs[0])
           return
         }
         case 'bucket': {
@@ -431,17 +534,21 @@ export function renderFilterPanel(
               onPick: () => {
                 draft.value = draft.value === bucket ? undefined : bucket
                 commit()
-                renderValue()
+                keepRowFocus(valueEl, renderValue)
               }
             })
           }
+          markPrimary(list.find('.pm-pop-item--selected') ?? list.find('button.pm-pop-item'))
         }
       }
     }
 
     renderOps()
     renderValue()
+    // A field with nothing to choose from still has its operators to land on.
+    if (!body.querySelector(`[${PRIMARY}]`)) markPrimary(ops.find('.pm-chip-btn--active'))
     if (at === null) commit()
+    settle()
   }
 
   if (start === 'list') {
@@ -452,9 +559,13 @@ export function renderFilterPanel(
   } else {
     showFields()
   }
+  ready = true
 }
 
-/** The filter panel in a popover under `anchor`, with its first field focused once it is on the page. */
+/**
+ * The filter panel in a popover under `anchor`. Focus starts on what the first screen
+ * leads with once it is on the page: the search field, or the first option to pick.
+ */
 export function openFilterPopover(
   anchor: HTMLElement,
   setup: FilterSetup,
@@ -462,17 +573,18 @@ export function openFilterPopover(
   start?: number | 'list'
 ): Popover {
   const pop = Popover.show({ anchor, width: 300 }, (el) => renderFilterPanel(el, setup, onChange, start))
-  pop.contentEl.find('input.pm-pop-field')?.focus()
+  focusPrimary(pop.contentEl)
   return pop
 }
 
+/** Draws the values to tick; returns where focus should start: the search field, else the first value. */
 function renderChecklist(
   parent: HTMLElement,
   setup: FilterSetup,
   field: string,
   draft: FilterCondition,
   commit: () => void
-): void {
+): HTMLElement | null {
   const options = valueOptions(setup, field)
   const search = options.length > 8 ? renderPopSearch(parent, t('filter.findValue'), () => render()) : null
   const list = parent.createDiv('pm-pop-list')
@@ -497,11 +609,16 @@ function renderChecklist(
           const current = selected()
           draft.value = isSelected ? current.filter((id) => keyOf(id) !== keyOf(option.id)) : [...current, option.id]
           commit()
-          render()
+          keepRowFocus(list, render)
         }
       })
     }
   }
+  search?.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return
+    e.preventDefault()
+    list.querySelector<HTMLButtonElement>('button.pm-pop-item')?.click()
+  })
   render()
-  search?.focus()
+  return search ?? list.find('button.pm-pop-item')
 }

@@ -48,6 +48,14 @@ shortcuts sheet leaves it out.
 In any picker, `↑`/`↓` move through the options, `Home`/`End` jump to the ends, and
 `Enter` picks. `Esc` closes only the picker; a task editor stays open.
 
+`f` opens the filter panel with its search field focused. Typing narrows the fields, `Enter`
+takes the first match, and `↓` walks the list. Picking a field lands on its first option, so
+`Space` or `Enter` ticks it and `↓`/`↑` move on without a Tab. `↑` from the first option
+reaches the operators (`is any of`, `is none of`, …), where `←`/`→` switch between them,
+and one more `↑` reaches the back button. In the list of applied filters, `→` moves from a
+row to its remove button. Number and date fields keep the arrows for their own value; `Tab`
+leaves them. `Esc` closes the panel; every change has already been applied.
+
 On the project list, `o` opens the project overview and `e` edits the project. On a
 project's overview page, `Enter` opens its tasks, `e` edits the project, `o` opens the
 Markdown note, and `n` adds a task.
