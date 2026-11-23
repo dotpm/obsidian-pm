@@ -250,13 +250,16 @@
 }
 .pm-gantt-bar-label {
   font-size: 10px;
-  fill: rgba(255, 255, 255, 0.85);
+  fill: var(--text-normal);
+  stroke: var(--background-primary);
+  stroke-width: 2.5px;
+  stroke-linejoin: round;
+  paint-order: stroke fill;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.03em;
   pointer-events: none;
   dominant-baseline: central;
-  text-shadow: 0 0 3px rgba(0, 0, 0, 0.55);
 }
 
 .pm-gantt-today-line {
