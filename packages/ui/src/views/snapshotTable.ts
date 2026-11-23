@@ -3,6 +3,7 @@ import {
   type FlatTask,
   applyTaskFilterFlat,
   dueUrgency,
+  effectiveCustomValue,
   flattenTasks,
   formatDateLong,
   getStatusConfig,
@@ -193,7 +194,7 @@ export function renderSnapshotTable(container: HTMLElement, model: ViewModel): H
           const cf = customFields.find((field) => `cf:${field.id}` === id)
           new CustomFieldCell(
             row,
-            cf ? customFieldValue(model, cf, task.customFields[cf.id]) : { kind: 'text', text: '' }
+            cf ? customFieldValue(model, cf, effectiveCustomValue(task, cf.id)) : { kind: 'text', text: '' }
           )
         }
       }

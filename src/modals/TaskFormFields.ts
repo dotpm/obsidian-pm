@@ -6,13 +6,18 @@ import {
   type Recurrence,
   collectAllAssignees,
   collectAllTags,
+  effectiveCustomValue,
   flattenTasks,
+  isInheritedField,
+  isUnsetValue,
   reaches,
   isTerminalStatus,
   priorityIcon,
   stringToColor,
   completionOutcome,
   relativeDue,
+  stringifyCustomValue,
+  tagKey,
   t
 } from '@dotpm/core'
 import {
@@ -23,6 +28,7 @@ import {
   renderMultiSelect,
   renderAddProperty,
   renderDepRow,
+  renderTagChip,
   type SelectItem,
   type HiddenProperty
 } from '@dotpm/ui'
@@ -54,6 +60,22 @@ const repeatOptions = (): SelectItem[] => [
   { id: 'monthly', label: t('taskForm.repeatMonthly'), icon: 'repeat' },
   { id: 'yearly', label: t('taskForm.repeatYearly'), icon: 'repeat' }
 ]
+
+/**
+ * What an ancestor adds to a property: all of the value, or for a list only the entries the
+ * task lacks. Empty once the task's own value has taken over, which the draft can do
+ * before the inherited values are resolved again.
+ */
+function inheritedText(task: Task, fieldId: string): string {
+  const value = effectiveCustomValue(task, fieldId)
+  const own = task.customFields[fieldId]
+  let added = value
+  if (!isUnsetValue(own)) {
+    if (!Array.isArray(value) || !Array.isArray(own)) return ''
+    added = value.filter((entry) => !own.includes(entry))
+  }
+  return stringifyCustomValue(added).replace(/\[\[(?:[^|\]]*\|)?([^\]]*)\]\]/g, '$1')
+}
 
 /**
  * The property grid. Core properties always show; the rest hide when empty behind "Add
@@ -335,6 +357,12 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
           if (!task.tags.includes(label)) task.tags.push(label)
         }
       })
+      const ownTags = new Set(task.tags.map(tagKey))
+      const inheritedTags = (task.inherited?.tags ?? []).filter((tag) => !ownTags.has(tagKey(tag)))
+      if (inheritedTags.length) {
+        const inherited = cell.createDiv('pm-prop-chips pm-prop-chips--inherited')
+        for (const tag of inheritedTags) renderTagChip(inherited, tag, plugin.settings.showTagColors, true)
+      }
       return cell
     },
     'tag'
@@ -448,7 +476,14 @@ export function renderTaskFormFields(container: HTMLElement, ctx: TaskFormFields
     cfSection.createEl('h4', { text: t('settings.customFields.name'), cls: 'pm-modal-section-title' })
     const cfGrid = cfSection.createDiv('pm-prop-grid')
     for (const cf of customFields) {
-      renderPropRow(cfGrid, cf.name, () => renderCustomFieldInput(cf, task, project, plugin, rerender))
+      renderPropRow(cfGrid, cf.name, () => {
+        const input = renderCustomFieldInput(cf, task, project, plugin, rerender)
+        const inherited = isInheritedField(task, cf.id) ? inheritedText(task, cf.id) : ''
+        if (inherited) {
+          input.createSpan({ cls: 'pm-prop-inherited-hint', text: t('taskForm.inheritedValue', { value: inherited }) })
+        }
+        return input
+      })
     }
   }
 }

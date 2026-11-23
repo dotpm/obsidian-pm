@@ -74,7 +74,7 @@ One column per status, or per priority, assignee, tag, type or custom field. Dra
 
 **Tasks**
 
-- Subtasks to any depth
+- Subtasks to any depth, which can inherit tags and custom fields from their parent tasks; see [Subtask inheritance](#subtask-inheritance)
 - Dependencies, within a project or across projects, and milestones
 - Start and due dates, progress, assignees, tags
 - Recurring tasks
@@ -106,6 +106,16 @@ One column per status, or per priority, assignee, tag, type or custom field. Dra
 - Statuses and priorities with label, color and icon, global or per project
 - Per-project overrides for default view, scheduling and archiving
 - Team members, global and per project
+
+## Subtask inheritance
+
+A subtask can take tags and custom fields from the tasks above it, at any depth, so a filter on `#client-x` or on a "Team" field finds a whole branch without tagging every task in it. It is off until you turn it on.
+
+Set the rules in **Settings → Task fields → Subtask inheritance**, or per project under **Subtask inheritance** in the project's settings. Tags and properties each have their own rule: inherit all of them, or only the ones you pick, or all but a few.
+
+- An inherited tag is shown dimmed and dashed next to the task's own tags, and is not part of the task's own tag list.
+- A task's own value for a field always wins. A list, such as a multi-select, adds up with the ancestors' instead.
+- Nothing is copied into the task's note. Change the parent or the rules and every subtask follows, and turning inheritance off leaves the notes as they were.
 
 ## File format
 

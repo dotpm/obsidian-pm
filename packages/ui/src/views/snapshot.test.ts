@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   DEFAULT_PRIORITIES,
   DEFAULT_STATUSES,
+  applyInheritance,
   makeDefaultFilter,
   makeDefaultGroup,
   makeTask,
@@ -146,6 +147,41 @@ describe('snapshot table', () => {
     expect(tableRows(model()).map((r) => r.task.id)).not.toContain('z')
     const withArchived = model({ filter: { ...makeDefaultFilter(), showArchived: true } })
     expect(tableRows(withArchived).map((r) => r.task.id)).toContain('z')
+  })
+})
+
+describe('inherited values', () => {
+  function inheriting(): ViewModel {
+    const view = model()
+    const [parent] = view.projects[0].tasks
+    parent.tags = ['client']
+    parent.customFields = { sprint: 'S1' }
+    applyInheritance(view.projects[0].tasks, {
+      tags: { inherit: true, except: [] },
+      properties: { inherit: true, except: [] }
+    })
+    return view
+  }
+
+  it('draws an inherited tag dashed beside the subtask own tags and shows an inherited property', () => {
+    const host = document.body.createDiv()
+    renderSnapshotTable(host, inheriting())
+    const tags = host.querySelectorAll('tr[data-task-id="c"] .pm-table-tags .pm-chip')
+    expect(Array.from(tags).map((tag) => [tag.textContent, tag.classList.contains('pm-chip--inherited')])).toEqual([
+      ['client', true]
+    ])
+    expect(host.querySelector('tr[data-task-id="a"] .pm-table-tags .pm-chip--inherited')).toBeNull()
+    const cells = Array.from(host.querySelectorAll('tr[data-task-id="c"] td')).map((td) => td.textContent?.trim())
+    expect(cells).toContain('S1')
+  })
+
+  it('deals a board card the inherited tag', () => {
+    const view = inheriting()
+    view.fields = { kanban: { visible: ['tags', 'subtasks'] } }
+    const host = document.body.createDiv()
+    renderSnapshotKanban(host, view)
+    const tags = host.querySelectorAll('.pm-kanban-card[data-task-id="c"] .pm-kanban-card-tags .pm-chip')
+    expect(Array.from(tags).map((tag) => tag.textContent)).toEqual(['client'])
   })
 })
 

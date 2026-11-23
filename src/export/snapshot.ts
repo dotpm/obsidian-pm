@@ -8,6 +8,7 @@ import {
   type ViewFields,
   type NonWorkingDays,
   type ViewMode,
+  effectiveCustomValue,
   flattenTasks,
   locale,
   PRIORITY_ICON_SETS,
@@ -91,7 +92,7 @@ function personColors(plugin: PMPlugin, projects: Project[]): Record<string, str
     const personFields = plugin.store.configFor(project).customFields.filter((field) => field.type === 'person')
     for (const { task } of flattenTasks(project.tasks)) {
       const fieldValues = personFields.flatMap((field) => {
-        const value = task.customFields[field.id]
+        const value = effectiveCustomValue(task, field.id)
         return (Array.isArray(value) ? value : [value]).map(stringifyCustomValue).filter(Boolean)
       })
       for (const raw of [...task.assignees, ...fieldValues]) {

@@ -15,6 +15,8 @@ import {
   isTerminalStatus,
   sanitizeFileName,
   resolveProjectConfig,
+  resolveInheritanceConfig,
+  applyInheritance,
   computeSchedule,
   findParentId,
   findTaskById,
@@ -178,6 +180,25 @@ export class ProjectStore implements TaskSource {
       this.getSettings(),
       ancestors.map((ref) => ref.customFields)
     )
+  }
+
+  /**
+   * Resolves what every task of the project takes from its ancestors. The result lives on
+   * the tasks and is rebuilt here after every load and every save, so it never outlives
+   * the tree or the rules it came from.
+   */
+  private applyInheritance(project: Project): void {
+    applyInheritance(
+      project.tasks,
+      resolveInheritanceConfig(this.getSettings().inheritance, project.config?.inheritance)
+    )
+  }
+
+  async refreshInheritance(): Promise<void> {
+    for (const loading of this.projectCache.values()) {
+      const project = await loading
+      if (project) this.applyInheritance(project)
+    }
   }
 
   private statusesFor(project: Project): StatusConfig[] {
@@ -471,6 +492,7 @@ export class ProjectStore implements TaskSource {
         rebuildTaskIndex(project)
         this.clearDirty(project)
       }
+      this.applyInheritance(project)
 
       return project
     } catch (e) {
@@ -702,6 +724,7 @@ export class ProjectStore implements TaskSource {
     // Snapshot before any await, so concurrent markDirty calls land in the next save.
     const dirty = this.dirtyTasks.get(project.filePath) ?? new Map<string, DirtyKind>()
     this.dirtyTasks.delete(project.filePath)
+    this.applyInheritance(project)
 
     try {
       project.updatedAt = new Date().toISOString()

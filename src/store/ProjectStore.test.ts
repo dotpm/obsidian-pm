@@ -6,6 +6,7 @@ import {
   today,
   DEFAULT_SETTINGS,
   makeDefaultFilter,
+  makeDefaultInheritance,
   makeDefaultSort,
   makeTask,
   type PMSettings,
@@ -2127,5 +2128,107 @@ describe('ProjectStore with a note whose properties will not parse', () => {
     stubCache(app, taskPath, { 'pm-task': true, id: task.id, title: 'task', projectId: project.id })
     await expect(store.updateTask(project, task.id, { description: 'edited' })).rejects.toThrow(UnreadableNoteError)
     expect(await vault.cachedRead(file)).toBe(MALFORMED)
+  })
+})
+
+describe('subtask inheritance', () => {
+  function inheritingStore(inheritance = makeDefaultInheritance()): {
+    store: ProjectStore
+    app: App
+    settings: PMSettings
+  } {
+    const { app } = makeFakeApp()
+    const settings: PMSettings = { ...SETTINGS, inheritance }
+    const store = new ProjectStore(app as unknown as App, () => settings)
+    return { store, app: app as unknown as App, settings }
+  }
+
+  const ALL = { tags: { inherit: true, except: [] }, properties: { inherit: true, except: [] } }
+
+  it('resolves what a subtask inherits as it is added', async () => {
+    const { store } = inheritingStore(ALL)
+    const project = await store.createProject('Tree', 'Projects')
+    const root = makeTask({ title: 'Root', tags: ['client'], customFields: { team: 'art' } })
+    await store.insertTask(project, root)
+    const child = await addNamed(store, project, 'Child', root.id)
+    const grandchild = await addNamed(store, project, 'Grandchild', child.id)
+
+    expect(grandchild.inherited).toEqual({ tags: ['client'], customFields: { team: 'art' } })
+    expect(root.inherited).toBeUndefined()
+  })
+
+  it('follows a change to an ancestor without touching the subtasks', async () => {
+    const { store, app } = inheritingStore(ALL)
+    const project = await store.createProject('Follow', 'Projects')
+    const root = makeTask({ title: 'Root', tags: ['client'] })
+    await store.insertTask(project, root)
+    const child = await addNamed(store, project, 'Child', root.id)
+    const before = await app.vault.cachedRead(fileAt(app, expectDefined(child.filePath)))
+
+    await store.updateTask(project, root.id, { tags: ['other'] })
+
+    expect(child.inherited?.tags).toEqual(['other'])
+    expect(child.tags).toEqual([])
+    expect(await app.vault.cachedRead(fileAt(app, expectDefined(child.filePath)))).toBe(before)
+  })
+
+  it('follows a move under another parent', async () => {
+    const { store } = inheritingStore(ALL)
+    const project = await store.createProject('Move', 'Projects')
+    const tagged = makeTask({ title: 'Tagged', tags: ['client'] })
+    await store.insertTask(project, tagged)
+    const loose = await addNamed(store, project, 'Loose')
+    expect(loose.inherited).toBeUndefined()
+
+    await store.moveTask(project, loose.id, tagged.id)
+    expect(loose.inherited?.tags).toEqual(['client'])
+
+    await store.moveTask(project, loose.id, null)
+    expect(loose.inherited).toBeUndefined()
+  })
+
+  it('writes no inherited value into the task notes', async () => {
+    const { store, app } = inheritingStore(ALL)
+    const project = await store.createProject('Notes', 'Projects')
+    const root = makeTask({ title: 'Root', tags: ['client'], customFields: { team: 'art' } })
+    await store.insertTask(project, root)
+    const child = await addNamed(store, project, 'Child', root.id)
+
+    const content = await app.vault.cachedRead(fileAt(app, expectDefined(child.filePath)))
+    expect(content).not.toContain('client')
+    expect(content).not.toContain('team')
+    expect(content).not.toContain('inherited')
+  })
+
+  it('resolves again on load and when the rules change', async () => {
+    const { store, app, settings } = inheritingStore()
+    const project = await store.createProject('Rules', 'Projects')
+    const root = makeTask({ title: 'Root', tags: ['client'] })
+    await store.insertTask(project, root)
+    const child = await addNamed(store, project, 'Child', root.id)
+    expect(child.inherited).toBeUndefined()
+
+    settings.inheritance = ALL
+    await store.refreshInheritance()
+    expect(child.inherited?.tags).toEqual(['client'])
+
+    const cold = new ProjectStore(app, () => settings)
+    const reloaded = expectDefined(await cold.loadProject(fileAt(app, project.filePath)))
+    expect(flattenTasks(reloaded.tasks).map((f) => f.task.inherited?.tags)).toEqual([undefined, ['client']])
+  })
+
+  it('lets a project replace the vault rule for one kind', async () => {
+    const { store, app } = inheritingStore(ALL)
+    const project = await store.createProject('Own', 'Projects')
+    const root = makeTask({ title: 'Root', tags: ['client'], customFields: { team: 'art' } })
+    await store.insertTask(project, root)
+    const child = await addNamed(store, project, 'Child', root.id)
+
+    await store.updateProject(project, { config: { inheritance: { tags: { inherit: false, except: [] } } } })
+    expect(child.inherited).toEqual({ tags: [], customFields: { team: 'art' } })
+
+    const cold = new ProjectStore(app, () => ({ ...SETTINGS, inheritance: ALL }))
+    const reloaded = expectDefined(await cold.loadProject(fileAt(app, project.filePath)))
+    expect(reloaded.config?.inheritance).toEqual({ tags: { inherit: false, except: [] } })
   })
 })

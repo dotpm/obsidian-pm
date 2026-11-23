@@ -242,3 +242,33 @@
   font-size: var(--font-ui-smaller);
   cursor: pointer;
 }
+
+/* The rule editor for subtask inheritance, shared by the plugin settings and a project's own. */
+.pm-inherit {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+}
+.pm-inherit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--font-ui-smaller);
+  cursor: pointer;
+}
+.pm-inherit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-start;
+  padding-left: 22px;
+}
+.pm-inherit-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.pm-inherit-tags:empty {
+  display: none;
+}

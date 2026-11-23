@@ -4,6 +4,8 @@ import {
   DEFAULT_SETTINGS,
   defaultPriorities,
   defaultStatuses,
+  hydrateInheritanceConfig,
+  makeDefaultInheritance,
   makeDefaultFilter,
   makeDefaultGroup,
   makeDefaultSort,
@@ -425,6 +427,7 @@ export default class PMPlugin extends Plugin {
     if (!this.settings.collapsedTasks) this.settings.collapsedTasks = {}
     if (!this.settings.collapsedProjects) this.settings.collapsedProjects = []
     if (!this.settings.excludedFolders) this.settings.excludedFolders = []
+    this.settings.inheritance = { ...makeDefaultInheritance(), ...hydrateInheritanceConfig(this.settings.inheritance) }
 
     let migrated = false
     // Filters were keyed by project path before a view could cover several projects.
@@ -683,15 +686,20 @@ export default class PMPlugin extends Plugin {
   refreshViews(): void {
     if (this.viewRefreshScheduled) return
     this.viewRefreshScheduled = true
-    window.setTimeout(() => {
-      this.viewRefreshScheduled = false
-      for (const leaf of this.app.workspace.getLeavesOfType(PM_PROJECT_VIEW_TYPE)) {
-        if (leaf.view instanceof ProjectView) leaf.view.redraw()
-      }
-      for (const leaf of this.app.workspace.getLeavesOfType(PM_DASHBOARD_VIEW_TYPE)) {
-        if (leaf.view instanceof DashboardView) leaf.view.render()
-      }
-    }, 0)
+    window.setTimeout(
+      safeAsync(async () => {
+        this.viewRefreshScheduled = false
+        // A rule the edit changed decides what the tasks hold, so it is applied before they are drawn.
+        await this.store.refreshInheritance()
+        for (const leaf of this.app.workspace.getLeavesOfType(PM_PROJECT_VIEW_TYPE)) {
+          if (leaf.view instanceof ProjectView) leaf.view.redraw()
+        }
+        for (const leaf of this.app.workspace.getLeavesOfType(PM_DASHBOARD_VIEW_TYPE)) {
+          if (leaf.view instanceof DashboardView) leaf.view.render()
+        }
+      }),
+      0
+    )
   }
 
   /**

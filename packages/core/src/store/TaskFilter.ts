@@ -2,6 +2,7 @@ import { parsePlainDate, Temporal, today } from '../dates'
 import type { DateBucket, FilterCondition, FilterState, StatusConfig, Task, TaskQuery } from '../types'
 import { displayName, isTerminalStatus, stringifyCustomValue } from '../utils'
 import { filterKind, filterValue, valueKey, type FilterContext } from './FilterFields'
+import { effectiveCustomValue, effectiveTags } from './Inheritance'
 import type { FlatTask } from './TaskTreeOps'
 
 /** Whether anything narrows the view. Showing archived tasks widens it, so it doesn't count. */
@@ -26,9 +27,11 @@ export function matchesSearch(task: Task, text: string, ctx: FilterContext): boo
   if (!q) return true
   if (task.id.toLowerCase() === q) return true
   if (task.title.toLowerCase().includes(q)) return true
-  if (task.tags.some((tag) => tag.toLowerCase().includes(q))) return true
+  if (effectiveTags(task).some((tag) => tag.toLowerCase().includes(q))) return true
   if (task.assignees.some((a) => a.toLowerCase().includes(q) || displayName(a).toLowerCase().includes(q))) return true
-  return ctx.customFields.some((cf) => stringifyCustomValue(task.customFields[cf.id]).toLowerCase().includes(q))
+  return ctx.customFields.some((cf) =>
+    stringifyCustomValue(effectiveCustomValue(task, cf.id)).toLowerCase().includes(q)
+  )
 }
 
 export function matchesCondition(task: Task, condition: FilterCondition, ctx: FilterContext): boolean {

@@ -173,6 +173,10 @@ button.pm-prop-add {
   flex-wrap: wrap;
   gap: 5px;
 }
+.pm-prop-inherited-hint {
+  font-size: var(--font-ui-smaller);
+  color: var(--text-faint);
+}
 .pm-prop-chips:empty {
   display: none;
 }

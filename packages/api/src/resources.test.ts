@@ -1,7 +1,22 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_PRIORITIES, DEFAULT_STATUSES, makeProject, makeTask, type ResolvedProjectConfig } from '@dotpm/core'
+import {
+  DEFAULT_PRIORITIES,
+  DEFAULT_STATUSES,
+  applyInheritance,
+  makeProject,
+  makeTask,
+  type ResolvedProjectConfig
+} from '@dotpm/core'
 import { ApiRequestError } from './contract'
-import { parseTaskCreate, parseTaskMove, parseTaskSearch, parseTaskWrite, taskPatch, taskResources } from './resources'
+import {
+  parseTaskCreate,
+  parseTaskMove,
+  parseTaskSearch,
+  parseTaskWrite,
+  taskPatch,
+  taskResources,
+  tasksFromResources
+} from './resources'
 
 const CONFIG: ResolvedProjectConfig = {
   statuses: DEFAULT_STATUSES,
@@ -121,5 +136,24 @@ describe('taskResources', () => {
     expect(taskResources(project, 'pid', true).map((r) => r.id)).toEqual(['a', 'c', 'z', 'b'])
     expect(rows[0].projectId).toBe('pid')
     expect(rows[0].archived).toBe(false)
+  })
+
+  it('reports what a subtask inherits apart from its own values, and restores it on a page', () => {
+    const project = makeProject('P', 'Projects/P/P.md')
+    const child = makeTask({ id: 'c', tags: ['own'] })
+    project.tasks = [makeTask({ id: 'a', tags: ['client'], customFields: { team: 'art' }, subtasks: [child] })]
+    applyInheritance(project.tasks, {
+      tags: { inherit: true, except: [] },
+      properties: { inherit: true, except: [] }
+    })
+
+    const rows = taskResources(project, 'pid', false)
+    expect(rows[0].inherited).toEqual({ tags: [], customFields: {} })
+    expect(rows[1].tags).toEqual(['own'])
+    expect(rows[1].customFields).toEqual({})
+    expect(rows[1].inherited).toEqual({ tags: ['client'], customFields: { team: 'art' } })
+
+    const restored = tasksFromResources(rows)[0].subtasks[0]
+    expect(restored.inherited).toEqual({ tags: ['client'], customFields: { team: 'art' } })
   })
 })

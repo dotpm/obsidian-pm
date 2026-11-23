@@ -58,6 +58,30 @@ export interface CustomFieldDef {
   filterable?: boolean
 }
 
+/**
+ * Decides which of one kind of value (tags, or properties) a subtask takes from its
+ * ancestors: every one but the names in `except` when `inherit` is on, only those names
+ * when it is off.
+ */
+export interface InheritanceRule {
+  inherit: boolean
+  except: string[]
+}
+
+/** Tags are named by their text, properties by their custom field id. */
+export interface InheritanceConfig {
+  tags: InheritanceRule
+  properties: InheritanceRule
+}
+
+/** What a task holds only because an ancestor does. Stored on no file, so it can never go stale there. */
+export interface InheritedValues {
+  /** Tags the task does not carry itself. */
+  tags: string[]
+  /** The value each property takes once the ancestors' are folded in, for the properties where that differs from the task's own. */
+  customFields: Record<string, unknown>
+}
+
 export interface Task {
   id: string
   title: string
@@ -81,6 +105,8 @@ export interface Task {
   updatedAt: string
   filePath?: string // vault path to this task's .md file
   archived?: boolean // runtime only, derived from file location in Archive/ subfolder
+  /** Runtime only. Resolved by the store from the inheritance rules; read through `effectiveTags` and `effectiveCustomFields`. */
+  inherited?: InheritedValues
 }
 
 export interface Project {
@@ -289,6 +315,8 @@ export interface ProjectConfig {
   priorityIcons?: PriorityIconSet
   /** Inherited field ids this project leaves out. Its own fields are never listed. */
   hiddenCustomFields?: string[]
+  /** Replaces the global rule for tags or for properties, each on its own. */
+  inheritance?: Partial<InheritanceConfig>
   defaultView?: ViewMode
   autoSchedule?: boolean
   pullForwardOnEarlyFinish?: boolean
@@ -359,6 +387,8 @@ export interface PMSettings {
   priorityIcons: PriorityIconSet
   /** Task properties every project starts with. A project adds to these, or overrides one by id. */
   customFields: CustomFieldDef[]
+  /** Which tags and properties a subtask takes from its ancestors. A project may override either. */
+  inheritance: InheritanceConfig
   globalTeamMembers: string[]
   notificationsEnabled: boolean
   notificationLeadDays: number
@@ -462,6 +492,7 @@ export const DEFAULT_SETTINGS: PMSettings = {
   priorities: DEFAULT_PRIORITIES,
   priorityIcons: 'chevrons',
   customFields: [],
+  inheritance: makeDefaultInheritance(),
   globalTeamMembers: [],
   showSubtreeConnections: true,
   lineBorders: 'none',
@@ -546,6 +577,11 @@ export function makeProject(title: string, filePath: string): Project {
 
 export function makeDefaultProjectList(): ProjectListState {
   return { filter: {}, sort: [], group: 'none', activeViewId: null }
+}
+
+/** Nothing is inherited, so a vault behaves as it always has until a rule is turned on. */
+export function makeDefaultInheritance(): InheritanceConfig {
+  return { tags: { inherit: false, except: [] }, properties: { inherit: false, except: [] } }
 }
 
 export function makeDefaultGroup(): GroupState {

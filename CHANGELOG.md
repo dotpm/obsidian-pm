@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Subtasks can inherit tags and custom fields from the tasks above them, at any depth, chosen per tag and per property. Set the rules in the plugin settings, or override them per project. Inherited values show in the views, filters and search and in the task editor, and are never written into the task's note. See [Subtask inheritance](README.md#subtask-inheritance)
 - The task name column in the table can now be resized
 
 ### Fixed

@@ -459,6 +459,11 @@ button.pm-chip-btn--active:hover {
   position: relative;
   top: 0.75px;
 }
+/* Taken from an ancestor rather than set on the task itself. */
+.pm-chip--inherited {
+  border-style: dashed;
+  opacity: 0.7;
+}
 .pm-chip--sm {
   padding: 1px 5px;
   font-size: 10px;

@@ -2,6 +2,7 @@ import { Menu, type App } from 'obsidian'
 import {
   getStatusConfig,
   dueUrgency,
+  effectiveCustomValue,
   formatDateLong,
   isTerminalStatus,
   stringifyCustomValue,
@@ -154,7 +155,10 @@ export function renderTaskRow(tbody: HTMLElement, flat: TableTreeRow, ctx: Table
       default: {
         const cf = customFields.find((field) => `cf:${field.id}` === column)
         const source = task.filePath ?? project.filePath
-        new CustomFieldCell(row, cf ? customFieldValue(ctx.plugin.app, cf, task.customFields[cf.id], source) : EMPTY)
+        new CustomFieldCell(
+          row,
+          cf ? customFieldValue(ctx.plugin.app, cf, effectiveCustomValue(task, cf.id), source) : EMPTY
+        )
       }
     }
   }

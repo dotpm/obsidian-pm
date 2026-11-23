@@ -1,4 +1,4 @@
-import { type Task, formatDateShort, t } from '@dotpm/core'
+import { type Task, effectiveTags, formatDateShort, t } from '@dotpm/core'
 import { AvatarStack, type AvatarPerson } from '#primitives/AvatarStack'
 import { Chip } from '#primitives/Chip'
 import { ProgressBar } from '#primitives/ProgressBar'
@@ -88,11 +88,12 @@ export class KanbanCard {
         body.createDiv({ cls: 'pm-kanban-card-description', text: props.descriptionPreview })
       } else if (field === 'time') {
         renderTimeChip(body, props.loggedHours, task.timeEstimate ?? 0, 'sm')
-      } else if (field === 'tags' && task.tags.length) {
+      } else if (field === 'tags' && effectiveTags(task).length) {
         const tagsEl = body.createDiv('pm-kanban-card-tags')
-        for (const tag of task.tags.slice(0, 3)) {
-          renderTagChip(tagsEl, tag, props.showTagColors)
-        }
+        const own = task.tags.length
+        effectiveTags(task)
+          .slice(0, 3)
+          .forEach((tag, i) => renderTagChip(tagsEl, tag, props.showTagColors, i >= own))
       } else if (field === 'progress' && task.progress > 0) {
         new ProgressBar(body).setSize('sm').setValue(task.progress)
       } else if (field === 'project') {

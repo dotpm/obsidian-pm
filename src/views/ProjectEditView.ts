@@ -3,6 +3,8 @@ import type PMPlugin from '#main'
 import { addTabPageItems, refreshTabTitle } from '#ui/tab'
 import {
   type CustomFieldDef,
+  type InheritanceConfig,
+  type InheritanceRule,
   type PriorityConfig,
   type PriorityIconSet,
   type Project,
@@ -13,6 +15,7 @@ import {
   makeId,
   priorityIconSetLabels,
   collectAllAssignees,
+  collectAllTags,
   flattenTasks,
   mergeById,
   t,
@@ -32,6 +35,7 @@ import {
   IconButton
 } from '@dotpm/ui'
 import { confirmDialog } from '#ui/ModalFactory'
+import { renderInheritanceRuleEditor } from '#ui/InheritanceRuleEditor'
 import { renderPersonPicker } from '#ui/PersonPicker'
 import { renderPriorityListEditor, renderStatusListEditor } from '#ui/PaletteListEditor'
 
@@ -138,6 +142,7 @@ export class ProjectEditView extends ItemView {
     this.renderStatuses(project)
     this.renderPriorities(project)
     this.renderBehavior(project)
+    this.renderInheritance(project)
     this.renderCustomFields(project)
     this.renderDangerZone(project)
   }
@@ -420,6 +425,56 @@ export class ProjectEditView extends ItemView {
       { value: 'vertical', label: t('settings.lineBorders.vertical') },
       { value: 'both', label: t('settings.lineBorders.both') }
     ])
+  }
+
+  /** A project that sets its own rule for tags or for properties replaces the vault's for that kind alone. */
+  private renderInheritance(project: Project): void {
+    const section = this.section(t('projectEdit.inheritance'), t('projectEdit.inheritanceHint'))
+    const global = this.plugin.settings.inheritance
+    const setRule = (kind: keyof InheritanceConfig, rule: InheritanceRule | undefined): void => {
+      const next = Object.fromEntries(
+        Object.entries({ ...project.config?.inheritance, [kind]: rule }).filter(([, value]) => value !== undefined)
+      )
+      this.patchConfig('inheritance', Object.keys(next).length ? next : undefined)
+    }
+
+    const kinds: {
+      kind: keyof InheritanceConfig
+      toggleLabel: string
+      allLabel: string
+      choices?: () => { id: string; label: string }[]
+    }[] = [
+      { kind: 'tags', toggleLabel: t('projectEdit.ownTagRule'), allLabel: t('inheritance.tagsAll') },
+      {
+        kind: 'properties',
+        toggleLabel: t('projectEdit.ownPropertyRule'),
+        allLabel: t('inheritance.propertiesAll'),
+        choices: () =>
+          this.plugin.store.configFor(project).customFields.map((field) => ({ id: field.id, label: field.name }))
+      }
+    ]
+    for (const { kind, toggleLabel, allLabel, choices } of kinds) {
+      const toggle = section.createEl('label', { cls: 'pm-status-toggle' })
+      const checkbox = toggle.createEl('input', { type: 'checkbox' })
+      const own = project.config?.inheritance?.[kind]
+      checkbox.checked = own !== undefined
+      toggle.createSpan({ text: toggleLabel })
+      checkbox.addEventListener('change', () => {
+        setRule(
+          kind,
+          checkbox.checked ? { inherit: global[kind].inherit, except: [...global[kind].except] } : undefined
+        )
+        this.render()
+      })
+      if (!own) continue
+      renderInheritanceRuleEditor(section.createDiv(), {
+        rule: own,
+        allLabel,
+        choices: choices?.(),
+        suggestions: kind === 'tags' ? collectAllTags(project.tasks) : undefined,
+        onChange: (rule) => setRule(kind, rule)
+      })
+    }
   }
 
   /**
