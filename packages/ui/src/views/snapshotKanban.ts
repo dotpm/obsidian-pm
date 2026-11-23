@@ -12,6 +12,7 @@ import { compareTasks } from './tableSort'
 import { boardColumns } from './boardColumns'
 import { boardCandidates, cardCustomValues, descriptionPreview } from './boardCards'
 import { renderProjectChip } from '../composites/projectChip'
+import { priorityIndicatorOf } from '../composites/priorityIndicator'
 import {
   allTasks,
   configOf,
@@ -46,6 +47,9 @@ function cardData(model: ViewModel, task: Task, fields: string[]): KanbanCardDat
     people: task.assignees.map((raw) => personOf(model, raw)),
     priorityColor:
       priorityConfig && task.priority !== 'medium' && task.priority !== 'low' ? priorityConfig.color : undefined,
+    priorityIndicator: model.settings.showPriorityIndicator
+      ? priorityIndicatorOf(config.priorities, task.priority, config.priorityIcons)
+      : undefined,
     parentTitle: fields.includes('subtasks') && task.type === 'subtask' ? parentTitle(model, task.id) : undefined,
     descriptionPreview: fields.includes('description') ? descriptionPreview(task.description) : undefined,
     customValues: cardCustomValues(task, customFieldColumns(model), fields),

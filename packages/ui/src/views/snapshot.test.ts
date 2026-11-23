@@ -174,6 +174,52 @@ describe('snapshot kanban fields', () => {
   })
 })
 
+describe('priority indicator', () => {
+  const withIndicator = (on: boolean): ViewModel => {
+    const view = model()
+    view.settings.showPriorityIndicator = on
+    view.projects[0].tasks[0].priority = 'critical'
+    return view
+  }
+
+  it('marks each board card and timeline row when the setting is on', () => {
+    const board = document.body.createDiv()
+    renderSnapshotKanban(board, withIndicator(true))
+    const cards = board.querySelectorAll('.pm-kanban-card')
+    expect(board.querySelectorAll('.pm-kanban-card .pm-priority-indicator').length).toBe(cards.length)
+    expect(board.querySelector('[data-task-id="a"] .pm-priority-indicator')?.getAttribute('aria-label')).toBe(
+      'Critical'
+    )
+
+    const timeline = document.body.createDiv()
+    renderSnapshotGantt(timeline, withIndicator(true))
+    const rows = timeline.querySelectorAll('.pm-gantt-label-row')
+    expect(timeline.querySelectorAll('.pm-gantt-label-row .pm-priority-indicator').length).toBe(rows.length)
+  })
+
+  it('draws nothing when the setting is off or the page predates it', () => {
+    const board = document.body.createDiv()
+    renderSnapshotKanban(board, withIndicator(false))
+    const timeline = document.body.createDiv()
+    renderSnapshotGantt(timeline, withIndicator(false))
+    const older = model()
+    delete older.settings.showPriorityIndicator
+    const olderBoard = document.body.createDiv()
+    renderSnapshotKanban(olderBoard, older)
+    for (const host of [board, timeline, olderBoard]) {
+      expect(host.querySelector('.pm-priority-indicator')).toBeNull()
+    }
+  })
+
+  it('leaves out the indicator for a priority without an icon', () => {
+    const view = withIndicator(true)
+    view.projects[0].config = { ...CONFIG, priorityIcons: 'none' }
+    const host = document.body.createDiv()
+    renderSnapshotKanban(host, view)
+    expect(host.querySelector('[data-task-id="a"] .pm-priority-indicator')).toBeNull()
+  })
+})
+
 describe('snapshot kanban grouping', () => {
   it('draws the columns of the field the view grouped by, leaving hidden ones out', () => {
     const host = document.body.createDiv()

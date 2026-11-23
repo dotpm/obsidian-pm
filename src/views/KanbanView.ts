@@ -34,6 +34,7 @@ import {
   KanbanColumn,
   type FilterSetup,
   type KanbanCardData,
+  priorityIndicatorOf,
   renderProjectChip
 } from '@dotpm/ui'
 import { openTaskModal } from '#ui/ModalFactory'
@@ -156,6 +157,9 @@ export class KanbanView implements SubView {
       task,
       people: linkedRefs(this.plugin.app, task.assignees, task.filePath ?? ''),
       priorityColor,
+      priorityIndicator: this.plugin.settings.showPriorityIndicator
+        ? priorityIndicatorOf(this.config.priorities, task.priority, this.config.priorityIcons)
+        : undefined,
       descriptionPreview: this.cardFields.includes('description') ? descriptionPreview(task.description) : undefined,
       parentTitle,
       customValues: cardCustomValues(task, this.scope.customFields(), this.cardFields),

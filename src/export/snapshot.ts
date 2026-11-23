@@ -146,6 +146,7 @@ export async function buildSnapshot(plugin: PMPlugin, scope: ProjectScope, view:
     settings: {
       priorityIcons: config.priorityIcons,
       showTagColors: plugin.settings.showTagColors,
+      showPriorityIndicator: plugin.settings.showPriorityIndicator,
       showSubtreeConnections: config.showSubtreeConnections,
       lineBorders: config.lineBorders,
       ganttWeekLabel: plugin.settings.ganttWeekLabel,

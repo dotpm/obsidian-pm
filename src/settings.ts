@@ -120,6 +120,12 @@ export class PMSettingTab extends PluginSettingTab {
             control: { type: 'toggle', key: 'showTagColors' }
           },
           {
+            name: t('settings.showPriorityIndicator.name'),
+            desc: t('settings.showPriorityIndicator.desc'),
+            aliases: ['appearance', 'priority', 'icon', 'kanban', 'board', 'timeline'],
+            control: { type: 'toggle', key: 'showPriorityIndicator' }
+          },
+          {
             name: t('settings.dateFormat.name'),
             desc: t('settings.dateFormat.desc'),
             aliases: ['appearance', 'date', 'moment'],

@@ -371,6 +371,8 @@ export interface PMSettings {
   showSubtreeConnections: boolean
   lineBorders: LineBorders
   showTagColors: boolean
+  /** A small priority icon on each board card and timeline row. */
+  showPriorityIndicator: boolean
   /** Moment-style tokens for every date label. Empty follows the interface language. */
   dateFormat: string
   saveTaskOnClose: boolean
@@ -466,6 +468,7 @@ export const DEFAULT_SETTINGS: PMSettings = {
   showSubtreeConnections: true,
   lineBorders: 'none',
   showTagColors: true,
+  showPriorityIndicator: false,
   dateFormat: '',
   notificationsEnabled: true,
   notificationLeadDays: 2,
