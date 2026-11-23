@@ -1,6 +1,8 @@
 import { setIcon } from '#platform'
 import { AvatarStack, type AvatarPerson } from '#primitives/AvatarStack'
 import { makeActivatable } from '#dom'
+import type { InheritedShare } from '@dotpm/core'
+import { markInherited } from '../inheritedMark'
 
 export type CustomFieldValue =
   | { kind: 'text'; text: string }
@@ -14,8 +16,13 @@ export type CustomFieldValue =
 export class CustomFieldCell {
   el: HTMLTableCellElement
 
-  constructor(parentRow: HTMLElement, value: CustomFieldValue) {
+  constructor(parentRow: HTMLElement, value: CustomFieldValue, inherited: InheritedShare = 'none') {
     this.el = parentRow.createEl('td', { cls: 'pm-table-cell' })
+    this.render(value)
+    markInherited(this.el, inherited)
+  }
+
+  private render(value: CustomFieldValue): void {
     switch (value.kind) {
       case 'text':
         this.empty(value.text)

@@ -468,6 +468,18 @@ button.pm-chip-btn--active:hover {
   --icon-size: 11px;
   margin-left: 0;
 }
+/* A property value taken from an ancestor: an arrow in front, italic when none of it is the task's own. */
+.pm-inherited-arrow {
+  display: inline-flex;
+  vertical-align: middle;
+  margin-right: 3px;
+  --icon-size: 11px;
+  color: var(--text-faint);
+}
+.pm-inherited--full {
+  font-style: italic;
+  color: var(--text-muted);
+}
 .pm-chip--sm {
   padding: 1px 5px;
   font-size: 10px;

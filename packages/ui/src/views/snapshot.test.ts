@@ -173,6 +173,33 @@ describe('inherited values', () => {
     expect(host.querySelector('tr[data-task-id="a"] .pm-table-tags .pm-chip--inherited')).toBeNull()
     const cells = Array.from(host.querySelectorAll('tr[data-task-id="c"] td')).map((td) => td.textContent?.trim())
     expect(cells).toContain('S1')
+    const cell = Array.from(host.querySelectorAll('tr[data-task-id="c"] td')).find(
+      (td) => td.textContent?.trim() === 'S1'
+    )
+    expect(cell?.classList.contains('pm-inherited--full')).toBe(true)
+    expect(cell?.querySelector('.pm-inherited-arrow')).not.toBeNull()
+    const own = Array.from(host.querySelectorAll('tr[data-task-id="a"] td')).find(
+      (td) => td.textContent?.trim() === 'S1'
+    )
+    expect(own?.classList.contains('pm-inherited')).toBe(false)
+  })
+
+  it('marks only the arrow when a list property merely gains inherited entries', () => {
+    const view = inheriting()
+    view.projects[0].config = { ...CONFIG, customFields: [{ id: 'areas', name: 'Areas', type: 'multiselect' }] }
+    view.projects[0].tasks[0].customFields = { areas: ['ui'] }
+    view.projects[0].tasks[0].subtasks[0].customFields = { areas: ['api'] }
+    applyInheritance(view.projects[0].tasks, {
+      tags: { inherit: true, except: [] },
+      properties: { inherit: true, except: [] }
+    })
+    const host = document.body.createDiv()
+    renderSnapshotTable(host, view)
+    const cell = Array.from(host.querySelectorAll('tr[data-task-id="c"] td')).find((td) =>
+      td.textContent?.includes('api')
+    )
+    expect(cell?.classList.contains('pm-inherited')).toBe(true)
+    expect(cell?.classList.contains('pm-inherited--full')).toBe(false)
   })
 
   it('deals a board card the inherited tag', () => {
@@ -182,6 +209,17 @@ describe('inherited values', () => {
     renderSnapshotKanban(host, view)
     const tags = host.querySelectorAll('.pm-kanban-card[data-task-id="c"] .pm-kanban-card-tags .pm-chip')
     expect(Array.from(tags).map((tag) => tag.textContent)).toEqual(['client'])
+  })
+
+  it('marks an inherited property on a board card', () => {
+    const view = inheriting()
+    view.fields = { kanban: { visible: ['cf:sprint', 'subtasks'] } }
+    const host = document.body.createDiv()
+    renderSnapshotKanban(host, view)
+    const value = (id: string) =>
+      host.querySelector(`.pm-kanban-card[data-task-id="${id}"] .pm-kanban-card-field-value`)
+    expect(value('c')?.classList.contains('pm-inherited--full')).toBe(true)
+    expect(value('a')?.classList.contains('pm-inherited')).toBe(false)
   })
 })
 

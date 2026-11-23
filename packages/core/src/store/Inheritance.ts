@@ -158,3 +158,11 @@ export function effectiveCustomValue(task: Task, fieldId: string): unknown {
 export function isInheritedField(task: Task, fieldId: string): boolean {
   return task.inherited !== undefined && fieldId in task.inherited.customFields
 }
+
+/** How much of a property's value comes from ancestors: all of it, only part of a list, or none. */
+export type InheritedShare = 'none' | 'partial' | 'full'
+
+export function inheritedShare(task: Task, fieldId: string): InheritedShare {
+  if (!isInheritedField(task, fieldId)) return 'none'
+  return isUnsetValue(task.customFields[fieldId]) ? 'full' : 'partial'
+}

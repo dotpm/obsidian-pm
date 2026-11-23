@@ -4,6 +4,7 @@ import {
   dueUrgency,
   effectiveCustomValue,
   formatDateLong,
+  inheritedShare,
   isTerminalStatus,
   stringifyCustomValue,
   type CustomFieldDef,
@@ -157,7 +158,8 @@ export function renderTaskRow(tbody: HTMLElement, flat: TableTreeRow, ctx: Table
         const source = task.filePath ?? project.filePath
         new CustomFieldCell(
           row,
-          cf ? customFieldValue(ctx.plugin.app, cf, effectiveCustomValue(task, cf.id), source) : EMPTY
+          cf ? customFieldValue(ctx.plugin.app, cf, effectiveCustomValue(task, cf.id), source) : EMPTY,
+          cf ? inheritedShare(task, cf.id) : 'none'
         )
       }
     }

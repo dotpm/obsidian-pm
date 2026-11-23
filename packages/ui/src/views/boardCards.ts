@@ -4,6 +4,7 @@ import {
   effectiveCustomValue,
   flattenTasks,
   formatDateLong,
+  inheritedShare,
   stringifyCustomValue,
   t
 } from '@dotpm/core'
@@ -47,7 +48,7 @@ export function cardCustomValues(
         : cf.type === 'date'
           ? list.map((value) => formatDateLong(value) || value).join(', ')
           : list.map((value) => value.replace(/^\[\[(?:[^|\]]*\|)?([^\]]*)\]\]$/, '$1')).join(', ')
-    if (text) values[id] = { name: cf.name, text }
+    if (text) values[id] = { name: cf.name, text, inherited: inheritedShare(task, cf.id) }
   }
   return values
 }
