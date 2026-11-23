@@ -306,6 +306,7 @@ export class GanttView implements SubView {
       plugin: this.plugin,
       scope: this.scope,
       statuses: this.scope.config.statuses,
+      showPriorityIndicator: this.plugin.settings.showPriorityIndicator,
       collapsedIds: this.collapsedIds,
       onRefresh: this.onRefresh
     }

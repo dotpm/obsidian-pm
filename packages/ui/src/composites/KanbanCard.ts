@@ -3,6 +3,7 @@ import { AvatarStack, type AvatarPerson } from '#primitives/AvatarStack'
 import { Chip } from '#primitives/Chip'
 import { ProgressBar } from '#primitives/ProgressBar'
 import { renderDueChip } from './dueChip'
+import { renderPriorityIndicator, type PriorityIndicator } from './priorityIndicator'
 import { renderTagChip } from './tagChip'
 import { renderTimeChip } from './timeChip'
 
@@ -18,6 +19,8 @@ export interface KanbanCardProps {
   people: AvatarPerson[]
   task: Task
   priorityColor?: string
+  /** The priority as a small icon beside the title; absent when the setting is off. */
+  priorityIndicator?: PriorityIndicator
   descriptionPreview?: string
   parentTitle?: string
   /** Keyed by field id, `cf:<id>`. A field without a value here shows nothing. */
@@ -81,6 +84,7 @@ export class KanbanCard {
         .setColor('var(--color-blue)')
         .setTooltip(t('chip.recurringTooltip'))
     }
+    if (props.priorityIndicator) renderPriorityIndicator(titleRow, props.priorityIndicator)
 
     const footer = body.createDiv('pm-kanban-card-footer')
     for (const field of fields) {

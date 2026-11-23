@@ -40,6 +40,8 @@ export interface SnapshotView {
 export interface SnapshotSettings {
   priorityIcons: PriorityIconSet
   showTagColors: boolean
+  /** Absent on a page exported before the indicator existed, which shows none. */
+  showPriorityIndicator?: boolean
   showSubtreeConnections: boolean
   lineBorders: LineBorders
   /** Only on a version 1 page, where the board's subtask cards were a setting rather than a field. */

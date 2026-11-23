@@ -9,6 +9,7 @@ import {
 } from '@dotpm/core'
 import { svgEl } from '#dom'
 import { SegmentedControl } from '#primitives/SegmentedControl'
+import { priorityIndicatorOf, renderPriorityIndicator } from '../composites/priorityIndicator'
 import { renderProjectChip } from '../composites/projectChip'
 import { renderStatusDot } from '../StatusBadge'
 import {
@@ -33,6 +34,7 @@ import {
 } from '../gantt/TimelineConfig'
 import {
   allTasks,
+  configOf,
   customFieldColumns,
   fieldCatalogOf,
   filterContextOf,
@@ -64,6 +66,11 @@ function renderLabel(container: HTMLElement, model: ViewModel, task: Task, depth
   el.createSpan({ cls: 'pm-gantt-label-spacer' })
   renderStatusDot(el, task.status, mergedConfig(model).statuses, 'pm-gantt-label-dot')
   el.createSpan({ text: task.title, cls: 'pm-gantt-label-title' })
+  if (model.settings.showPriorityIndicator) {
+    const { priorities, priorityIcons } = configOf(model, task.id)
+    const indicator = priorityIndicatorOf(priorities, task.priority, priorityIcons)
+    if (indicator) renderPriorityIndicator(el, indicator)
+  }
   if (isMulti(model)) {
     const owner = projectOf(model, task.id)
     if (owner) renderProjectChip(el, { title: owner.title, color: owner.color, onClick: noop })

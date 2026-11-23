@@ -35,6 +35,8 @@ export interface ViewProject {
 export interface ViewSettings {
   priorityIcons: PriorityIconSet
   showTagColors: boolean
+  /** Absent on a page exported before the indicator existed, which shows none. */
+  showPriorityIndicator?: boolean
   showSubtreeConnections: boolean
   lineBorders: LineBorders
   ganttWeekLabel: GanttWeekLabel

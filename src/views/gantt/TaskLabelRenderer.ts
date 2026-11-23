@@ -1,5 +1,15 @@
 import { Menu } from 'obsidian'
-import { Chip, CollapseToggle, IconButton, renderProjectChip, renderStatusDot, safeAsync, ROW_HEIGHT } from '@dotpm/ui'
+import {
+  Chip,
+  CollapseToggle,
+  IconButton,
+  priorityIndicatorOf,
+  renderPriorityIndicator,
+  renderProjectChip,
+  renderStatusDot,
+  safeAsync,
+  ROW_HEIGHT
+} from '@dotpm/ui'
 import type PMPlugin from '#main'
 import { type StatusConfig, type Task, t, tn } from '@dotpm/core'
 import type { ProjectScope, TaskRef } from '#store'
@@ -10,6 +20,7 @@ export interface LabelContext {
   plugin: PMPlugin
   scope: ProjectScope
   statuses: StatusConfig[]
+  showPriorityIndicator: boolean
   collapsedIds: ReadonlySet<string>
   onRefresh: () => Promise<void>
 }
@@ -80,6 +91,12 @@ export function renderTaskLabel(
   titleEl.addEventListener('click', () => {
     openTaskModal(ctx.plugin, project, { task, onSave: () => ctx.onRefresh() })
   })
+
+  if (ctx.showPriorityIndicator) {
+    const { priorities, priorityIcons } = ctx.plugin.store.configFor(project)
+    const indicator = priorityIndicatorOf(priorities, task.priority, priorityIcons)
+    if (indicator) renderPriorityIndicator(el, indicator)
+  }
 
   // With one project the rows are all its own; with several, each says where it belongs.
   if (ctx.scope.isMulti) {

@@ -586,6 +586,8 @@
   "settings.saveTaskOnClose.desc": "Save changes when the task editor is closed.",
   "settings.saveTaskOnClose.name": "Save tasks on close",
   "settings.scheduling.heading": "Scheduling",
+  "settings.showPriorityIndicator.desc": "Show a small priority icon on each board card and timeline row.",
+  "settings.showPriorityIndicator.name": "Show priority indicator",
   "settings.showReleaseNotes.desc": "Open a tab with the release notes after the plugin updates.",
   "settings.showReleaseNotes.name": "Show release notes after updates",
   "settings.showSubtreeConnections.desc": "Draw lines tying a subtask row back to its parent.",

@@ -3,6 +3,7 @@ import type { Task } from '@dotpm/core'
 import { formatBadgeText, isIconName } from '#icons'
 import { safeAsync } from '#dom'
 import { KanbanCard, type CardFieldValue } from './KanbanCard'
+import type { PriorityIndicator } from './priorityIndicator'
 import type { AvatarPerson } from '#primitives/AvatarStack'
 
 /** What a column stands for: a status, a priority, a person, a tag... */
@@ -17,6 +18,7 @@ export interface KanbanCardData {
   people: AvatarPerson[]
   task: Task
   priorityColor?: string
+  priorityIndicator?: PriorityIndicator
   descriptionPreview?: string
   parentTitle?: string
   customValues?: Record<string, CardFieldValue>
@@ -79,6 +81,7 @@ export class KanbanColumn {
         task: card.task,
         people: card.people,
         priorityColor: card.priorityColor,
+        priorityIndicator: card.priorityIndicator,
         descriptionPreview: card.descriptionPreview,
         parentTitle: card.parentTitle,
         customValues: card.customValues,
