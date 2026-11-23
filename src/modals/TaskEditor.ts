@@ -374,6 +374,18 @@ export class TaskEditor {
     }, 0)
   }
 
+  /**
+   * A property change rebuilds the whole form, which destroys the control that had focus
+   * (a select's trigger, say). Focus goes back to the control in the same place.
+   */
+  private renderKeepingFocus(): void {
+    const active = activeDocument.activeElement as HTMLElement | null
+    const index = active ? this.tabTargets().indexOf(active) : -1
+    this.render()
+    if (index === -1) return
+    this.tabTargets()[index]?.focus()
+  }
+
   private render(): void {
     const contentEl = this.containerEl
     if (!contentEl) return
@@ -470,7 +482,7 @@ export class TaskEditor {
       setParentId: (id) => {
         this.parentId = id
       },
-      rerender: () => this.render(),
+      rerender: () => this.renderKeepingFocus(),
       shownExtras: this.shownExtras,
       openTask: (path) => this.openLinkedTask(path)
     })
