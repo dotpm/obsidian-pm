@@ -42,6 +42,7 @@ shortcuts sheet leaves it out.
 | `Mod+F` or `/` | Focus search |
 | `f` / `Shift+F` | Open the filter panel / clear every filter |
 | `v`, `1` `2` `3` | Next view, or table / board / timeline |
+| `Shift+V` | Next saved view, wrapping back to the built-in one |
 | `Mod+K` | Actions for the current item and view |
 | `?` or `F1` | Keyboard shortcuts |
 

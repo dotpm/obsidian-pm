@@ -137,6 +137,7 @@ export class DashboardView extends ItemView {
         if (active) void safeAsync(() => this.plugin.router.openProjectEdit(active))()
       },
       new: () => openProjectCreate(this.plugin),
+      nextSavedView: () => this.cycleView(),
       expand: () => this.setActiveCollapsed(false),
       collapse: () => this.setActiveCollapsed(true),
       search: () => this.searchBox?.focus(),
@@ -695,6 +696,26 @@ export class DashboardView extends ItemView {
     await this.persistViews(views)
   }
 
+  private selectView(id: string | null): void {
+    const view = this.plugin.settings.projectListViews.find((v) => v.id === id)
+    if (view) this.applyView(view)
+    else {
+      this.plugin.settings.projectList = makeDefaultProjectList()
+      this.plugin.settings.showArchivedProjects = false
+    }
+    this.text = ''
+    this.renderHeader()
+    this.changed()
+  }
+
+  /** The next saved view in the list, and the built-in one after the last. */
+  private cycleView(): void {
+    const views = this.plugin.settings.projectListViews
+    if (!views.length) return
+    const at = views.findIndex((view) => view.id === this.state.activeViewId)
+    this.selectView(at === views.length - 1 ? null : views[at + 1].id)
+  }
+
   private openSavedViews(anchor: HTMLElement): void {
     const views = this.plugin.settings.projectListViews
     openSavedViewsPopover(anchor, {
@@ -704,17 +725,7 @@ export class DashboardView extends ItemView {
       canSave: !sameValue({ ...this.state, activeViewId: null }, makeDefaultProjectList()),
       storageNote: t('header.storedInSettings'),
       builtInName: t('header.allProjects'),
-      onSelect: (id) => {
-        const view = views.find((v) => v.id === id)
-        if (view) this.applyView(view)
-        else {
-          this.plugin.settings.projectList = makeDefaultProjectList()
-          this.plugin.settings.showArchivedProjects = false
-        }
-        this.text = ''
-        this.renderHeader()
-        this.changed()
-      },
+      onSelect: (id) => this.selectView(id),
       onSave: async (name, isDefault) => {
         const view = { ...this.snapshot(makeId(), name), ...(isDefault ? { isDefault: true } : {}) }
         const rest = isDefault ? withDefault(views, null) : views

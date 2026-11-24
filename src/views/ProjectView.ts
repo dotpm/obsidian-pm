@@ -257,6 +257,7 @@ export class ProjectView extends ItemView {
         const index = MODES.indexOf(this.currentView)
         this.switchMode(MODES[(index + 1) % MODES.length])
       },
+      nextSavedView: () => this.cycleSavedView(),
       viewTable: () => this.switchMode('table'),
       viewBoard: () => this.switchMode('kanban'),
       viewTimeline: () => this.switchMode('gantt'),
@@ -1458,6 +1459,14 @@ export class ProjectView extends ItemView {
     this.syncHeader()
     void this.persistFilter()
     this.refreshSubview()
+  }
+
+  /** The next saved view in the list, and the built-in one after the last. */
+  private cycleSavedView(): void {
+    const views = this.savedViews()
+    if (!views.length) return
+    const at = views.findIndex((view) => view.id === this.activeSavedViewId)
+    this.handleSavedViewSelect(at === views.length - 1 ? null : views[at + 1].id)
   }
 
   private handleSavedViewSelect(id: string | null): void {

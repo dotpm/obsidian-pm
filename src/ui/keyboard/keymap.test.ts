@@ -33,6 +33,13 @@ describe('keymap', () => {
     }
   })
 
+  it('cycles the saved views on Shift+V where v cycles the view modes', () => {
+    for (const context of ['table', 'board', 'timeline', 'projects'] as const) {
+      expect(resolveAction(context, 'Shift+v')).toBe('nextSavedView')
+    }
+    expect(resolveAction('table', 'v')).toBe('nextView')
+  })
+
   it('resolves the punctuation aliases', () => {
     expect(resolveAction('table', '?')).toBe('help')
     expect(resolveAction('table', '/')).toBe('search')

@@ -339,6 +339,7 @@
   "keyboard.newTask": "New task",
   "keyboard.next": "Next item",
   "keyboard.nextColumn": "Next column",
+  "keyboard.nextSavedView": "Next saved view",
   "keyboard.nextView": "Next view",
   "keyboard.openNote": "Open as note",
   "keyboard.openOverview": "Open overview",

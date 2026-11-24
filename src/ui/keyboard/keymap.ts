@@ -37,6 +37,7 @@ export type ActionId =
   | 'filter'
   | 'clearFilter'
   | 'nextView'
+  | 'nextSavedView'
   | 'viewTable'
   | 'viewBoard'
   | 'viewTimeline'
@@ -106,6 +107,7 @@ export const ACTION_LABELS: Record<ActionId, MessageKey> = {
   filter: 'header.filter',
   clearFilter: 'filter.clearAllFilters',
   nextView: 'keyboard.nextView',
+  nextSavedView: 'keyboard.nextSavedView',
   viewTable: 'views.table',
   viewBoard: 'views.kanban',
   viewTimeline: 'views.gantt',
@@ -179,6 +181,7 @@ export const ACTION_SECTIONS: Record<ActionId, KeyboardSection> = {
   filter: 'view',
   clearFilter: 'view',
   nextView: 'view',
+  nextSavedView: 'view',
   viewTable: 'view',
   viewBoard: 'view',
   viewTimeline: 'view',
@@ -228,6 +231,7 @@ const VIEW_ACTIONS: Binding[] = [
   { keys: ['f'], action: 'filter' },
   { keys: ['Shift+F'], action: 'clearFilter' },
   { keys: ['v'], action: 'nextView' },
+  { keys: ['Shift+V'], action: 'nextSavedView' },
   { keys: ['1'], action: 'viewTable' },
   { keys: ['2'], action: 'viewBoard' },
   { keys: ['3'], action: 'viewTimeline' }
@@ -265,6 +269,7 @@ export const KEYMAP: Record<KeyboardContext, Binding[]> = {
     { keys: ['Mod+F', '/'], action: 'search' },
     { keys: ['f'], action: 'filter' },
     { keys: ['Shift+F'], action: 'clearFilter' },
+    { keys: ['Shift+V'], action: 'nextSavedView' },
     ...COMMON_ACTIONS,
     ...TREE
   ],
