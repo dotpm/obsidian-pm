@@ -1,4 +1,3 @@
-import type { Scope } from 'obsidian'
 import type PMPlugin from '#main'
 import {
   type Task,
@@ -29,8 +28,9 @@ import {
   LABEL_WIDTH
 } from '@dotpm/ui'
 import { openAddTask } from '../addTask'
+import type { KeyboardSurface } from '#ui/keyboard/types'
 import type { SubView } from '../SubView'
-import { collapsedTaskIds } from '../collapse'
+import { collapsedTaskIds, setCollapsed as setTaskCollapsed } from '../collapse'
 import { makeDragState } from './GanttDragHandler'
 import type { DragState } from './GanttDragHandler'
 import { makeLinkState, cancelLink } from './GanttLinkHandler'
@@ -46,17 +46,93 @@ import {
 import type { RendererContext } from './GanttRenderer'
 import { renderTaskLabel } from './TaskLabelRenderer'
 
-export class GanttView implements SubView {
+export class GanttView implements SubView, KeyboardSurface {
   private scrollEl!: HTMLElement
   private svgEl!: SVGSVGElement
   private headerSvgEl!: SVGSVGElement
   private flatTasks: FlatTask[] = []
+  /** Task ids in the order the label column paints them. */
+  private rowIds: string[] = []
+  private activeTaskId: string | null = null
   /** Read from settings once per render pass. */
   private collapsedIds: ReadonlySet<string> = new Set()
   private cfg!: TimelineCfg
   private drag: DragState = makeDragState()
   private link: LinkState = makeLinkState()
   private labelWidth: number = LABEL_WIDTH
+
+  readonly context = 'timeline' as const
+
+  get keyboard(): KeyboardSurface {
+    return this
+  }
+
+  groups(): string[][] {
+    return [this.rowIds]
+  }
+
+  activeId(): string | null {
+    return this.activeTaskId
+  }
+
+  setActive(id: string | null): void {
+    this.activeTaskId = id
+    this.paintActive()
+    if (!id || !this.scrollEl) return
+    const index = this.rowIds.indexOf(id)
+    if (index === -1) return
+    const top = index * ROW_HEIGHT
+    const viewport = this.scrollEl.clientHeight
+    if (top < this.scrollEl.scrollTop || top + ROW_HEIGHT > this.scrollEl.scrollTop + viewport) {
+      this.scrollEl.scrollTop = Math.max(0, top - viewport / 2)
+    }
+  }
+
+  pageSize(): number {
+    return Math.max(1, Math.floor((this.scrollEl?.clientHeight ?? 500) / ROW_HEIGHT))
+  }
+
+  cancel(): boolean {
+    if (this.link.active) {
+      cancelLink(this.link)
+      return true
+    }
+    if (!this.activeTaskId) return false
+    this.setActive(null)
+    return true
+  }
+
+  expand(): Promise<void> {
+    return this.setActiveCollapsed(false)
+  }
+
+  collapse(): Promise<void> {
+    return this.setActiveCollapsed(true)
+  }
+
+  private async setActiveCollapsed(collapsed: boolean): Promise<void> {
+    const id = this.activeTaskId
+    if (!id) return
+    const project = this.scope.projectOf(id)
+    if (!project) return
+    setTaskCollapsed(this.plugin.settings, project, id, collapsed)
+    await this.plugin.saveSettings()
+    await this.onRefresh()
+  }
+
+  private paintActive(): void {
+    this.container
+      .querySelectorAll('.pm-gantt-label-row--active')
+      .forEach((el) => el.removeClass('pm-gantt-label-row--active'))
+    if (!this.activeTaskId) return
+    this.container
+      .querySelector(`.pm-gantt-label-row[data-task-id="${this.activeTaskId}"]`)
+      ?.addClass('pm-gantt-label-row--active')
+  }
+
+  isDragging(): boolean {
+    return this.drag.isDragging
+  }
 
   getLabelWidth(): number {
     return this.labelWidth
@@ -76,7 +152,6 @@ export class GanttView implements SubView {
     private onRefresh: () => Promise<void>,
     private query: TaskQuery,
     private granularity: GanttGranularity,
-    private keyScope: Scope,
     private fields: ViewFields,
     private zoom: number,
     private nonWorkingDays: NonWorkingDays,
@@ -226,33 +301,12 @@ export class GanttView implements SubView {
     })
     svgContainer.appendChild(this.svgEl)
 
-    const undo = () => {
-      if (this.drag.isDragging) return
-      void this.plugin.undoLastAction()
-      return false
-    }
-    const redo = () => {
-      if (this.drag.isDragging) return
-      void this.plugin.redoLastAction()
-      return false
-    }
-    const keyHandlers = [
-      this.keyScope.register([], 'Escape', () => {
-        if (this.link.active) cancelLink(this.link)
-      }),
-      this.keyScope.register(['Mod'], 'z', undo),
-      this.keyScope.register(['Mod', 'Shift'], 'z', redo),
-      this.keyScope.register(['Mod'], 'y', redo)
-    ]
-    this.cleanupFns.push(() => {
-      for (const handler of keyHandlers) this.keyScope.unregister(handler)
-    })
-
     const ctx = this.makeRendererContext()
     renderTimelineHeader(ctx)
     renderGridLines(ctx, totalRows)
     renderTodayLine(ctx, svgHeight)
     this.renderTaskRows(leftBody, ctx)
+    this.paintActive()
     renderDependencyArrows(ctx)
     renderMilestoneLabels(ctx)
 
@@ -301,6 +355,7 @@ export class GanttView implements SubView {
   private renderTaskRows(leftBody: HTMLElement, ctx: RendererContext): void {
     const barsGroup = svgEl('g', { class: 'pm-gantt-bars' })
     this.svgEl.appendChild(barsGroup)
+    this.rowIds = []
 
     const labelCtx = {
       plugin: this.plugin,
@@ -312,6 +367,7 @@ export class GanttView implements SubView {
     let rowIndex = 0
     const renderFlatList = (tasks: Task[], depth: number) => {
       for (const task of tasks) {
+        this.rowIds.push(task.id)
         renderTaskLabel(leftBody, task, depth, rowIndex, labelCtx)
         renderTaskBar(barsGroup, task, rowIndex, depth, ctx)
         rowIndex++

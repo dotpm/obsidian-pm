@@ -1,23 +1,36 @@
-import { Notice, type KeymapEventHandler, type Scope } from 'obsidian'
+import { Notice } from 'obsidian'
 import { confirmDialog } from '#ui/ModalFactory'
 import type PMPlugin from '#main'
-import { t, tn, type TaskQuery, type Project, type SortRule, type ViewFields, shownFields } from '@dotpm/core'
+import {
+  t,
+  tn,
+  type TaskQuery,
+  type Project,
+  type SortRule,
+  type ViewFields,
+  isQueryActive,
+  shownFields
+} from '@dotpm/core'
 import type { ProjectScope } from '#store'
 import { safeAsync } from '@dotpm/ui'
+import type { KeyboardSelection, KeyboardSurface } from '#ui/keyboard/types'
 import type { SubView } from '../SubView'
-import { collapsedTaskIds } from '../collapse'
-import { renderTable, refreshTableBody, handleTableKeyDown, ROW_HEIGHT_ESTIMATE } from './TableRenderer'
+import { collapsedTaskIds, setCollapsed as setTaskCollapsed } from '../collapse'
+import {
+  renderTable,
+  refreshTableBody,
+  getVisibleTaskIds,
+  updateSelectCheckboxes,
+  ROW_HEIGHT_ESTIMATE
+} from './TableRenderer'
 import type { TableState } from './TableRenderer'
-import { updateSelectAllCheckbox } from './TableRow'
+import { updateSelectAllCheckbox, updateSelectedRow } from './TableRow'
 import { renderBulkActionBar } from './BulkActionBar'
 import type { BulkAction } from './BulkActionBar'
 
-const TABLE_KEYS = ['Escape', 'ArrowDown', 'ArrowUp', 'j', 'k', 'Enter', 'e', 'Delete', 'Backspace']
-
-export class TableView implements SubView {
+export class TableView implements SubView, KeyboardSurface {
   private state: TableState
   private pendingScrollTop: number | null = null
-  private keyHandlers: KeymapEventHandler[]
 
   constructor(
     private container: HTMLElement,
@@ -27,7 +40,6 @@ export class TableView implements SubView {
     query: TaskQuery,
     sort: SortRule[],
     private onSortChange: () => void,
-    private keyScope: Scope,
     private fields: ViewFields,
     private onFieldsChange: () => void
   ) {
@@ -47,11 +59,73 @@ export class TableView implements SubView {
       windowEnd: -1,
       renderWindow: null
     }
-    this.keyHandlers = TABLE_KEYS.map((key) =>
-      keyScope.register([], key, (e) => {
-        handleTableKeyDown(e, this.makeTableContext())
-      })
-    )
+  }
+
+  readonly context = 'table' as const
+
+  get keyboard(): KeyboardSurface {
+    return this
+  }
+
+  groups(): string[][] {
+    return [getVisibleTaskIds(this.state)]
+  }
+
+  activeId(): string | null {
+    return this.state.selectedTaskId
+  }
+
+  setActive(id: string | null): void {
+    this.state.selectedTaskId = id
+    this.paintActive()
+  }
+
+  selection(): KeyboardSelection {
+    return {
+      ids: () => this.state.selectedTaskIds,
+      set: (ids) => {
+        this.state.selectedTaskIds.clear()
+        for (const id of ids) this.state.selectedTaskIds.add(id)
+      },
+      onChange: () => {
+        updateSelectCheckboxes(this.state)
+        updateSelectAllCheckbox(this.state)
+        this.updateBulkBar()
+        this.paintActive()
+      }
+    }
+  }
+
+  pageSize(): number {
+    const wrapper = this.container.querySelector<HTMLElement>('.pm-table-wrapper')
+    return Math.max(1, Math.floor((wrapper?.clientHeight ?? 400) / this.state.rowHeight) - 1)
+  }
+
+  canCollapse(): boolean {
+    return !isQueryActive(this.state.query)
+  }
+
+  expand(): Promise<void> {
+    return this.setActiveCollapsed(false)
+  }
+
+  collapse(): Promise<void> {
+    return this.setActiveCollapsed(true)
+  }
+
+  private async setActiveCollapsed(collapsed: boolean): Promise<void> {
+    const id = this.state.selectedTaskId
+    if (!id) return
+    const project = this.scope.projectOf(id)
+    if (!project) return
+    setTaskCollapsed(this.plugin.settings, project, id, collapsed)
+    await this.plugin.saveSettings()
+    await this.onRefresh()
+  }
+
+  /** Paints the active row and lets the virtual window scroll it into range. */
+  private paintActive(): void {
+    updateSelectedRow(this.state)
   }
 
   getScrollTop(): number {
@@ -81,17 +155,32 @@ export class TableView implements SubView {
       }
       this.pendingScrollTop = null
     }
+    this.pruneSelection()
   }
 
   destroy(): void {
-    for (const handler of this.keyHandlers) this.keyScope.unregister(handler)
-    this.keyHandlers = []
     this.state.resizeObserver?.disconnect()
     this.state.resizeObserver = null
   }
 
   refresh(): void {
     this.doRefreshTable()
+    this.pruneSelection()
+    this.updateBulkBar()
+  }
+
+  /** A hidden row must not stay deletable just because it was selected before the filter. */
+  private pruneSelection(): void {
+    const visible = new Set(getVisibleTaskIds(this.state))
+    let removed = false
+    for (const id of this.state.selectedTaskIds) {
+      if (visible.has(id)) continue
+      this.state.selectedTaskIds.delete(id)
+      removed = true
+    }
+    if (!removed) return
+    updateSelectCheckboxes(this.state)
+    updateSelectAllCheckbox(this.state)
     this.updateBulkBar()
   }
 
@@ -231,7 +320,6 @@ export class TableView implements SubView {
         updateSelectAllCheckbox(this.state)
         this.updateBulkBar()
       },
-      onBulkDelete: safeAsync(() => this.handleBulkAction({ type: 'delete' })),
       onSortChange: this.onSortChange,
       onFieldsChange: this.onFieldsChange
     }

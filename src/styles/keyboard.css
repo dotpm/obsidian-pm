@@ -1,0 +1,92 @@
+/* Keyboard cursor */
+.pm-kanban-card--active {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: -2px;
+  background: color-mix(in srgb, var(--interactive-accent) 8%, var(--background-primary));
+}
+
+.pm-gantt-label-row--active {
+  background: color-mix(in srgb, var(--interactive-accent) 12%, transparent);
+  box-shadow: inset 3px 0 0 var(--interactive-accent);
+}
+
+.pm-project-row--active {
+  background: color-mix(in srgb, var(--interactive-accent) 10%, transparent);
+  box-shadow: inset 3px 0 0 var(--interactive-accent);
+}
+
+/* The action picker */
+.pm-choice-label {
+  color: var(--text-normal);
+}
+
+.pm-choice-detail {
+  color: var(--text-muted);
+  font-size: 0.85em;
+}
+
+/* Keyboard help */
+.pm-keys {
+  line-height: 1.5;
+}
+
+.pm-keys-title {
+  margin: 0 0 4px;
+}
+
+.pm-keys-context {
+  color: var(--text-muted);
+  margin-top: 0;
+}
+
+.pm-keys-section {
+  margin: 18px 0 6px;
+  color: var(--text-muted);
+  font-size: 0.8em;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.pm-keys-table {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pm-keys-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 3px 0;
+}
+
+.pm-keys-label {
+  color: var(--text-normal);
+}
+
+.pm-keys-keys {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  justify-content: flex-end;
+}
+
+.pm-keys-keys kbd {
+  min-width: 1.6em;
+  padding: 1px 5px;
+  border: 1px solid var(--background-modifier-border);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  background: var(--background-secondary);
+  color: var(--text-normal);
+  font-family: var(--font-monospace);
+  font-size: 0.78em;
+  text-align: center;
+}
+
+.pm-modal-desc-preview:focus-visible {
+  outline: 2px solid var(--interactive-accent);
+  outline-offset: 3px;
+}

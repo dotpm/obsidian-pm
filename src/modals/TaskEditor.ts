@@ -24,7 +24,7 @@ import {
   t
 } from '@dotpm/core'
 import { TaskFileNameConflictError } from '#store'
-import { safeAsync, renderGlyph } from '@dotpm/ui'
+import { Popover, safeAsync, renderGlyph } from '@dotpm/ui'
 import { saveShortcutLabel } from '../utils'
 import { confirmDialog, openTaskByPath } from '#ui/ModalFactory'
 import { renderTaskFormFields } from './TaskFormFields'
@@ -53,6 +53,7 @@ export class TaskEditor {
   private descResizeObserver: ResizeObserver | null = null
   private shownExtras = new Set<string>()
   private saveKeyHandler: KeymapEventHandler | null = null
+  private escapeKeyHandler: KeymapEventHandler | null = null
   private containerEl: HTMLElement | null = null
   private titleInput: HTMLTextAreaElement | null = null
 
@@ -94,6 +95,12 @@ export class TaskEditor {
 
   mount(container: HTMLElement): void {
     this.containerEl = container
+    container.addEventListener('keydown', this.onTabKey)
+    this.escapeKeyHandler = this.host.scope.register([], 'Escape', () => {
+      const modal = this.containerEl?.closest<HTMLElement>('.modal')
+      if (modal && Popover.closeWithin(modal)) return false
+      return true
+    })
     this.render()
     this.focusTitle()
   }
@@ -126,6 +133,11 @@ export class TaskEditor {
       this.host.scope.unregister(this.saveKeyHandler)
       this.saveKeyHandler = null
     }
+    if (this.escapeKeyHandler) {
+      this.host.scope.unregister(this.escapeKeyHandler)
+      this.escapeKeyHandler = null
+    }
+    this.containerEl?.removeEventListener('keydown', this.onTabKey)
     this.noteSuggest?.destroy()
     this.noteSuggest = null
     this.descResizeObserver?.disconnect()
@@ -306,6 +318,74 @@ export class TaskEditor {
     menu.showAtPosition({ x: rect.left, y: rect.bottom + 4 })
   }
 
+  /** Every visible main control, in reading order. Chips and preview links stay out. */
+  private tabTargets(): HTMLElement[] {
+    const root = this.containerEl
+    if (!root) return []
+    return Array.from(
+      root.querySelectorAll<HTMLElement>(
+        'button, input, textarea, select, a[href], [contenteditable="true"], [tabindex]'
+      )
+    ).filter((el) => {
+      if (el.tabIndex < 0 || el.hasAttribute('disabled')) return false
+      if (el.getAttribute('aria-hidden') === 'true') return false
+      if (el.closest('.pm-pop, .suggestion-container, .pm-hidden, .pm-chip')) return false
+      if (el.closest('.pm-modal-desc-preview') && !el.classList.contains('pm-modal-desc-preview')) return false
+      if (typeof el.checkVisibility === 'function') return el.checkVisibility()
+      return el.offsetParent !== null || el.getClientRects().length > 0
+    })
+  }
+
+  /**
+   * Tabs through the property form itself. Native Tab drops keys when a blur rebuilds the
+   * form or hides the description; this keeps each press one deterministic move.
+   */
+  private onTabKey = (event: KeyboardEvent): void => {
+    if (event.key !== 'Tab' || event.defaultPrevented) return
+    if (event.ctrlKey || event.metaKey || event.altKey) return
+    const target = event.target as HTMLElement | null
+    if (target?.closest('.pm-pop, .suggestion-container')) return
+    const targets = this.tabTargets()
+    if (!targets.length) return
+    const current = activeDocument.activeElement as HTMLElement | null
+    let index = current ? targets.indexOf(current) : -1
+    if (index === -1) {
+      if (current) {
+        const following = targets.find(
+          (el) => (current.compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING) !== 0
+        )
+        index = following ? targets.indexOf(following) - (event.shiftKey ? 1 : 0) : event.shiftKey ? targets.length : -1
+      } else {
+        index = event.shiftKey ? targets.length : -1
+      }
+    }
+    const nextIndex = (index + (event.shiftKey ? -1 : 1) + targets.length) % targets.length
+    event.preventDefault()
+    event.stopPropagation()
+    targets[nextIndex].focus()
+    // A blur can rebuild the form (an inline edit saved, say). Put focus back on the
+    // nearest control if the target was replaced underneath us.
+    window.setTimeout(() => {
+      if (!this.containerEl?.isConnected) return
+      const active = activeDocument.activeElement
+      if (active && active !== activeDocument.body) return
+      const after = this.tabTargets()
+      if (after.length) after[Math.min(Math.max(nextIndex, 0), after.length - 1)]?.focus()
+    }, 0)
+  }
+
+  /**
+   * A property change rebuilds the whole form, which destroys the control that had focus
+   * (a select's trigger, say). Focus goes back to the control in the same place.
+   */
+  private renderKeepingFocus(): void {
+    const active = activeDocument.activeElement as HTMLElement | null
+    const index = active ? this.tabTargets().indexOf(active) : -1
+    this.render()
+    if (index === -1) return
+    this.tabTargets()[index]?.focus()
+  }
+
   private render(): void {
     const contentEl = this.containerEl
     if (!contentEl) return
@@ -380,7 +460,16 @@ export class TaskEditor {
       autosizeTitle()
     })
     titleInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !Keymap.isModifier(e, this.plugin.settings.editorSaveModifier)) e.preventDefault()
+      // Safari can report a committing Enter as the legacy keyCode 229 instead of isComposing.
+      const legacyKeyCode = (e as unknown as { keyCode?: number }).keyCode
+      if (e.key !== 'Enter' || e.isComposing || legacyKeyCode === 229) return
+      if (Keymap.isModifier(e, this.plugin.settings.editorSaveModifier)) return
+      e.preventDefault()
+      // Enter leaves the title for the first property, so the whole form can be filled by keyboard.
+      const next = this.containerEl?.querySelector<HTMLElement>(
+        '.pm-te-props button, .pm-te-props input, .pm-te-props select, .pm-te-props [tabindex]'
+      )
+      next?.focus()
     })
     window.setTimeout(autosizeTitle, 0)
 
@@ -393,7 +482,7 @@ export class TaskEditor {
       setParentId: (id) => {
         this.parentId = id
       },
-      rerender: () => this.render(),
+      rerender: () => this.renderKeepingFocus(),
       shownExtras: this.shownExtras,
       openTask: (path) => this.openLinkedTask(path)
     })
@@ -402,6 +491,9 @@ export class TaskEditor {
     descSection.createEl('h4', { text: t('common.description'), cls: 'pm-modal-section-title' })
 
     const descPreview = descSection.createDiv('pm-modal-desc-preview')
+    descPreview.tabIndex = 0
+    descPreview.setAttribute('role', 'button')
+    descPreview.setAttribute('aria-label', t('taskEditor.editDescription'))
     const descArea = descSection.createEl('textarea', { cls: 'pm-modal-description' })
     descArea.placeholder = t('taskEditor.descriptionPlaceholder')
     descArea.value = this.task.description
@@ -491,17 +583,24 @@ export class TaskEditor {
     }
 
     const showPreview = () => {
-      if (!hasContent()) return
+      if (!hasContent() || !descArea.isConnected) return
       void renderPreview()
       descArea.classList.add('pm-hidden')
       descPreview.classList.remove('pm-hidden')
     }
 
+    descPreview.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter' && e.key !== ' ') return
+      e.preventDefault()
+      showEdit(0)
+    })
+
     descArea.addEventListener('input', () => {
       this.task.description = descArea.value
       autoResize()
     })
-    descArea.addEventListener('blur', () => showPreview())
+    // Let the next Tab land before the textarea is swapped for the preview.
+    descArea.addEventListener('blur', () => window.setTimeout(showPreview, 0))
 
     descArea.addEventListener('paste', (e) => {
       const items = e.clipboardData?.items

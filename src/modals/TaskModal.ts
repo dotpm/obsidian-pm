@@ -1,6 +1,7 @@
 import { App, Modal } from 'obsidian'
 import type PMPlugin from '#main'
 import type { Project, Task } from '@dotpm/core'
+import { Popover } from '@dotpm/ui'
 import { TaskEditor } from './TaskEditor'
 
 export class TaskModal extends Modal {
@@ -26,6 +27,13 @@ export class TaskModal extends Modal {
       { surface: 'modal', close: () => this.close(), scope: this.scope },
       defaults
     )
+  }
+
+  /** Escape closes a picker first; only the next one closes the task itself. */
+  close(): void {
+    if (Popover.closeWithin(this.modalEl)) return
+    if (Popover.consumeEscape()) return
+    super.close()
   }
 
   onOpen(): void {

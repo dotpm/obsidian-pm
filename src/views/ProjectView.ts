@@ -98,6 +98,14 @@ import { KanbanView } from './KanbanView'
 import { openTaskModal } from '#ui/ModalFactory'
 import { exportViewAsHtml } from '../export/exportView'
 import { collapsedTaskIds, setAllCollapsed } from './collapse'
+import {
+  KeyboardController,
+  taskActionHandlers,
+  type ActionHandlers,
+  type ActionSnapshot,
+  type KeyboardSurface,
+  askSavedView
+} from '#ui/keyboard/index'
 
 export const PM_PROJECT_VIEW_TYPE = 'pm-project'
 
@@ -180,6 +188,7 @@ export class ProjectView extends ItemView {
   private zoomStepper: Stepper | null = null
   private daysButton: ChipButton | null = null
   private keyScope: Scope
+  private keyboard!: KeyboardController
   private pendingRefresh: Promise<void> | null = null
   private initialized = false
   /** Set once the default view mode is applied, so reloads don't undo a mode switch. */
@@ -204,6 +213,78 @@ export class ProjectView extends ItemView {
       safeAsync(() => this.updateActiveView())()
       return false
     })
+    this.keyboard = new KeyboardController(this.app, this.keyScope, {
+      container: () => this.containerEl,
+      getSurface: () => this.currentSurface(),
+      getHandlers: (snapshot) => this.actionHandlers(snapshot)
+    })
+  }
+
+  private currentSurface(): KeyboardSurface | null {
+    return this.subview?.keyboard ?? null
+  }
+
+  private targetIds(): string[] {
+    const surface = this.currentSurface()
+    const selected = surface?.selection?.().ids()
+    if (selected?.size) return [...selected]
+    const active = surface?.activeId()
+    return active ? [active] : []
+  }
+
+  /** Everything a key or the palette can run on the current surface. */
+  private actionHandlers(snapshot?: ActionSnapshot): ActionHandlers {
+    const scope = this.projectScope
+    if (!scope) return {}
+    // Capture the board that was on screen when the key was pressed, not whichever
+    // view is showing by the time a queued move runs.
+    const board = this.subview instanceof KanbanView ? this.subview : null
+    return {
+      ...taskActionHandlers({
+        plugin: this.plugin,
+        scope,
+        refresh: () => this.refreshProject(),
+        surface: () => this.currentSurface(),
+        activeId: () => snapshot?.activeId ?? this.currentSurface()?.activeId() ?? null,
+        targetIds: () => snapshot?.targetIds ?? this.targetIds(),
+        enqueue: (fn) => this.keyboard.enqueue(fn)
+      }),
+      expand: () => this.currentSurface()?.expand?.(),
+      collapse: () => this.currentSurface()?.collapse?.(),
+      search: () => this.searchBox?.focus(),
+      filter: () => this.openFilter(),
+      clearFilter: () => this.clearFilter(),
+      nextView: () => {
+        const index = MODES.indexOf(this.currentView)
+        this.switchMode(MODES[(index + 1) % MODES.length])
+      },
+      pickSavedView: () =>
+        askSavedView(this.app, {
+          views: this.savedViews(),
+          activeId: this.activeSavedViewId,
+          builtInName: t('header.allTasks'),
+          canSave: this.canSaveView(),
+          onSelect: (id) => this.handleSavedViewSelect(id),
+          onSave: (name) => this.handleSavedViewSave(name, false)
+        }),
+      viewTable: () => this.switchMode('table'),
+      viewBoard: () => this.switchMode('kanban'),
+      viewTimeline: () => this.switchMode('gantt'),
+      moveCardNext: () => board?.moveCard(1, snapshot?.activeId ?? undefined, snapshot?.activeGroupKey ?? undefined),
+      moveCardPrev: () => board?.moveCard(-1, snapshot?.activeId ?? undefined, snapshot?.activeGroupKey ?? undefined),
+      undo: () =>
+        (async () => {
+          if (this.subview instanceof GanttView && this.subview.isDragging()) return
+          await this.plugin.undoLastAction()
+          await this.refreshProject()
+        })(),
+      redo: () =>
+        (async () => {
+          if (this.subview instanceof GanttView && this.subview.isDragging()) return
+          await this.plugin.redoLastAction()
+          await this.refreshProject()
+        })()
+    }
   }
 
   getViewType(): string {
@@ -279,6 +360,7 @@ export class ProjectView extends ItemView {
   }
 
   onClose(): Promise<void> {
+    this.keyboard.destroy()
     this.subview?.destroy?.()
     this.subview = null
     this.header?.destroy()
@@ -760,6 +842,16 @@ export class ProjectView extends ItemView {
     })
   }
 
+  /** False while nothing differs from the defaults, so there is nothing to save. */
+  private canSaveView(): boolean {
+    return (
+      countActiveFilters(this.query.filter) > 0 ||
+      !sameValue(this.sort, makeDefaultSort()) ||
+      Object.keys(this.fields).length > 0 ||
+      this.currentView !== this.projectScope?.config.defaultView
+    )
+  }
+
   private openSavedViews(anchor: HTMLElement): void {
     const primary = this.projectScope?.primary
     openSavedViewsPopover(anchor, {
@@ -771,11 +863,7 @@ export class ProjectView extends ItemView {
       })),
       activeId: this.activeSavedViewId,
       changes: this.viewChanges(),
-      canSave:
-        countActiveFilters(this.query.filter) > 0 ||
-        !sameValue(this.sort, makeDefaultSort()) ||
-        Object.keys(this.fields).length > 0 ||
-        this.currentView !== this.projectScope?.config.defaultView,
+      canSave: this.canSaveView(),
       builtInName: t('header.allTasks'),
       storageNote:
         this.projectScope?.spec.kind === 'project' && primary
@@ -842,6 +930,15 @@ export class ProjectView extends ItemView {
     this.queryBarOpen = true
     if (!this.filterBar) this.renderFilterBar()
     this.filterBar?.openPicker()
+  }
+
+  /** Drops every filter condition and the archived toggle; the search text stays. */
+  private clearFilter(): void {
+    if (countActiveFilters(this.query.filter) === 0) return
+    this.query.filter.conditions = []
+    this.query.filter.showArchived = false
+    this.handleFilterMutation()
+    this.renderFilterBar()
   }
 
   private openSort(anchor: HTMLElement): void {
@@ -1131,6 +1228,13 @@ export class ProjectView extends ItemView {
           .onClick(() => this.addTask(anchor, { type: 'milestone' }))
       )
     }
+    menu.addSeparator()
+    menu.addItem((item) =>
+      item
+        .setTitle(t('keyboard.help'))
+        .setIcon('keyboard')
+        .onClick(() => this.keyboard.openHelp())
+    )
   }
 
   private renderOptionsSlot(parent: HTMLElement, scope: ProjectScope): void {
@@ -1454,6 +1558,7 @@ export class ProjectView extends ItemView {
 
   private refreshSubview(): void {
     this.subview?.render()
+    this.keyboard.reconcile()
   }
 
   /** With several projects in view, a new task has to say which one it belongs to. */
@@ -1487,6 +1592,7 @@ export class ProjectView extends ItemView {
   private renderCurrentView(): void {
     const scope = this.projectScope
     if (!scope?.primary) return
+    const active = this.currentSurface()?.activeId() ?? null
 
     let savedGanttScroll: ReturnType<GanttView['getScrollPosition']> | null = null
     let savedGanttLabelWidth: number | null = null
@@ -1519,7 +1625,6 @@ export class ProjectView extends ItemView {
             this.syncHeader()
             await this.persistFilter()
           }),
-          this.keyScope,
           fields,
           () => (phone ? this.handlePhoneTableFields(fields) : this.handleFieldsChange())
         )
@@ -1535,7 +1640,6 @@ export class ProjectView extends ItemView {
           () => this.refreshProject(),
           this.query,
           this.granularity,
-          this.keyScope,
           this.fields,
           this.zoom,
           this.nonWorkingDays,
@@ -1565,6 +1669,8 @@ export class ProjectView extends ItemView {
     }
     this.bodyEl.toggleClass('pm-content--kanban', this.currentView === 'kanban')
     this.subview?.render()
+    this.keyboard.setSurface(this.currentSurface())
+    if (active) this.keyboard.activate(active)
   }
 
   /**
@@ -1572,14 +1678,20 @@ export class ProjectView extends ItemView {
    * through both its own callback and the store's change event paints once.
    */
   refreshProject(): Promise<void> {
+    if (!this.containerEl.isConnected) return Promise.resolve()
     if (this.pendingRefresh) return this.pendingRefresh
     this.pendingRefresh = new Promise((resolve) => {
       window.setTimeout(() => {
         this.pendingRefresh = null
+        if (!this.containerEl.isConnected) {
+          resolve()
+          return
+        }
         if (this.projectScope?.primary) {
           if (this.subview?.refresh) this.subview.refresh()
           else if (this.subview) this.subview.render()
           else this.renderCurrentView()
+          this.keyboard.reconcile()
           this.syncHeader()
         }
         resolve()

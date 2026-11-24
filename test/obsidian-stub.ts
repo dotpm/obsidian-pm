@@ -12,6 +12,18 @@ export class Notice {
   hide(): void {}
 }
 
+export const Platform = {
+  isMacOS: false,
+  isWin: false,
+  isLinux: true,
+  isMobile: false,
+  isDesktop: true,
+  isIosApp: false,
+  isAndroidApp: false,
+  isPhone: false,
+  isTablet: false
+}
+
 export function setIcon(): void {}
 
 export function getIcon(): SVGSVGElement | null {
@@ -46,3 +58,42 @@ export class TFolder extends TAbstractFile {
   }
 }
 export const getLanguage = (): string => 'en'
+
+export class Modal {
+  contentEl!: HTMLElement
+  modalEl!: HTMLElement
+  constructor(public app?: unknown) {
+    if (typeof document !== 'undefined') {
+      this.contentEl = document.createElement('div')
+      this.modalEl = document.createElement('div')
+    }
+  }
+  open(): void {}
+  close(): void {}
+  onOpen(): void {}
+  onClose(): void {}
+}
+
+export class FuzzySuggestModal<T> extends Modal {
+  inputEl!: HTMLInputElement
+  resultContainerEl!: HTMLElement
+  limit = 50
+  emptyStateText = ''
+  constructor(app?: unknown) {
+    super(app)
+    if (typeof document !== 'undefined') {
+      this.inputEl = document.createElement('input')
+      this.resultContainerEl = document.createElement('div')
+    }
+  }
+  setPlaceholder(_text: string): void {}
+  setInstructions(_instructions: unknown): void {}
+  getItems(): T[] {
+    return []
+  }
+  getItemText(_item: T): string {
+    return ''
+  }
+  onChooseItem(_item: T, _evt?: unknown): void {}
+  renderSuggestion(_item: unknown, _el: HTMLElement): void {}
+}

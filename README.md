@@ -98,6 +98,7 @@ One column per status, or per priority, assignee, tag, type or custom field. Dra
 - Saved views: named filter and sort combinations, one of them starred as the view a project opens with
 - Sort by up to three keys in the table and on the board
 - Bulk edit from the table
+- Keyboard-first browsing, selection and actions, with `?` for the current keys and `Mod+K` for a searchable action list; see [docs/keyboard.md](docs/keyboard.md)
 - A project list you can search, filter by progress or tag, sort, group by folder or tag, and save views of
 - People notes for assignees, with a per-person task list and an avatar color set by the note's `color` property
 

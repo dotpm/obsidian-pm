@@ -185,6 +185,13 @@ describe('FilterBar', () => {
     ])
   })
 
+  it('focuses the field search when the picker opens', () => {
+    mountBar(makeDefaultFilter()).openPicker()
+    const search = document.body.querySelector<HTMLInputElement>('.pm-filter-pop input.pm-pop-field')
+    expect(search).not.toBeNull()
+    expect(document.activeElement).toBe(search)
+  })
+
   it('adds a condition from the value list, with counts that leave archived tasks out', () => {
     const filter = makeDefaultFilter()
     const bar = mountBar(filter)
@@ -235,6 +242,156 @@ describe('FilterBar', () => {
     input.value = 'copy'
     input.dispatchEvent(new Event('input'))
     expect(filter.conditions).toEqual([{ field: 'title', op: 'contains', value: 'copy' }])
+  })
+
+  describe('by keyboard', () => {
+    const press = (key: string): KeyboardEvent => {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+      ;(document.activeElement ?? document.body).dispatchEvent(event)
+      return event
+    }
+    const focusedLabel = (): string | null | undefined =>
+      document.activeElement?.find('.pm-pop-item-label')?.textContent ?? document.activeElement?.textContent
+    const valueRows = (): HTMLElement[] => document.body.findAll('.pm-filter-pop-value .pm-pop-item')
+    const activeOp = (): string | null | undefined =>
+      document.body.find('.pm-filter-pop-op.pm-chip-btn--active')?.textContent
+
+    /** Opens the picker and takes the first field, which is Status, the way Enter in the search field does. */
+    const openStatusEditor = (filter = makeDefaultFilter()): FilterState => {
+      mountBar(filter).openPicker()
+      press('Enter')
+      return filter
+    }
+
+    it('walks from the search field into the field list with the arrow keys', () => {
+      mountBar(makeDefaultFilter()).openPicker()
+      expect(document.activeElement?.tagName).toBe('INPUT')
+      expect(press('ArrowDown').defaultPrevented).toBe(true)
+      expect(focusedLabel()).toBe('Status')
+      press('ArrowDown')
+      expect(focusedLabel()).toBe('Priority')
+      press('ArrowUp')
+      press('ArrowUp')
+      expect(document.activeElement?.tagName).toBe('INPUT')
+    })
+
+    it('lands on the first option when a field is picked, not on the operators', () => {
+      openStatusEditor()
+      expect(document.body.find('.pm-pop-title')?.textContent).toBe('Status')
+      expect(document.activeElement).toBe(valueRows()[0])
+    })
+
+    it('moves through the options with the arrow keys and keeps its place after ticking one', () => {
+      const filter = openStatusEditor()
+      press('ArrowDown')
+      expect(document.activeElement).toBe(valueRows()[1])
+      ;(document.activeElement as HTMLElement).click()
+      expect(filter.conditions).toEqual([{ field: 'status', op: 'any', value: [DEFAULT_STATUSES[1].id] }])
+      expect(document.activeElement).toBe(valueRows()[1])
+      expect(valueRows()[1].hasClass('pm-pop-item--selected')).toBe(true)
+
+      ;(document.activeElement as HTMLElement).click()
+      expect(filter.conditions).toEqual([])
+      expect(document.activeElement).toBe(valueRows()[1])
+    })
+
+    it('jumps to the first and last option with Home and End', () => {
+      openStatusEditor()
+      press('End')
+      expect(document.activeElement).toBe(valueRows().at(-1))
+      press('Home')
+      expect(document.activeElement).toBe(valueRows()[0])
+    })
+
+    it('reaches the operators from the options, switches between them and returns to the options', () => {
+      const filter = openStatusEditor()
+      press('ArrowUp')
+      expect(activeOp()).toBe('is any of')
+      expect(document.activeElement?.textContent).toBe('is any of')
+      press('ArrowRight')
+      const next = document.activeElement as HTMLElement
+      expect(next.textContent).not.toBe('is any of')
+      next.click()
+      expect(filter.conditions).toEqual([])
+      expect(document.activeElement?.textContent).toBe(next.textContent)
+      expect(activeOp()).toBe(next.textContent)
+      press('ArrowDown')
+      expect(document.activeElement).toBe(valueRows()[0])
+    })
+
+    it('goes back with the back button, which sits above the operators', () => {
+      openStatusEditor()
+      press('ArrowUp')
+      press('ArrowUp')
+      expect(document.activeElement?.classList.contains('pm-icon-btn')).toBe(true)
+      ;(document.activeElement as HTMLElement).click()
+      expect(document.activeElement?.tagName).toBe('INPUT')
+      expect(document.body.find('.pm-pop-title')).toBeNull()
+    })
+
+    it('opens the match for what was typed with Enter in the field search', () => {
+      const filter = makeDefaultFilter()
+      mountBar(filter).openPicker()
+      const search = document.activeElement as HTMLInputElement
+      search.value = 'Priority'
+      search.dispatchEvent(new Event('input'))
+      press('Enter')
+      expect(document.body.find('.pm-pop-title')?.textContent).toBe('Priority')
+      ;(document.activeElement as HTMLElement).click()
+      expect(filter.conditions[0]?.field).toBe('priority')
+    })
+
+    it('focuses the text field of a text condition and leaves number fields their own arrows', () => {
+      mountBar(makeDefaultFilter()).openPicker()
+      document.body
+        .findAll('.pm-filter-pop .pm-pop-item')
+        .find((row) => row.find('.pm-pop-item-label')?.textContent === 'Title')
+        ?.click()
+      expect(document.activeElement).toBe(document.body.querySelector('.pm-filter-pop-value input'))
+      expect(press('ArrowUp').defaultPrevented).toBe(true)
+      expect(activeOp()).toBe(document.activeElement?.textContent)
+
+      document.body.empty()
+      mountBar(makeDefaultFilter()).openPicker()
+      document.body
+        .findAll('.pm-filter-pop .pm-pop-item')
+        .find((row) => row.find('.pm-pop-item-label')?.textContent === 'Estimate')
+        ?.click()
+      expect((document.activeElement as HTMLInputElement).type).toBe('number')
+      expect(press('ArrowDown').defaultPrevented).toBe(false)
+    })
+
+    it('keeps the arrows on the list rows and their remove buttons, and focus where a removal leaves it', () => {
+      const filter: FilterState = {
+        showArchived: false,
+        conditions: [
+          { field: 'status', op: 'any', value: ['todo'] },
+          { field: 'due', op: 'bucket', value: 'overdue' }
+        ]
+      }
+      openFilterPopover(document.body.createDiv(), setupFor(filter), noop, 'list')
+      const rows = (): HTMLElement[] => document.body.findAll('.pm-filter-list-row .pm-pop-item')
+      expect(document.activeElement).toBe(rows()[0])
+      press('ArrowRight')
+      expect(document.activeElement?.hasClass('pm-filter-list-remove')).toBe(true)
+      press('ArrowDown')
+      expect(document.activeElement).toBe(rows()[1])
+      press('ArrowRight')
+      ;(document.activeElement as HTMLElement).click()
+      expect(filter.conditions.map((c) => c.field)).toEqual(['status'])
+      expect(document.activeElement).toBe(rows()[0])
+    })
+
+    it('lands on the first row of the list when coming back from a condition', () => {
+      const filter: FilterState = { showArchived: false, conditions: [{ field: 'status', op: 'any', value: ['todo'] }] }
+      openFilterPopover(document.body.createDiv(), setupFor(filter), noop, 'list')
+      ;(document.activeElement as HTMLElement).click()
+      expect(document.body.find('.pm-pop-title')?.textContent).toBe('Status')
+      press('ArrowUp')
+      press('ArrowUp')
+      ;(document.activeElement as HTMLElement).click()
+      expect(document.activeElement).toBe(document.body.find('.pm-filter-list-row .pm-pop-item'))
+    })
   })
 
   it('names how many filters apply on the button that stands in for the chips', () => {

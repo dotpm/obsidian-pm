@@ -15,16 +15,14 @@ import {
   tidyFields,
   viewFieldLabel,
   flattenTasks,
-  findTaskById,
   applyTaskFilterFlat,
   isQueryActive,
   t
 } from '@dotpm/core'
 import { personKeyer, type ProjectScope } from '#store'
 import { renderAddButton, childTreeGuides, compareTasks } from '@dotpm/ui'
-import { openTaskModal } from '#ui/ModalFactory'
 import { openAddTask } from '../addTask'
-import { renderTaskRow, updateSelectedRow, updateSelectAllCheckbox } from './TableRow'
+import { renderTaskRow, updateSelectAllCheckbox } from './TableRow'
 
 /** A display row plus what the tree connectors need to know about its siblings. */
 export interface TableTreeRow extends FlatTask {
@@ -70,7 +68,6 @@ export interface TableContext {
   state: TableState
   onRefresh: () => Promise<void>
   onSelectionChange: () => void
-  onBulkDelete: () => void
   onSortChange: () => void
   /** A column was resized, or dragged narrow enough to hide. */
   onFieldsChange: () => void
@@ -403,94 +400,6 @@ export function updateSelectCheckboxes(state: TableState): void {
   updateSelectAllCheckbox(state)
 }
 
-export function handleTableKeyDown(e: KeyboardEvent, ctx: TableContext): void {
-  const active = activeDocument.activeElement
-  const isInput =
-    active instanceof HTMLInputElement ||
-    active instanceof HTMLTextAreaElement ||
-    (active instanceof HTMLElement && active.contentEditable === 'true')
-
-  if (e.key === 'Escape') {
-    if (isInput) {
-      active.blur()
-      return
-    }
-    if (ctx.state.selectedTaskIds.size > 0) {
-      ctx.state.selectedTaskIds.clear()
-      updateSelectCheckboxes(ctx.state)
-      ctx.onSelectionChange()
-      return
-    }
-    ctx.state.selectedTaskId = null
-    updateSelectedRow(ctx.state)
-    return
-  }
-
-  if (isInput) return
-
-  const rows = getVisibleTaskIds(ctx.state)
-  if (!rows.length) return
-
-  switch (e.key) {
-    case 'ArrowDown':
-    case 'j': {
-      e.preventDefault()
-      const idx = ctx.state.selectedTaskId ? rows.indexOf(ctx.state.selectedTaskId) : -1
-      const next = Math.min(idx + 1, rows.length - 1)
-      ctx.state.selectedTaskId = rows[next]
-      updateSelectedRow(ctx.state)
-      break
-    }
-    case 'ArrowUp':
-    case 'k': {
-      e.preventDefault()
-      const idx = ctx.state.selectedTaskId ? rows.indexOf(ctx.state.selectedTaskId) : rows.length
-      const prev = Math.max(idx - 1, 0)
-      ctx.state.selectedTaskId = rows[prev]
-      updateSelectedRow(ctx.state)
-      break
-    }
-    case 'Enter':
-    case 'e': {
-      if (!ctx.state.selectedTaskId) return
-      e.preventDefault()
-      const owner = ctx.scope.projectOf(ctx.state.selectedTaskId)
-      const task = owner ? findTaskById(owner, ctx.state.selectedTaskId) : null
-      if (owner && task) {
-        openTaskModal(ctx.plugin, owner, {
-          task,
-          onSave: async () => {
-            await ctx.onRefresh()
-          }
-        })
-      }
-      break
-    }
-    case 'Delete':
-    case 'Backspace': {
-      e.preventDefault()
-      if (ctx.state.selectedTaskIds.size > 0) {
-        ctx.onBulkDelete()
-        break
-      }
-      if (!ctx.state.selectedTaskId) return
-      const id = ctx.state.selectedTaskId
-      const currentIdx = rows.indexOf(id)
-      const nextIdx = currentIdx < rows.length - 1 ? currentIdx + 1 : currentIdx - 1
-      ctx.state.selectedTaskId = nextIdx >= 0 ? rows[nextIdx] : null
-      void deleteTask(id, ctx)
-      break
-    }
-  }
-}
-
 export function getVisibleTaskIds(state: TableState): string[] {
   return state.visibleRows.map((f) => f.task.id)
-}
-
-async function deleteTask(id: string, ctx: TableContext): Promise<void> {
-  const owner = ctx.scope.projectOf(id)
-  if (!owner) return
-  await ctx.plugin.store.deleteTask(owner, id)
-  await ctx.onRefresh()
 }

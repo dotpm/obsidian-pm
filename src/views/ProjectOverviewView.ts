@@ -1,4 +1,4 @@
-import { ButtonComponent, Menu, Component, ItemView, MarkdownRenderer, WorkspaceLeaf } from 'obsidian'
+import { ButtonComponent, Menu, Component, ItemView, MarkdownRenderer, Scope, WorkspaceLeaf } from 'obsidian'
 import type PMPlugin from '#main'
 import { addTabPageItems, refreshTabTitle } from '#ui/tab'
 import {
@@ -36,6 +36,8 @@ import {
   renderGlyph
 } from '@dotpm/ui'
 import { linkedRefs } from './linkedRefs'
+import { openTaskModal } from '#ui/ModalFactory'
+import { KeyboardController, type ActionHandlers, type KeyboardSurface } from '#ui/keyboard/index'
 
 export const PM_PROJECT_OVERVIEW_VIEW_TYPE = 'pm-project-overview'
 
@@ -63,11 +65,50 @@ export class ProjectOverviewView extends ItemView {
   private container!: HTMLElement
   /** Parent and sub-projects as last drawn, so an unrelated index change doesn't repaint. */
   private treeSignature = ''
+  private keyScope: Scope
+  private keyboard!: KeyboardController
+  private surface!: KeyboardSurface
 
   constructor(leaf: WorkspaceLeaf, plugin: PMPlugin) {
     super(leaf)
     this.plugin = plugin
     this.navigation = false
+    this.keyScope = new Scope(this.app.scope)
+    this.scope = this.keyScope
+    this.surface = {
+      context: 'overview',
+      groups: () => (this.project ? [[this.project.filePath]] : []),
+      activeId: () => this.project?.filePath ?? null,
+      setActive: () => {}
+    }
+    this.keyboard = new KeyboardController(this.app, this.keyScope, {
+      container: () => this.containerEl,
+      getSurface: () => this.surface,
+      getHandlers: () => this.actionHandlers()
+    })
+  }
+
+  private actionHandlers(): ActionHandlers {
+    return {
+      open: () => {
+        const project = this.project
+        if (project) {
+          void safeAsync(() => this.plugin.router.openScope({ kind: 'project', path: project.filePath }, this.leaf))()
+        }
+      },
+      editProject: () => {
+        const project = this.project
+        if (project) void safeAsync(() => this.plugin.router.openProjectEdit(project.filePath, this.leaf))()
+      },
+      openNote: () => {
+        const project = this.project
+        if (project) void safeAsync(() => this.plugin.openAsMarkdown(project.filePath, this.leaf))()
+      },
+      new: () => {
+        const project = this.project
+        if (project) openTaskModal(this.plugin, project, { onSave: () => this.render() })
+      }
+    }
   }
 
   getViewType(): string {
@@ -85,6 +126,13 @@ export class ProjectOverviewView extends ItemView {
     const project = this.project
     if (!project) return
     addTabPageItems(menu, this.plugin, this.leaf, project.filePath, ['tasks', 'edit', 'note'])
+    menu.addSeparator()
+    menu.addItem((item) =>
+      item
+        .setTitle(t('keyboard.help'))
+        .setIcon('keyboard')
+        .onClick(() => this.keyboard.openHelp())
+    )
   }
 
   async setState(state: ProjectOverviewState, result: unknown): Promise<void> {
@@ -120,6 +168,7 @@ export class ProjectOverviewView extends ItemView {
   }
 
   onClose(): Promise<void> {
+    this.keyboard.destroy()
     this.description.unload()
     this.contentEl.empty()
     return Promise.resolve()
