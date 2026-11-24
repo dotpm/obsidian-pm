@@ -33,17 +33,9 @@ describe('keymap', () => {
     }
   })
 
-  it('cycles the saved views on Shift+V where v cycles the view modes', () => {
-    for (const context of ['table', 'board', 'timeline', 'projects'] as const) {
-      expect(resolveAction(context, 'Shift+v')).toBe('nextSavedView')
-    }
-    expect(resolveAction('table', 'v')).toBe('nextView')
-  })
-
-  it('picks a saved view on w and saves a new one on Shift+W', () => {
+  it('picks a saved view on w', () => {
     for (const context of ['table', 'board', 'timeline', 'projects'] as const) {
       expect(resolveAction(context, 'w')).toBe('pickSavedView')
-      expect(resolveAction(context, 'Shift+w')).toBe('saveView')
     }
     expect(resolveAction('overview', 'w')).toBeNull()
   })

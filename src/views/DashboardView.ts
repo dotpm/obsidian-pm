@@ -53,13 +53,7 @@ import {
   syncSortButton
 } from '@dotpm/ui'
 import { openProjectCreate } from '#ui/ModalFactory'
-import {
-  KeyboardController,
-  askSavedView,
-  askSaveView,
-  type ActionHandlers,
-  type KeyboardSurface
-} from '#ui/keyboard/index'
+import { KeyboardController, askSavedView, type ActionHandlers, type KeyboardSurface } from '#ui/keyboard/index'
 import { projectListItems, renderProjectTable, type ProjectListContext } from './ProjectListRenderer'
 
 export const PM_DASHBOARD_VIEW_TYPE = 'pm-dashboard'
@@ -143,16 +137,15 @@ export class DashboardView extends ItemView {
         if (active) void safeAsync(() => this.plugin.router.openProjectEdit(active))()
       },
       new: () => openProjectCreate(this.plugin),
-      nextSavedView: () => this.cycleView(),
       pickSavedView: () =>
-        askSavedView(
-          this.plugin.app,
-          this.plugin.settings.projectListViews,
-          this.state.activeViewId,
-          t('header.allProjects'),
-          (id) => this.selectView(id)
-        ),
-      saveView: () => askSaveView(this.plugin.app, this.canSaveView(), (name) => this.saveView(name, false)),
+        askSavedView(this.plugin.app, {
+          views: this.plugin.settings.projectListViews,
+          activeId: this.state.activeViewId,
+          builtInName: t('header.allProjects'),
+          canSave: this.canSaveView(),
+          onSelect: (id) => this.selectView(id),
+          onSave: (name) => this.saveView(name, false)
+        }),
       expand: () => this.setActiveCollapsed(false),
       collapse: () => this.setActiveCollapsed(true),
       search: () => this.searchBox?.focus(),
@@ -721,14 +714,6 @@ export class DashboardView extends ItemView {
     this.text = ''
     this.renderHeader()
     this.changed()
-  }
-
-  /** The next saved view in the list, and the built-in one after the last. */
-  private cycleView(): void {
-    const views = this.plugin.settings.projectListViews
-    if (!views.length) return
-    const at = views.findIndex((view) => view.id === this.state.activeViewId)
-    this.selectView(at === views.length - 1 ? null : views[at + 1].id)
   }
 
   /** False while nothing differs from the defaults, so there is nothing to save. */
