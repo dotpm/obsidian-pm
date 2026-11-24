@@ -103,7 +103,9 @@ import {
   taskActionHandlers,
   type ActionHandlers,
   type ActionSnapshot,
-  type KeyboardSurface
+  type KeyboardSurface,
+  askSavedView,
+  askSaveView
 } from '#ui/keyboard/index'
 
 export const PM_PROJECT_VIEW_TYPE = 'pm-project'
@@ -258,6 +260,11 @@ export class ProjectView extends ItemView {
         this.switchMode(MODES[(index + 1) % MODES.length])
       },
       nextSavedView: () => this.cycleSavedView(),
+      pickSavedView: () =>
+        askSavedView(this.app, this.savedViews(), this.activeSavedViewId, t('header.allTasks'), (id) =>
+          this.handleSavedViewSelect(id)
+        ),
+      saveView: () => askSaveView(this.app, this.canSaveView(), (name) => this.handleSavedViewSave(name, false)),
       viewTable: () => this.switchMode('table'),
       viewBoard: () => this.switchMode('kanban'),
       viewTimeline: () => this.switchMode('gantt'),
@@ -833,6 +840,16 @@ export class ProjectView extends ItemView {
     })
   }
 
+  /** False while nothing differs from the defaults, so there is nothing to save. */
+  private canSaveView(): boolean {
+    return (
+      countActiveFilters(this.query.filter) > 0 ||
+      !sameValue(this.sort, makeDefaultSort()) ||
+      Object.keys(this.fields).length > 0 ||
+      this.currentView !== this.projectScope?.config.defaultView
+    )
+  }
+
   private openSavedViews(anchor: HTMLElement): void {
     const primary = this.projectScope?.primary
     openSavedViewsPopover(anchor, {
@@ -844,11 +861,7 @@ export class ProjectView extends ItemView {
       })),
       activeId: this.activeSavedViewId,
       changes: this.viewChanges(),
-      canSave:
-        countActiveFilters(this.query.filter) > 0 ||
-        !sameValue(this.sort, makeDefaultSort()) ||
-        Object.keys(this.fields).length > 0 ||
-        this.currentView !== this.projectScope?.config.defaultView,
+      canSave: this.canSaveView(),
       builtInName: t('header.allTasks'),
       storageNote:
         this.projectScope?.spec.kind === 'project' && primary
