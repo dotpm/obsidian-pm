@@ -1,6 +1,7 @@
 import type { CustomFieldDef, FilterOp, StatusConfig, Task } from '../types'
 import { t } from '../i18n'
 import { displayName, stringifyCustomValue } from '../utils'
+import { effectiveCustomValue, effectiveTags } from './Inheritance'
 
 /** How a field's values compare, which decides the operators it offers. */
 export type FilterKind = 'list' | 'multi' | 'text' | 'number' | 'date' | 'checkbox'
@@ -138,8 +139,8 @@ export function filterFieldIcon(field: string, customFields: CustomFieldDef[]): 
 }
 
 /**
- * The value a condition compares: one string for a list field (empty when unset), the
- * strings of a multi field, the text of a text field, a number or null, a `YYYY-MM-DD`
+ * The value a condition compares, counting what a subtask inherits: one string for a list
+ * field (empty when unset), the strings of a multi field, the text of a text field, a number or null, a `YYYY-MM-DD`
  * string (empty when unset), or a boolean.
  */
 export function filterValue(
@@ -155,7 +156,7 @@ export function filterValue(
     case 'assignee':
       return task.assignees
     case 'tag':
-      return task.tags
+      return effectiveTags(task)
     case 'due':
       return task.due
     case 'start':
@@ -169,7 +170,7 @@ export function filterValue(
   }
   const custom = customFieldOf(field, ctx.customFields)
   if (!custom) return null
-  const raw = task.customFields[custom.id]
+  const raw = effectiveCustomValue(task, custom.id)
   switch (CUSTOM_KINDS[custom.type]) {
     case 'multi':
       return (Array.isArray(raw) ? raw : [raw]).map((v) => stringifyCustomValue(v)).filter(Boolean)

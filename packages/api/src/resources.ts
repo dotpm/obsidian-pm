@@ -61,6 +61,10 @@ export function toTaskResource(task: Task, projectId: string, parentId: string |
     timeEstimate: task.timeEstimate ?? null,
     timeLogs: (task.timeLogs ?? []).map((log) => ({ ...log })),
     customFields: { ...task.customFields },
+    inherited: {
+      tags: [...(task.inherited?.tags ?? [])],
+      customFields: { ...task.inherited?.customFields }
+    },
     archived: task.archived === true,
     createdAt: task.createdAt,
     updatedAt: task.updatedAt
@@ -323,6 +327,9 @@ export function tasksFromResources(resources: TaskResource[]): Task[] {
         timeEstimate: r.timeEstimate ?? undefined,
         timeLogs: r.timeLogs.map((log) => ({ ...log })),
         customFields: { ...r.customFields },
+        ...(r.inherited
+          ? { inherited: { tags: [...r.inherited.tags], customFields: { ...r.inherited.customFields } } }
+          : {}),
         archived: r.archived,
         createdAt: r.createdAt,
         updatedAt: r.updatedAt,

@@ -79,7 +79,7 @@ Fields a client may write: `title`, `description`, `type` (`task`, `milestone`, 
 
 A new project goes in the projects folder from settings, or inside its parent's folder when `parentId` is given. It starts with the global statuses and priorities; its palettes, custom fields and other settings are changed in Obsidian.
 
-Every task also carries `id`, `projectId`, `parentId`, `position` (its index among siblings), `path`, `archived`, `completed`, `timeLogs`, `createdAt` and `updatedAt`. Ids are stable for the life of a task. Paths change when a task is renamed or archived. A new task's note is named after its title, with a number appended when a note of that name is already there, so two tasks may share a title.
+Every task also carries `id`, `projectId`, `parentId`, `position` (its index among siblings), `path`, `archived`, `completed`, `timeLogs`, `createdAt` and `updatedAt`. It also carries `inherited` (`{ tags, customFields }`), what it takes from its ancestors under the [inheritance rules](../README.md#subtask-inheritance); `tags` and `customFields` hold only the task's own values, and `inherited` can't be written. Ids are stable for the life of a task. Paths change when a task is renamed or archived. A new task's note is named after its title, with a number appended when a note of that name is already there, so two tasks may share a title.
 
 Errors come back as `{ "error": { "code", "message" } }`:
 

@@ -21,6 +21,7 @@ import {
   isTaskNotesInstalled
 } from './integrations/tasknotes'
 import { renderPaletteFields, renderStatusDoneToggle } from './ui/PaletteListEditor'
+import { renderInheritanceRuleEditor } from './ui/InheritanceRuleEditor'
 import { renderPersonPicker } from './ui/PersonPicker'
 import { generateToken } from './api/LocalApiServer'
 
@@ -269,7 +270,13 @@ export class PMSettingTab extends PluginSettingTab {
       {
         type: 'group',
         heading: t('settings.taskFields.heading'),
-        items: [this.statusesPage(), this.prioritiesPage(), this.customFieldsPage(), this.teamMembersPage()]
+        items: [
+          this.statusesPage(),
+          this.prioritiesPage(),
+          this.customFieldsPage(),
+          this.inheritancePage(),
+          this.teamMembersPage()
+        ]
       },
       {
         type: 'group',
@@ -433,6 +440,52 @@ export class PMSettingTab extends PluginSettingTab {
               this.persist()
               this.update()
             }
+          }
+        }
+      ]
+    }
+  }
+
+  private inheritancePage(): SettingDefinitionPage {
+    const settings = this.plugin.settings
+    return {
+      type: 'page',
+      name: t('settings.inheritance.name'),
+      desc: t('settings.inheritance.desc'),
+      displayValue: () => {
+        const { tags, properties } = settings.inheritance
+        const active = [
+          ...(tags.inherit || tags.except.length ? [t('taskForm.tags')] : []),
+          ...(properties.inherit || properties.except.length ? [t('settings.customFields.name')] : [])
+        ]
+        return active.length ? active.join(', ') : t('common.off')
+      },
+      items: [
+        {
+          name: t('taskForm.tags'),
+          render: (setting: Setting) => {
+            renderInheritanceRuleEditor(setting.controlEl, {
+              rule: settings.inheritance.tags,
+              allLabel: t('inheritance.tagsAll'),
+              onChange: (rule) => {
+                settings.inheritance.tags = rule
+                this.persist()
+              }
+            })
+          }
+        },
+        {
+          name: t('settings.customFields.name'),
+          render: (setting: Setting) => {
+            renderInheritanceRuleEditor(setting.controlEl, {
+              rule: settings.inheritance.properties,
+              allLabel: t('inheritance.propertiesAll'),
+              choices: settings.customFields.map((field) => ({ id: field.id, label: field.name })),
+              onChange: (rule) => {
+                settings.inheritance.properties = rule
+                this.persist()
+              }
+            })
           }
         }
       ]

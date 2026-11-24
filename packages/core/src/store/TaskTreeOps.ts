@@ -93,8 +93,9 @@ function cloneNode(source: Task, includeSubtasks: boolean, idMap: Map<string, st
   const now = new Date().toISOString()
   const newId = makeId()
   idMap.set(source.id, newId)
+  const { inherited: _inherited, ...own } = source
   return {
-    ...source,
+    ...own,
     id: newId,
     filePath: undefined,
     createdAt: now,

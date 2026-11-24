@@ -1,8 +1,9 @@
-import { type Task, formatDateShort, t } from '@dotpm/core'
+import { type InheritedShare, type Task, effectiveTags, formatDateShort, t } from '@dotpm/core'
 import { AvatarStack, type AvatarPerson } from '#primitives/AvatarStack'
 import { Chip } from '#primitives/Chip'
 import { ProgressBar } from '#primitives/ProgressBar'
 import { renderDueChip } from './dueChip'
+import { markInherited } from './inheritedMark'
 import { renderTagChip } from './tagChip'
 import { renderTimeChip } from './timeChip'
 
@@ -10,6 +11,7 @@ import { renderTimeChip } from './timeChip'
 export interface CardFieldValue {
   name: string
   text: string
+  inherited?: InheritedShare
 }
 
 export interface KanbanCardProps {
@@ -88,11 +90,12 @@ export class KanbanCard {
         body.createDiv({ cls: 'pm-kanban-card-description', text: props.descriptionPreview })
       } else if (field === 'time') {
         renderTimeChip(body, props.loggedHours, task.timeEstimate ?? 0, 'sm')
-      } else if (field === 'tags' && task.tags.length) {
+      } else if (field === 'tags' && effectiveTags(task).length) {
         const tagsEl = body.createDiv('pm-kanban-card-tags')
-        for (const tag of task.tags.slice(0, 3)) {
-          renderTagChip(tagsEl, tag, props.showTagColors)
-        }
+        const own = task.tags.length
+        effectiveTags(task)
+          .slice(0, 3)
+          .forEach((tag, i) => renderTagChip(tagsEl, tag, props.showTagColors, i >= own))
       } else if (field === 'progress' && task.progress > 0) {
         new ProgressBar(body).setSize('sm').setValue(task.progress)
       } else if (field === 'project') {
@@ -105,7 +108,8 @@ export class KanbanCard {
         const { name, text } = props.customValues[field]
         const row = body.createDiv('pm-kanban-card-field')
         row.createSpan({ cls: 'pm-kanban-card-field-name', text: name })
-        row.createSpan({ cls: 'pm-kanban-card-field-value', text })
+        const value = row.createSpan({ cls: 'pm-kanban-card-field-value', text })
+        markInherited(value, props.customValues[field].inherited ?? 'none')
       }
     }
     if (footer.childElementCount) body.appendChild(footer)

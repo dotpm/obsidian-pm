@@ -80,11 +80,11 @@ export class TitleCell {
         .setTooltip(t('common.archived'))
     }
 
-    if (task.tags.length) {
+    const inheritedTags = task.inherited?.tags ?? []
+    if (task.tags.length || inheritedTags.length) {
       const tagRow = inner.createDiv('pm-table-tags')
-      for (const tag of task.tags) {
-        renderTagChip(tagRow, tag, props.showTagColors)
-      }
+      for (const tag of task.tags) renderTagChip(tagRow, tag, props.showTagColors)
+      for (const tag of inheritedTags) renderTagChip(tagRow, tag, props.showTagColors, true)
     }
   }
 }

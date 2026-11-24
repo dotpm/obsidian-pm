@@ -1,4 +1,13 @@
-import { type CustomFieldDef, type Task, flattenTasks, formatDateLong, stringifyCustomValue, t } from '@dotpm/core'
+import {
+  type CustomFieldDef,
+  type Task,
+  effectiveCustomValue,
+  flattenTasks,
+  formatDateLong,
+  inheritedShare,
+  stringifyCustomValue,
+  t
+} from '@dotpm/core'
 import type { CardFieldValue } from '../composites/KanbanCard'
 
 /** The tasks a board deals cards for: the top-level ones, or every task once subtasks get cards of their own. */
@@ -28,7 +37,7 @@ export function cardCustomValues(
   const values: Record<string, CardFieldValue> = {}
   for (const cf of customFields) {
     const id = `cf:${cf.id}`
-    const raw = task.customFields[cf.id]
+    const raw = effectiveCustomValue(task, cf.id)
     if (!fields.includes(id) || raw === undefined || raw === null || raw === '') continue
     const list = (Array.isArray(raw) ? raw : [raw]).map(stringifyCustomValue).filter(Boolean)
     const text =
@@ -39,7 +48,7 @@ export function cardCustomValues(
         : cf.type === 'date'
           ? list.map((value) => formatDateLong(value) || value).join(', ')
           : list.map((value) => value.replace(/^\[\[(?:[^|\]]*\|)?([^\]]*)\]\]$/, '$1')).join(', ')
-    if (text) values[id] = { name: cf.name, text }
+    if (text) values[id] = { name: cf.name, text, inherited: inheritedShare(task, cf.id) }
   }
   return values
 }

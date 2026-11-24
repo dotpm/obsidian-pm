@@ -29,6 +29,9 @@ export interface TaskSource {
    */
   configFor(project: Project): ResolvedProjectConfig
 
+  /** Resolves inherited tags and properties again in every loaded project, after a rule changed. */
+  refreshInheritance(): Promise<void>
+
   /** Loads the projects at the given paths, skipping any that no longer resolve to a file. */
   loadProjects(paths: string[]): Promise<Project[]>
 

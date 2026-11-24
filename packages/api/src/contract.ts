@@ -1,4 +1,12 @@
-import type { CustomFieldDef, PriorityConfig, Recurrence, StatusConfig, TaskType, TimeLog } from '@dotpm/core'
+import type {
+  CustomFieldDef,
+  InheritedValues,
+  PriorityConfig,
+  Recurrence,
+  StatusConfig,
+  TaskType,
+  TimeLog
+} from '@dotpm/core'
 
 /** What a listing shows for a project, cheap enough to serve without loading it. */
 export interface ProjectSummary {
@@ -47,6 +55,11 @@ export interface TaskResource {
   timeEstimate: number | null
   timeLogs: TimeLog[]
   customFields: Record<string, unknown>
+  /**
+   * What the task takes from its ancestors, on top of `tags` and `customFields`, which hold
+   * only its own values. Read-only. Absent on a page exported before inheritance existed.
+   */
+  inherited?: InheritedValues
   archived: boolean
   createdAt: string
   updatedAt: string
