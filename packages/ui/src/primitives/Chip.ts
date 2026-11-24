@@ -60,9 +60,9 @@ export class Chip {
     return this
   }
 
-  setInherited(tooltip: string): this {
+  setInherited(): this {
     this.el.addClass('pm-chip--inherited')
-    return this.setTooltip(tooltip)
+    return this
   }
 
   setShape(shape: 'rounded' | 'pill'): this {

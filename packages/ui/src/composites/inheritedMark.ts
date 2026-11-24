@@ -1,5 +1,5 @@
-import { t, type InheritedShare } from '@dotpm/core'
-import { setIcon, setTooltip } from '#platform'
+import type { InheritedShare } from '@dotpm/core'
+import { setIcon } from '#platform'
 
 /**
  * Marks a value an ancestor contributes, the way an inherited tag is marked: an arrow in
@@ -13,5 +13,4 @@ export function markInherited(el: HTMLElement, share: InheritedShare): void {
   const arrow = el.createSpan({ cls: 'pm-inherited-arrow' })
   setIcon(arrow, 'corner-down-right')
   el.prepend(arrow)
-  setTooltip(el, t(share === 'full' ? 'chip.inheritedTooltip' : 'chip.inheritedPartialTooltip'))
 }

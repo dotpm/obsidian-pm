@@ -1,4 +1,4 @@
-import { stringToColor, t } from '@dotpm/core'
+import { stringToColor } from '@dotpm/core'
 import { Chip } from '#primitives/Chip'
 
 /**
@@ -8,7 +8,7 @@ import { Chip } from '#primitives/Chip'
 export function renderTagChip(parent: HTMLElement, tag: string, colored: boolean, inherited = false): Chip {
   const chip = new Chip(parent).setLabel(tag).setVariant('outline').setTag()
   if (colored) chip.setColor(stringToColor(tag))
-  if (inherited) chip.setLeadingIcon('corner-down-right').setInherited(t('chip.inheritedTooltip'))
+  if (inherited) chip.setLeadingIcon('corner-down-right').setInherited()
   else if (colored) chip.setDot(true)
   return chip
 }

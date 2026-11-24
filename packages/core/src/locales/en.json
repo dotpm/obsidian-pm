@@ -29,8 +29,6 @@
   "bulk.tomorrow": "Tomorrow ({date})",
   "cell.projectActions": "Project actions",
   "cell.taskActions": "Task actions",
-  "chip.inheritedPartialTooltip": "Includes values inherited from a parent task",
-  "chip.inheritedTooltip": "Inherited from a parent task, not set on this task",
   "chip.milestone": "M",
   "chip.recurring": "R",
   "chip.recurringTooltip": "Recurring",
